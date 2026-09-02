@@ -28,6 +28,7 @@ gzip	1.13-1
 hashdeep	4.4+git20170824+ds-1
 hostname	3.25
 init-system-helpers	1.69~deb13u1
+isa-support:amd64	27
 libacl1:amd64	2.3.2-2+b1
 libafflib0t64:amd64	3.7.21-1
 libapt-pkg7.0:amd64	3.0.3
@@ -38,6 +39,7 @@ libaudit1:amd64	1:4.0.2-2+b2
 libbcg729-0:amd64	1.1.1-3
 libbfio1:amd64	20170123-6+b2
 libblkid1:amd64	2.41.5-0+deb13u1
+libbpf1:amd64	1:1.5.0-3
 libbrotli1:amd64	1.1.0-2+b7
 libbsd0:amd64	0.12.2-2
 libbz2-1.0:amd64	1.0.8-6
@@ -56,8 +58,13 @@ libdb5.3t64:amd64	5.3.28+dfsg2-9
 libdbus-1-3:amd64	1.16.2-2
 libdebconfclient0:amd64	0.280
 libdeflate0:amd64	1.23-2
+libelf1t64:amd64	0.192-4
+libevent-2.1-7t64:amd64	2.1.12-stable-10+b1
+libevent-core-2.1-7t64:amd64	2.1.12-stable-10+b1
+libevent-pthreads-2.1-7t64:amd64	2.1.12-stable-10+b1
 libewf2:amd64	20140816-1+b1
 libexpat1:amd64	2.8.3-1~deb13u1
+libfdt1:amd64	1.7.2-2+b1
 libffi8:amd64	3.4.8-2
 libgcc-s1:amd64	14.2.0-19
 libgcrypt20:amd64	1.11.0-7+deb13u1
@@ -68,7 +75,10 @@ libgmp10:amd64	2:6.3.0+dfsg-3
 libgnutls30t64:amd64	3.8.9-3+deb13u4
 libgpg-error0:amd64	1.51-4
 libgssapi-krb5-2:amd64	1.21.3-5+deb13u1
+libhiredis1.1.0:amd64	1.2.0-6+b3
 libhogweed6t64:amd64	3.10.1-1
+libhtp2	1:0.5.50-1+deb13u1
+libhyperscan5	5.4.2-3
 libidn2-0:amd64	2.3.8-2
 libjansson4:amd64	2.14-2+b3
 libjbig0:amd64	2.1-6.1+b2
@@ -82,20 +92,28 @@ liblastlog2-2:amd64	2.41.5-0+deb13u1
 libldap2:amd64	2.6.10+dfsg-1
 liblerc4:amd64	4.0.0+ds-5
 liblua5.4-0:amd64	5.4.7-1+b2
+libluajit-5.1-2:amd64	2.1.0+openresty20250117-2
+libluajit-5.1-common	2.1.0+openresty20250117-2
 liblz4-1:amd64	1.10.0-4
 liblzma5:amd64	5.8.1-1+deb13u1
 libmagic-mgc	1:5.46-5
 libmagic1t64:amd64	1:5.46-5
 libmaxminddb0:amd64	1.12.2-1
 libmd0:amd64	1.1.0-2+b1
+libmnl0:amd64	1.0.5-3
 libmount1:amd64	2.41.5-0+deb13u1
 libncursesw6:amd64	6.5+20250216-2
+libnet1:amd64	1.3+dfsg-2
+libnetfilter-log1:amd64	1.0.2-4+b1
+libnetfilter-queue1:amd64	1.0.5-4+b1
 libnettle8t64:amd64	3.10.1-1
+libnfnetlink0:amd64	1.0.2-3
 libnghttp2-14:amd64	1.64.0-1.1+deb13u1
 libnghttp3-9:amd64	1.8.0-1
 libnl-3-200:amd64	3.7.0-2
 libnl-genl-3-200:amd64	3.7.0-2
 libnl-route-3-200:amd64	3.7.0-2
+libnuma1:amd64	2.0.19-1
 libopencore-amrnb0:amd64	0.1.6-1+b2
 libopus0:amd64	1.5.2-2
 libp11-kit0:amd64	0.25.5-3
@@ -107,8 +125,28 @@ libpcap0.8t64:amd64	1.10.5-2
 libpcre2-8-0:amd64	10.46-1~deb13u1
 libperl5.40:amd64	5.40.1-6
 libpsl5t64:amd64	0.21.2-1.1+b1
+libpython3-stdlib:amd64	3.13.5-1
 libpython3.13-minimal:amd64	3.13.5-2+deb13u4
+libpython3.13-stdlib:amd64	3.13.5-2+deb13u4
 libreadline8t64:amd64	8.2-6
+librte-bus-pci25:amd64	24.11.4-0+deb13u1
+librte-bus-vdev25:amd64	24.11.4-0+deb13u1
+librte-eal25:amd64	24.11.4-0+deb13u1
+librte-ethdev25:amd64	24.11.4-0+deb13u1
+librte-hash25:amd64	24.11.4-0+deb13u1
+librte-ip-frag25:amd64	24.11.4-0+deb13u1
+librte-kvargs25:amd64	24.11.4-0+deb13u1
+librte-log25:amd64	24.11.4-0+deb13u1
+librte-mbuf25:amd64	24.11.4-0+deb13u1
+librte-mempool25:amd64	24.11.4-0+deb13u1
+librte-meter25:amd64	24.11.4-0+deb13u1
+librte-net-bond25:amd64	24.11.4-0+deb13u1
+librte-net25:amd64	24.11.4-0+deb13u1
+librte-pci25:amd64	24.11.4-0+deb13u1
+librte-rcu25:amd64	24.11.4-0+deb13u1
+librte-ring25:amd64	24.11.4-0+deb13u1
+librte-sched25:amd64	24.11.4-0+deb13u1
+librte-telemetry25:amd64	24.11.4-0+deb13u1
 librtmp1:amd64	2.4+20151223.gitfa8646d.1-2+b5
 libsasl2-2:amd64	2.1.28+dfsg1-9
 libsasl2-modules-db:amd64	2.1.28+dfsg1-9
@@ -144,8 +182,10 @@ libwireshark-data	4.4.18-0+deb13u1
 libwireshark18:amd64	4.4.18-0+deb13u1
 libwiretap15:amd64	4.4.18-0+deb13u1
 libwsutil16:amd64	4.4.18-0+deb13u1
+libxdp1:amd64	1.5.4-1
 libxml2:amd64	2.12.7+dfsg+really2.9.14-2.1+deb13u3
 libxxhash0:amd64	0.8.3-2
+libyaml-0-2:amd64	0.2.5-2
 libyara10:amd64	4.5.2-1
 libzstd1:amd64	1.5.7+dfsg-1
 login	1:4.16.0-2+really2.41.5-0+deb13u1
@@ -165,11 +205,16 @@ perl-base	5.40.1-6
 perl-modules-5.40	5.40.1-6
 pkgconf:amd64	1.8.1-4
 python3	3.13.5-1
+python3-minimal	3.13.5-1
+python3.13	3.13.5-2+deb13u4
 python3.13-minimal	3.13.5-2+deb13u4
 readline-common	8.2-6
 sed	4.9-2+deb13u1
 sleuthkit	4.12.1+dfsg-3
 sqv	1.3.0-3+b2
+sse3-support	27
+sse4.2-support	27
+suricata	1:7.0.10-1+deb13u4
 sysvinit-utils	3.14-4
 tar	1.35+dfsg-3.1
 tshark	4.4.18-0+deb13u1
@@ -218,7 +263,7 @@ libfvde-python==20240502
 libfwnt-python==20260602
 libfwsi-python==20260522
 liblnk-python==20260525
-libluksde-python==20240503
+libluksde-python==20260902
 libmodi-python==20260902
 libmsiecf-python==20260525
 libolecf-python==20260526
@@ -254,6 +299,7 @@ redis==8.1.0
 regipy==6.3.0
 requests==2.34.2
 six==1.17.0
+suricata-update==1.3.3
 typing_extensions==4.16.0
 urllib3==2.7.0
 volatility3==2.28.0
@@ -269,6 +315,7 @@ regipy 6.3.0 - MIT
 python-evtx 0.8.1 - voir METADATA / classifiers
 evtx 0.12.1 - voir METADATA / classifiers
 PyYAML 6.0.2 - MIT
+suricata-update 1.3.3 - GPLv2
 
 == Licences des paquets Debian (extraits des fichiers copyright installes) ==
 --- adduser ---
@@ -375,6 +422,9 @@ Copyright: 2013 Michael Stapelberg
 License: BSD-3-clause
 Copyright: 2013-2014 Michael Stapelberg <stapelberg@debian.org>
 License: BSD-3-clause
+--- isa-support ---
+Copyright: 2016 Adam Borowski <kilobyte@angband.pl>
+License: MIT
 --- libacl1 ---
 Copyright:
 License: GPL-2+
@@ -425,6 +475,11 @@ Copyright: Michal Luscon <mluscon@redhat.com>
 License: GPL-2+
 Copyright: 2005 Jens Axboe <jens@axboe.dk>
 License: GPL-2
+--- libbpf1 ---
+Copyright: 2013-2015 Alexei Starovoitov <ast@kernel.org>
+License:   LGPL-2.1 or BSD-2-Clause
+Copyright: Grant Seltzer <grantseltzer@gmail.com>
+License:   GPL-2.0
 --- libbrotli1 ---
 Copyright: 2009, 2010, 2013-2015 by the Brotli Authors
 License: MIT
@@ -507,6 +562,26 @@ Copyright: 2016, 2018, 2020, 2022, 2024 Eric Biggers
 License: Expat
 Copyright: 2018, Eric Biggers
 License: Expat
+--- libelf1t64 ---
+Copyright: (C) 1996-2019 Red Hat, Inc.
+License: GPL-3+
+Copyright: (C) 1996-2019 Red Hat, Inc.
+License: LGPL-3+ or GPL-2+
+--- libevent-2.1-7t64 ---
+Copyright: 2000-2007 Niels Provos <provos@citi.umich.edu>
+License: BSD-3-clause
+Copyright: 2002-2005 Simon Law <sfllaw@debian.org>
+License: BSD-3-clause
+--- libevent-core-2.1-7t64 ---
+Copyright: 2000-2007 Niels Provos <provos@citi.umich.edu>
+License: BSD-3-clause
+Copyright: 2002-2005 Simon Law <sfllaw@debian.org>
+License: BSD-3-clause
+--- libevent-pthreads-2.1-7t64 ---
+Copyright: 2000-2007 Niels Provos <provos@citi.umich.edu>
+License: BSD-3-clause
+Copyright: 2002-2005 Simon Law <sfllaw@debian.org>
+License: BSD-3-clause
 --- libewf2 ---
 Copyright: 2006-2022, Joachim Metz <joachim.metz@gmail.com>
 License: LGPL-3+
@@ -517,6 +592,11 @@ Copyright: Copyright (C) Expat maintainers
 Copyright:
 License: MIT
 Copyright:
+--- libfdt1 ---
+Copyright:
+License: GPL-2+
+Copyright:
+License: GPL-2+
 --- libffi8 ---
 Copyright:
 License: Expat
@@ -567,11 +647,26 @@ Copyright:
 Copyright (C) 1985-2022 by the Massachusetts Institute of Technology.
 license:
 license:
+--- libhiredis1.1.0 ---
+Copyright: 2009-2011, Salvatore Sanfilippo <antirez@gmail.com>
+License: BSD-3-Clause
+Copyright:
+License: BSD-3-Clause
 --- libhogweed6t64 ---
 Copyright: © 2001-2024 Niels Möller
 License: LGPL-3+ or GPL-2+
 Copyright: 2001-2023 Niels Möller
 License: LGPL-3+ or GPL-2+
+--- libhtp2 ---
+Copyright: 2009-2010 Open Information Security Foundation
+License: BSD-3-clause
+Copyright: 1998 Todd C. Miller <Todd.Miller@courtesan.com>
+License: BSD-3-clause
+--- libhyperscan5 ---
+Copyright: 2015 Intel Corporation <hyperscan@intel.com>
+License: BSD-3-Clause-Intel
+Copyright: 2004-2006 Intel Corporation
+License: BSD-2-Clause
 --- libidn2-0 ---
 Copyright: 2011-2025 Simon Josefsson
 License: GPL-3+
@@ -630,6 +725,16 @@ License: Apache-2.0
 --- liblua5.4-0 ---
 Copyright: 1994–2020 Lua.org, PUC-Rio.
 License: Expat
+--- libluajit-5.1-2 ---
+Copyright: 2005-2022, Mike Pall
+License: MIT/X
+Copyright: Doug Lea <dl@cs.oswego.edu>
+License: PD
+--- libluajit-5.1-common ---
+Copyright: 2005-2022, Mike Pall
+License: MIT/X
+Copyright: Doug Lea <dl@cs.oswego.edu>
+License: PD
 --- liblz4-1 ---
 Copyright: 2011-2020, Yann Collet
 License: GPL-2+
@@ -660,6 +765,11 @@ Copyright:
 License: BSD-3-clause
 Copyright:
 License: BSD-3-clause-Aaron-D-Gifford
+--- libmnl0 ---
+Copyright: 2008-2012, Pablo Neira Ayuso <pablo@netfilter.org>
+License: LGPL-2.1
+Copyright: 2010-2016, Anibal Monsalve Salazar <anibal@debian.org>
+License: GPL-2+
 --- libmount1 ---
 Copyright: Michal Luscon <mluscon@redhat.com>
 License: GPL-2+
@@ -670,11 +780,31 @@ Copyright: 1998-2017,2018 Free Software Foundation, Inc.
 License: MIT/X11
 Copyright: 1994 X Consortium
 License: X11
+--- libnet1 ---
+Copyright: © 1998-2004, Mike D. Schiffman <mike@infonexus.com>
+License: BSD-2-clause
+Copyright: © 1982-1997, The Regents of the University of California
+License: BSD-3-clause
+--- libnetfilter-log1 ---
+Copyright: 2005-2006 Harald Welte <laforge@netfilter.org>
+License: GPL-2+
+Copyright: 2006 Max Kellermann <max@duempel.org>
+License: GPL-2+
+--- libnetfilter-queue1 ---
+Copyright: 2005 Harald Welte <laforge@gnumonks.org>
+License: GPL-2+
+Copyright: 2013 Alexander Wirt <formorer@debian.org>
+License: GPL-2+
 --- libnettle8t64 ---
 Copyright: © 2001-2024 Niels Möller
 License: LGPL-3+ or GPL-2+
 Copyright: 2001-2023 Niels Möller
 License: LGPL-3+ or GPL-2+
+--- libnfnetlink0 ---
+Copyright: 2001-2005 Netfilter Core Team <coreteam@netfilter.org>
+License: GPL-2.0+
+Copyright: 2006-2007 Max Kellermann <max@duempel.org>
+License: GPL-2.0+
 --- libnghttp2-14 ---
 Copyright: 2012, 2013, 2014 Tatsuhiro Tsujikawa
 License: Expat
@@ -694,6 +824,8 @@ License:
 --- libnl-route-3-200 ---
 Copyright: 
 License:
+--- libnuma1 ---
+Copyright (C) 2004 Andi Kleen
 --- libopencore-amrnb0 ---
 Copyright and License for OpenCORE (the opencore directory):
 Copyright and License for non-OpenCORE files (files not in opencore directory):
@@ -744,11 +876,116 @@ Copyright: 2014-2022 Tim Ruehsen
 License: MIT
 Copyright: 2014-2023 Daniel Kahn Gillmor
 License: MIT
+--- libpython3-stdlib ---
+Copyright notice (as found in LICENSE in the original source).
+Licensee hereby agrees to include in any such work a brief summary of
+Licensee.  This License Agreement does not grant permission to use PSF
+license to reproduce, analyze, test, perform and/or display publicly,
+--- libpython3.13-minimal ---
+Copyright:
+License:
+license to reproduce, analyze, test, perform and/or display publicly,
+Licensee.
+--- libpython3.13-stdlib ---
+Copyright:
+License:
+license to reproduce, analyze, test, perform and/or display publicly,
+Licensee.
 --- libreadline8t64 ---
 Copyright:
 License: GPL-3+
 Copyright:
 License: GPL-2+
+--- librte-bus-pci25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-bus-vdev25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-eal25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-ethdev25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-hash25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-ip-frag25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-kvargs25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-log25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-mbuf25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-mempool25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-meter25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-net-bond25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-net25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-pci25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-rcu25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-ring25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-sched25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
+--- librte-telemetry25 ---
+Copyright:
+License: BSD-3-clause
+Copyright: 2008-2016 Freescale Semiconductor Inc.
+License: BSD-3-clause or GPL-2
 --- librtmp1 ---
 License of the programs in the rtmpdump package:
 License of the librtmp library (included in the librtmp-dev package and in the
@@ -919,6 +1156,11 @@ Copyright: Gerald Combs <gerald@wireshark.org> and contributors
 License: GPL-2+
 Copyright: 1998-2008 Frederic Peters <fpeters@debian.org>
 License: GPL-2+
+--- libxdp1 ---
+Copyright: 2018-2022 Intel Corporation
+License: GPL-2.0
+Copyright: 2021 Red Hat
+License: GPL-2+ with Linux-syscall-note exception
 --- libxml2 ---
 Copyright: 1998-2017 Daniel Veillard <daniel@veillard.com>
 License: MIT-1
@@ -929,6 +1171,11 @@ Copyright: 2012-2014 Yann Collet
 License: BSD-2-clause
 Copyright: 2012-2021 Yann Collet
 License: GPL-2+
+--- libyaml-0-2 ---
+Copyright: 2006-2020, Kirill Simonov <xi@resolvent.net>
+License: Expat
+Copyright: 2008-2022, Anders Kaseorg <andersk@mit.edu>
+License: permissive
 --- libyara10 ---
 Copyright: 2007-2016. The YARA Authors
 License: BSD-3-Clause
@@ -959,6 +1206,9 @@ Copyright: 1996, Michael D. Brennan.
 License: GPL-2.0-only
 Copyright: (C) 1995-96 Chris Fearnley.
 License: GPL-2.0-only
+--- media-types ---
+Copyright: public-domain
+License: ad-hoc
 --- mount ---
 Copyright: Michal Luscon <mluscon@redhat.com>
 License: GPL-2+
@@ -1007,6 +1257,26 @@ Copyright:
 License: GPL-1+ or Artistic
 Copyright:
 License: GPL-1+ or Artistic
+--- python3-minimal ---
+Copyright notice (as found in LICENSE in the original source).
+Licensee hereby agrees to include in any such work a brief summary of
+Licensee.  This License Agreement does not grant permission to use PSF
+license to reproduce, analyze, test, perform and/or display publicly,
+--- python3.13-minimal ---
+Copyright:
+License:
+license to reproduce, analyze, test, perform and/or display publicly,
+Licensee.
+--- python3.13 ---
+Copyright:
+License:
+license to reproduce, analyze, test, perform and/or display publicly,
+Licensee.
+--- python3 ---
+Copyright notice (as found in LICENSE in the original source).
+Licensee hereby agrees to include in any such work a brief summary of
+Licensee.  This License Agreement does not grant permission to use PSF
+license to reproduce, analyze, test, perform and/or display publicly,
 --- readline-common ---
 Copyright:
 License: GPL-3+
@@ -1027,6 +1297,17 @@ Copyright:
 License: LGPL-2.0-or-later
 Copyright:
 License: LGPL-2.0-or-later
+--- sse3-support ---
+Copyright: 2016 Adam Borowski <kilobyte@angband.pl>
+License: MIT
+--- sse4.2-support ---
+Copyright: 2016 Adam Borowski <kilobyte@angband.pl>
+License: MIT
+--- suricata ---
+Copyright: 2007-2020 Open Information Security Foundation
+License: GPL-2
+Copyright: 1996-2017 Free Software Foundation, Inc.
+License: GPL-2+
 --- sysvinit-utils ---
 Copyright: 1989, 1991 Free Software Foundation, Inc.
 License: GPL-2.0+

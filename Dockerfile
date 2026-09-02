@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tshark=4.4.18-0+deb13u1 \
     sleuthkit=4.12.1+dfsg-3 \
     yara=4.5.2-1 \
-    suricata=7.0.10-1+deb13u4 \
+    suricata=1:7.0.10-1+deb13u4 \
     hashdeep \
     lzip \
     ca-certificates \
@@ -40,9 +40,12 @@ COPY config/suricata/ /etc/suricata/kit/
 # Regles suricata : ET Open (snapshot pris au build, triage kit applique) + regles kit.
 # Le snapshot est date et son empreinte bakes dans /etc/suricata/kit/regles-trace.txt ;
 # la reproductibilite stricte passe par le bundle air-gap (docker save de l'image construite).
-RUN suricata-update --no-test \
-      --disable-file /etc/suricata/kit/disable.conf \
+RUN suricata-update update --no-test \
+      --disable-conf /etc/suricata/kit/disable.conf \
  && cat /etc/suricata/kit/regles-kit.rules >> /var/lib/suricata/rules/suricata.rules \
+ && sed -i 's|^# threshold-file: /etc/suricata/threshold.config|threshold-file: /etc/suricata/threshold.config|' /etc/suricata/suricata.yaml \
+ && chmod 755 /var/lib/suricata/rules \
+ && chmod 644 /var/lib/suricata/rules/* \
  && sh -c 'echo "source: ET Open (snapshot pris au build) + regles kit (sids 1000001+)" > /etc/suricata/kit/regles-trace.txt \
     && echo "sha256: $(sha256sum /var/lib/suricata/rules/suricata.rules | cut -d" " -f1)" >> /etc/suricata/kit/regles-trace.txt \
     && echo "nombre_regles: $(grep -cE "^(alert|drop|pass|reject) " /var/lib/suricata/rules/suricata.rules)" >> /etc/suricata/kit/regles-trace.txt \

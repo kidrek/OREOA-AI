@@ -22,7 +22,7 @@ echo
 echo "== Licences des bibliotheques d'analyse (metadata importlib) =="
 python3 - <<'PY'
 from importlib.metadata import distribution
-for nom in ["plaso", "volatility3", "regipy", "python-evtx", "evtx", "PyYAML"]:
+for nom in ["plaso", "volatility3", "regipy", "python-evtx", "evtx", "PyYAML", "suricata-update"]:
     try:
         d = distribution(nom)
         lic = d.metadata.get("License") or "voir METADATA / classifiers"

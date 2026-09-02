@@ -28,10 +28,13 @@ Fichier d'etat : lu en debut de session, mis a jour a la fin de chaque etape. Il
 | 6 | Rebuild image oreoa-ai-tools + doctor test complet + E2E | termine | 2026-09-02 |
 | 7 | Push GitHub kidrek/OREOA-AI (depot public) | termine | 2026-09-02 |
 | 8 | Mise a jour fichiers de reference du vault associe | termine | 2026-09-02 |
+| 9 | Sprint 2 - guide multi-laptops : docs/DEPLOY.md + skills/deploiement.md (guidage agent) | termine | 2026-09-02 |
+| 10 | Sprint 2 - memoire volatile outillee (volatility3) | a faire | -- |
+| 11 | Sprint 2 - reseau outille (tshark) + skills timeline/ioc | a faire | -- |
 
 ## Prochaine action
 
-Aucune etape en cours : le sprint 1 est livre (depot public a jour). Prochaine session : sprint 2 (memoire volatile, reseau, skills timeline/ioc, guide multi-laptops) - commencer par une passe de triage du backlog ci-dessus.
+Aucune etape en cours : le guide de deploiement multi-laptops est livre (docs/DEPLOY.md + skills/deploiement.md, guidage agent integre). Prochaine session : sprint 2 - etape 10 (memoire volatile outillee) puis etape 11 (reseau + skills timeline/ioc).
 
 ## Journal de construction
 
@@ -46,6 +49,7 @@ Aucune etape en cours : le sprint 1 est livre (depot public a jour). Prochaine s
 - 2026-09-02 -- docs/licences-image.txt genere depuis le conteneur via scripts/gen_licences.sh (165 paquets inventories, reproductible apres chaque changement d'image)
 - 2026-09-02 -- Push GitHub : remote git@github.com:kidrek/OREOA-AI.git (URL canonique majuscules), main = 35a5f8a verifiee par ls-remote - depot public operationnel
 - 2026-09-02 -- Fichiers de reference du vault mis a jour : fiche projet renommee Projet OREOA-AI.md, fiche ressource Fiche -- OREOA-AI.md, section projet du fichier de memoire actualisee
+- 2026-09-02 -- Sprint 2 (1/3) : docs/DEPLOY.md (protocole depuis OS vierge : prerequis Debian/Ubuntu, acquisition, provisioning, arbre de decision LLM - /connect pour le cloud, bloc provider pour passerelle et Ollama/vLLM en air-gap, echange d'affaires, coherence de version entre instances autonomes, checklist) + skills/deploiement.md (guidage agent : diagnostic initial, pas-a-pas avec verification des retours, qualification consignee dans le MEMORY.md de l'instance - pas de registre central, instances autonomes) + accroches (AGENTS.md, opencode.json, README, profils)
 
 ## Decisions verrouillees (rappel)
 

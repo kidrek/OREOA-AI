@@ -2,6 +2,8 @@
 
 Application quand le laptop a acces a Internet (directement ou par proxy).
 
+**Procedure complete de deploiement (prerequis, provisioning, LLM, recette) : [docs/DEPLOY.md](../docs/DEPLOY.md). L'agent peut te guider pas a pas (competence `skills/deploiement.md`).**
+
 ## Configuration LLM
 
 - Provider : endpoint compatible OpenAI (OpenAI, Azure OpenAI, OpenRouter, ou proxy interne)

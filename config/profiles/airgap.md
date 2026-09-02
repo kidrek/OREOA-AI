@@ -2,6 +2,8 @@
 
 Application quand le laptop est isole du reseau. Tout le necessaire est apporte par media amovible.
 
+**Procedure complete de deploiement (preparation du bundle, import, LLM local, recette) : [docs/DEPLOY.md](../docs/DEPLOY.md). L'agent peut te guider pas a pas (competence `skills/deploiement.md`).**
+
 ## Contenu du bundle (prepare sur une machine connectee)
 
 ```bash

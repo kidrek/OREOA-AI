@@ -44,6 +44,8 @@ cd OREOA-AI
 ./install.sh test     # tests fonctionnels par outil + E2E
 ```
 
+**Guide complet de deploiement** (prerequis Debian/Ubuntu, profils en-ligne et air-gap, configurations LLM, montees de version, checklist) : [docs/DEPLOY.md](docs/DEPLOY.md). L'agent peut te guider pas a pas dans tout le parcours - demande-lui simplement : *"guide-moi pour deployer OREOA-AI"*.
+
 ## Prerequis
 
 | Composant | Version | Usage |

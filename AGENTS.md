@@ -37,6 +37,8 @@ Sur un laptop fraichement deploye (dossier clone ou copie), au premier lancement
 
 Barriere d'espace disque : `doctor` refuse toute ecriture si l'espace libre sur la partition de stockage Docker est inferieur aux seuils de `config/tools.yaml` (3 Go pour un build, 2 Go pour un chargement de bundle). Aucune exception : liberer l'espace d'abord.
 
+**Deploiement accompagne** : si l'analyste te demande de le guider pour deployer le kit (laptop neuf ou parc), suis la competence `skills/deploiement.md` - protocole complet dans `docs/DEPLOY.md` (depuis l'OS vierge jusqu'a la premiere affaire, profils en-ligne et air-gap).
+
 ---
 
 ## Principes non negociables
@@ -121,6 +123,7 @@ Se referer aux documents de methodologie pour le detail :
 | `analyse.md` | Phases 2-5 : analyse initiale, correlation, investigation, observables |
 | `reporting.md` | Phase 6 : redaction du rapport |
 | `guidance.md` | Mode guidance : accompagnement d'analyste |
+| `deploiement.md` | Mode guidance : deploiement du kit sur un laptop ou un parc (voir `docs/DEPLOY.md`) |
 
 ---
 

@@ -1,0 +1,53 @@
+# Configuration des outils du kit - dfir-tools (image Docker)
+# Chaque outil est pine dans le conteneur ; l'hote n'installe rien.
+
+image:
+  name: dfir-tools
+  tag: "1.0.0"
+  dockerfile: Dockerfile
+
+outils:
+  plaso:
+    binaire: log2timeline
+    role: super-timeline des collections
+    version_pinnee: "20260720"
+  psort:
+    binaire: psort
+    role: rendu de timeline depuis un fichier plaso
+    version_pinnee: "20260720"
+  volatility3:
+    binaire: vol
+    role: analyse memoire volatile
+    version_pinnee: "2.28.0"
+  tsk:
+    binaire: fls
+    role: enumeration systeme de fichiers (The Sleuth Kit)
+    version_pinnee: "4.12.1"
+  icat:
+    binaire: icat
+    role: extraction de fichier depuis image
+    version_pinnee: "4.12.1"
+  tshark:
+    binaire: tshark
+    role: lecture et filtrage de captures reseau
+    version_pinnee: "4.4.18"
+  yara:
+    binaire: yara
+    role: scan de fichiers par signatures
+    version_pinnee: "4.5.2"
+  regipy:
+    role: parsing des ruches de registre Windows
+    version_pinnee: "6.3.0"
+  evtx:
+    role: parsing des journaux evenements Windows
+    version_pinnee: "0.12.1"
+
+regles:
+  source: catalogue/  # catalogues de signaux faibles
+  format: sigma
+  version_min: "2.0"
+
+limits_execution:
+  reseau: none          # aucun reseau dans les conteneurs d'outils
+  evidence_mount: ro    # evidence toujours montee lecture seule
+  root_requis: false

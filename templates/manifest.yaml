@@ -1,0 +1,18 @@
+# Template manifest.yaml - inventaire des collections d'une affaire
+
+affaire:
+  id: "CASE-2026-0000"
+  nom: "Nom de l'affaire"
+  date_creation: "2026-01-01"
+  statut: ouverte
+
+collections: []
+# Chaque collection importee par scripts/ingest.py est enregistree ici :
+#
+# - nom: "Security.evtx"
+#   type: ".evtx"
+#   chemin_original: "/chemin/vers/Security.evtx"
+#   copie: "00_evidence/originals/Security.evtx"
+#   sha256: "<hash>"
+#   date_import: "2026-01-01T00:00:00"
+#   description: "Journal Security du serveur web"

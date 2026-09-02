@@ -1,0 +1,8 @@
+# Contexte de build minimal : le Dockerfile ne copie rien du depot
+.git
+cases
+tests
+docs
+.venv
+*.log
+.DS_Store

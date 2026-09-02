@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# dt - wrapper d'execution conteneurisee des outils du kit
+# Usage : dt <outil> [args...]
+#   dt log2timeline --storage-file work/timeline.plaso 00_evidence/exports/collection.evtx
+# Regles appliquees :
+#   - evidence montee en lecture seule
+#   - reseau desactive
+#   - utilisateur non root (uid/gid de l'analyste)
+set -euo pipefail
+
+KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+IMAGE="dfir-tools:1.0.0"
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage : dt <outil> [args...]" >&2
+  echo "Outils : log2timeline psort vol fls icat tshark yara" >&2
+  exit 2
+fi
+
+OUTIL="$1"; shift
+
+# L'image doit etre presente (voir Dockerfile et install.sh)
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  echo "Erreur : image $IMAGE absente. Lancer 'docker build -t $IMAGE .' dans le kit." >&2
+  exit 1
+fi
+
+# Montages : affaire en lecture seule, work en ecriture
+cd "$KIT_DIR"
+exec docker run --rm \
+  --network none \
+  --user "$(id -u):$(id -g)" \
+  -v "$(pwd)/cases:/affaires:ro" \
+  -v "$(pwd)/tests:/tests:ro" \
+  -w /affaires \
+  "$IMAGE" "$OUTIL" "$@"

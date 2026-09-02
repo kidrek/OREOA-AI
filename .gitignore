@@ -1,0 +1,36 @@
+# ---- Donnees d'affaire : jamais versionnees (sensibilite et volume) ----
+cases/*
+!cases/.gitkeep
+
+# ---- Preuves et productions d'analyse hors depot ----
+00_evidence/
+01_work/
+*.E01
+*.e01
+*.raw
+*.mem
+*.dmp
+*.pcap
+!tests/samples/*.pcap
+
+# ---- Bundle outils air-gap (binaires pre-telecharges) ----
+tools/
+*.tar.gz
+*.tgz
+
+# ---- Environnements et artifacts de build ----
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# ---- Fichiers systeme ----
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ---- Sorties temporaires ----
+tmp/
+*.tmp

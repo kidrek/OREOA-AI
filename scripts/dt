@@ -1,36 +1,56 @@
 #!/usr/bin/env bash
-# dt - wrapper d'execution conteneurisee des outils du kit
-# Usage : dt <outil> [args...]
-#   dt log2timeline --storage-file work/timeline.plaso 00_evidence/exports/collection.evtx
+# dt - wrapper d'execution conteneurisee des outils du kit OREOA-AI
+# Usage :
+#   dt [-c CASE_ID] <outil> [args...]
+# Exemples :
+#   dt yara /tests/samples/rules.yar /tests/samples/testfile.bin
+#   dt -c CASE-2026-0042 log2timeline --storage-file 02_analysis/timeline/timeline.plaso 00_evidence/exports/collection.jsonl
 # Regles appliquees :
-#   - evidence montee en lecture seule
-#   - reseau desactive
-#   - utilisateur non root (uid/gid de l'analyste)
+#   - 00_evidence monte en lecture seule ; 01_work et 02_analysis en ecriture
+#   - reseau desactive ; utilisateur non root (uid/gid de l'analyste)
+#   - image oreoa-ai-tools obligatoire (provisioning : python3 scripts/doctor.py fix)
 set -euo pipefail
 
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE="dfir-tools:1.0.0"
+IMAGE="oreoa-ai-tools:1.0.0"
+
+CASE_ID=""
+while [[ "${1:-}" == "-c" ]]; do
+  CASE_ID="${2:?Usage : dt [-c CASE_ID] <outil> [args...]}"
+  shift 2
+done
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage : dt <outil> [args...]" >&2
+  echo "Usage : dt [-c CASE_ID] <outil> [args...]" >&2
   echo "Outils : log2timeline psort vol fls icat tshark yara" >&2
   exit 2
 fi
 
 OUTIL="$1"; shift
 
-# L'image doit etre presente (voir Dockerfile et install.sh)
+# L'image doit etre presente (provisioning : doctor.py fix)
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  echo "Erreur : image $IMAGE absente. Lancer 'docker build -t $IMAGE .' dans le kit." >&2
+  echo "Erreur : image $IMAGE absente. Provisionner avec : python3 scripts/doctor.py fix" >&2
   exit 1
 fi
 
-# Montages : affaire en lecture seule, work en ecriture
 cd "$KIT_DIR"
+MOUNTS=(-v "$(pwd)/tests:/tests:ro")
+if [[ -n "$CASE_ID" ]]; then
+  CASE_DIR="cases/$CASE_ID"
+  [[ -d "$CASE_DIR" ]] || { echo "Erreur : affaire inconnue : $CASE_DIR" >&2; exit 1; }
+  MOUNTS+=(
+    -v "$(pwd)/$CASE_DIR/00_evidence:/affaires/00_evidence:ro"
+    -v "$(pwd)/$CASE_DIR/01_work:/affaires/01_work"
+    -v "$(pwd)/$CASE_DIR/02_analysis:/affaires/02_analysis"
+    -w /affaires
+  )
+else
+  MOUNTS+=(-w /tmp)
+fi
+
 exec docker run --rm \
   --network none \
   --user "$(id -u):$(id -g)" \
-  -v "$(pwd)/cases:/affaires:ro" \
-  -v "$(pwd)/tests:/tests:ro" \
-  -w /affaires \
+  "${MOUNTS[@]}" \
   "$IMAGE" "$OUTIL" "$@"

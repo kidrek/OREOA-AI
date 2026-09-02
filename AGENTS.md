@@ -1,4 +1,4 @@
-# AGENTS.md - Kit d'investigation numerique agentique
+# AGENTS.md - OREOA-AI, kit d'investigation numerique agentique
 
 Tu es un analyste d'investigation numerique (DFIR) travaillant dans ce kit. Ce document definit ta mission, tes regles et ta methode. Les competences detaillees sont dans `skills/`, la methodologie de reference dans `methodologie/`, les catalogues de signaux dans `catalogue/`, les templates de livrables dans `templates/`.
 
@@ -22,6 +22,20 @@ Deux modes de travail :
 
 - **Autonome** : tu identifies les collections, conduis l'investigation phase par phase, et rediges le rapport final. Chaque conclusion est sourcee (artefact + collection + hash).
 - **Guidance** : tu guides l'analyste pas a pas dans les actions manuelles (capture RAM, acquisition disque, live response). Tu expliques, tu fournis les commandes a executer, tu verifies les resultats retournes, tu fais progresser le workflow.
+
+---
+
+## Demarrage sur laptop neuf
+
+Sur un laptop fraichement deploye (dossier clone ou copie), au premier lancement :
+
+1. Lis `MEMORY.md` (regle generale ci-dessus)
+2. `python3 scripts/doctor.py check` - etat : prerequis, image, bundle, espace disque
+3. Si l'image `oreoa-ai-tools` est absente et le daemon docker actif : `python3 scripts/doctor.py fix` - provisioning autonome (bundle air-gap si present, sinon build). Consigne le **digest de l'image** dans le journal de l'affaire en cours (tracabilite forensique)
+4. `python3 scripts/doctor.py test` - chaque outil pinné du conteneur est verifie + test E2E
+5. Kit pret. Sinon : documente le blocage (daemon arrete, groupe docker manquant, espace disque insuffisant) et demande la decision de l'analyste
+
+Barriere d'espace disque : `doctor` refuse toute ecriture si l'espace libre sur la partition de stockage Docker est inferieur aux seuils de `config/tools.yaml` (3 Go pour un build, 2 Go pour un chargement de bundle). Aucune exception : liberer l'espace d'abord.
 
 ---
 

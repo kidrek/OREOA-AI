@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# install.sh - bootstrap du kit DFIR Agent Kit
+# install.sh - sante et provisioning du kit OREOA-AI
+# Alternative manuelle au parcours agent (l'agent provisionne seul via doctor.py).
 # Usage : ./install.sh check | test | fix
 set -euo pipefail
 

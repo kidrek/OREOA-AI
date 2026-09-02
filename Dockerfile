@@ -1,11 +1,9 @@
-# Dockerfile - image dfir-tools du kit
+# Dockerfile - image oreoa-ai-tools du kit OREOA-AI
 # Tous les outils d'analyse sont pinnes dans cette image.
 # L'hote n'installe rien : il execute les outils via les wrappers (dt).
+# Note : le LABEL est place en fin de fichier pour preserver le cache des
+# couches apt/pip lors des changements de metadonnees.
 FROM python:3.12-slim
-
-LABEL name="dfir-tools" \
-      version="1.0.0" \
-      description="Chaine d'outils forensiques du kit - execution hors ligne"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1
@@ -40,3 +38,7 @@ WORKDIR /work
 
 # Les volumes d'affaire sont montes a l'execution (00_evidence en ro)
 # Pas de reseau par defaut : docker run --network none
+LABEL name="oreoa-ai-tools" \
+      version="1.0.0" \
+      description="Chaine d'outils forensiques du kit OREOA-AI - execution hors ligne" \
+      license="AGPL-3.0 (kit) - licences tierces : voir NOTICE"

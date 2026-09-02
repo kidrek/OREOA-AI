@@ -47,12 +47,14 @@ H2=$(sha256sum "$ORIG" | cut -d' ' -f1)
 [[ "$H1" == "$H2" ]] && ok "originals intacts" || ko "originals modifies"
 
 etape "5. Outils conteneurises (si image disponible)"
-if docker image inspect dfir-tools:1.0.0 >/dev/null 2>&1; then
+if docker image inspect oreoa-ai-tools:1.0.0 >/dev/null 2>&1; then
   # tests monte sous /tests dans le conteneur (voir scripts/dt)
   ./scripts/dt yara /tests/samples/rules.yar /tests/samples/testfile.bin 2>/dev/null | grep -q kit_test_marker \
     && ok "yara conteneurise" || ko "yara conteneurise"
+  ./scripts/dt log2timeline --version >/dev/null 2>&1 \
+    && ok "log2timeline conteneurise" || ko "log2timeline conteneurise"
 else
-  echo "   [skip] image dfir-tools absente (docker build non execute dans cet environnement)"
+  echo "   [skip] image oreoa-ai-tools absente (provisioner avec : python3 scripts/doctor.py fix)"
 fi
 
 etape "6. Resume"

@@ -26,7 +26,7 @@ outils:
     version_pinnee: "20260720"
   volatility3:
     binaire: vol
-    test: "--version"
+    test_cmd: "python3 -c 'from importlib.metadata import version; print(version(\"volatility3\"))'"
     role: analyse memoire volatile
     version_pinnee: "2.28.0"
     licence: "Volatility Software License v1.0 (copyleft - voir NOTICE)"
@@ -51,11 +51,11 @@ outils:
     role: scan de fichiers par signatures
     version_pinnee: "4.5.2"
 
-# Bibliotheques Python sans binaire - verification par import
+# Bibliotheques Python sans binaire - verification par import (noms de modules reels)
 imports:
   regipy: "parsing des ruches de registre Windows (6.3.0)"
-  evtx: "parsing des journaux evenements Windows (0.12.1)"
-  python_evtx: "parsing alternatif des journaux evtx (0.8.1)"
+  evtx: "parsing des journaux evenements Windows, bindings omerbenamram (0.12.1)"
+  Evtx: "parsing alternatif des journaux evtx, williballenthin (0.8.1)"
 
 regles:
   source: catalogue/  # catalogues de signaux faibles

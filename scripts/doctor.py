@@ -73,6 +73,12 @@ def image_ref(cfg):
     return f"{cfg['image']['name']}:{cfg['image']['tag']}"
 
 
+def taille_lisible(octets):
+    if octets >= GO:
+        return f"{octets / GO:.1f} Go"
+    return f"{octets / (1024 * 1024):.0f} Mo"
+
+
 def image_info(ref):
     out = docker_cmd(["image", "inspect", ref, "--format", "{{.Id}}|{{.Size}}"])
     if out.returncode == 0:
@@ -151,7 +157,7 @@ def run_check():
     if ok:
         identifiant, taille = image_info(ref)
         if identifiant:
-            r.ok.append((f"image {ref}", f"presente ({taille // GO} Go)"))
+            r.ok.append((f"image {ref}", f"presente ({taille_lisible(taille)})"))
         else:
             r.warn.append((f"image {ref}", "absente - provisioner avec : python3 scripts/doctor.py fix"))
             if bundle.exists():
@@ -242,7 +248,7 @@ def run_fix():
     if not identifiant:
         print("Provisioning termine mais image introuvable (verifier le nom dans config/tools.yaml).")
         return 1
-    print(f"\nImage {ref} provisionnee ({taille // GO} Go).")
+    print(f"\nImage {ref} provisionnee ({taille_lisible(taille)}).")
     print(f"  digest : {identifiant}")
     print("  Journalisation conseillee : consigner ce digest dans le journal de l'affaire en cours.")
     return 0
@@ -260,16 +266,21 @@ def run_test():
     else:
         print(f"Outils du conteneur {ref} :")
         for nom, outil in cfg["outils"].items():
-            binaire, arg = outil["binaire"], outil["test"]
-            out = docker_cmd(["run", "--rm", "--network", "none", ref, binaire, arg], timeout=120)
+            if outil.get("test_cmd"):
+                args = ["sh", "-c", outil["test_cmd"]]
+                trace = outil["test_cmd"][:40]
+            else:
+                args = [outil["binaire"], outil["test"]]
+                trace = f"{outil['binaire']} {outil['test']}"
+            out = docker_cmd(["run", "--rm", "--network", "none", ref] + args, timeout=120)
             if out.returncode == 0:
                 version = (out.stdout or out.stderr).strip().splitlines()[0] if (out.stdout or out.stderr) else ""
-                print(f"  [ok]   {nom} ({binaire} {arg}) -- {version[:70]}")
+                print(f"  [ok]   {nom} ({trace}) -- {version[:70]}")
             else:
                 echecs += 1
-                print(f"  [fail] {nom} ({binaire} {arg}) -- {(out.stderr or out.stdout).strip()[:70]}")
+                print(f"  [fail] {nom} ({trace}) -- {(out.stderr or out.stdout).strip()[:70]}")
 
-        bibliotheques = " ".join(f"import {m}" for m in cfg["imports"])
+        bibliotheques = " ; ".join(f"import {m}" for m in cfg["imports"])
         out = docker_cmd(["run", "--rm", "--network", "none", ref,
                           "python3", "-c", f"{bibliotheques}; print('imports ok')"], timeout=120)
         if out.returncode == 0:

@@ -25,13 +25,13 @@ Fichier d'etat : lu en debut de session, mis a jour a la fin de chaque etape. Il
 | 3 | Renommage OREOA-AI (depot, image oreoa-ai-tools, titres) | termine | 2026-09-02 |
 | 4 | doctor.py v2 : provisioning autonome (barriere disque, bundle, tests par outil) | termine | 2026-09-02 |
 | 5 | Conformite depot public : LICENSE AGPL-3.0, NOTICE, README, sanitisation | termine | 2026-09-02 |
-| 6 | Rebuild image oreoa-ai-tools + doctor test complet + E2E | en cours | 2026-09-02 |
-| 7 | Push GitHub kidrek/oreoa-ai (depot public) | a faire | -- |
-| 8 | Mise a jour fichiers de reference du vault associe | a faire | -- |
+| 6 | Rebuild image oreoa-ai-tools + doctor test complet + E2E | termine | 2026-09-02 |
+| 7 | Push GitHub kidrek/OREOA-AI (depot public) | termine | 2026-09-02 |
+| 8 | Mise a jour fichiers de reference du vault associe | termine | 2026-09-02 |
 
 ## Prochaine action
 
-Etape 6 : reconstruire l'image `oreoa-ai-tools:1.0.0` (LABEL deplace en fin de Dockerfile : couches apt/pip reutilisees du cache, rebuild rapide), puis `doctor.py test` complet (7 outils + bibliotheques + copyright + E2E), puis generer `docs/licences-image.txt` (inventaire dpkg/pip/copyright dans le conteneur), commit, puis etape 7 (push).
+Aucune etape en cours : le sprint 1 est livre (depot public a jour). Prochaine session : sprint 2 (memoire volatile, reseau, skills timeline/ioc, guide multi-laptops) - commencer par une passe de triage du backlog ci-dessus.
 
 ## Journal de construction
 
@@ -42,6 +42,10 @@ Etape 6 : reconstruire l'image `oreoa-ai-tools:1.0.0` (LABEL deplace en fin de D
 - 2026-09-02 -- Renommage du projet : OREOA-AI (coherence avec le projet OREOA existant, dont c'est la branche agentique) - dossier, image oreoa-ai-tools:1.0.0, titres ; verification disponibilite : namespace GitHub libre, namespace Docker Hub libre
 - 2026-09-02 -- doctor.py v2 : provisioning autonome avec barriere d'espace disque (refus avant toute ecriture si seuil insuffisant), chargement du bundle air-gap prioritaire sur le build, test unitaire de chaque outil pine, verification des fichiers copyright embarques
 - 2026-09-02 -- Conformite depot public : LICENSE AGPL-3.0 (texte officiel), docs/NOTICE (licences tierces : plaso Apache-2.0, python-evtx Apache-2.0, regipy MIT, evtx MIT/Apache-2.0, yara BSD-3, volatility3 VSL v1.0 - cas special documente), README reecrit pour le parcours agent, MEMORY.md sanitaire (aucun detail d'environnement personnel)
+- 2026-09-02 -- Rebuild image : instantane grace au LABEL place en fin de Dockerfile (cache apt/pip preserve) - digest 8774d5eab ; doctor test complet : 7 outils + 3 bibliotheques + copyright + E2E tous OK (corrections en cours de route : volatility3 sans --version -> importlib.metadata, modules reels regipy/evtx/Evtx, jointure d'imports)
+- 2026-09-02 -- docs/licences-image.txt genere depuis le conteneur via scripts/gen_licences.sh (165 paquets inventories, reproductible apres chaque changement d'image)
+- 2026-09-02 -- Push GitHub : remote git@github.com:kidrek/OREOA-AI.git (URL canonique majuscules), main = 35a5f8a verifiee par ls-remote - depot public operationnel
+- 2026-09-02 -- Fichiers de reference du vault mis a jour : fiche projet renommee Projet OREOA-AI.md, fiche ressource Fiche -- OREOA-AI.md, section projet du fichier de memoire actualisee
 
 ## Decisions verrouillees (rappel)
 

@@ -42,4 +42,15 @@ Les signaux faibles detects lors de l'analyse sont croises avec `catalogue/` :
 
 - `catalogue/windows.md` -- signaux Windows
 - `catalogue/linux.md` -- signaux Linux
-- `catalogue/correlation.md` -- regles de correlation multi-signaux
+- `catalogue/memoire.md` -- signaux memoire volatile (SF-M)
+- `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M)
+
+## Exploitation memoire volatile (v1.1)
+
+Lorsqu'un dump RAM est present dans l'affaire (type memoire au manifest) :
+
+1. Suivre le sequencement de `connaissances/memoire/exploitation-volatility.md` (`windows.info` puis inventaire processus, execution, injection, reseau, persistance)
+2. Executer via le wrapper : `dt -c <CASE_ID> vol -q -f 00_evidence/originals/<dump> windows.<plugin> > 01_work/memoire/<plugin>.txt`
+3. Sorties brutes dans `01_work/memoire/`, extractions d'artefacts dans `00_evidence/exports/` avec SHA256
+4. Croiser les signaux detectes avec `catalogue/memoire.md` (SF-M) et les chaines C-M-01 / R-04 / R-05 de `catalogue/correlation.md`
+5. Chaque conclusion cite : hash du dump + plugin + fichier de sortie ; symboles absents = ecart documente, jamais de speculation

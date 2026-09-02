@@ -10,6 +10,7 @@ export KIT_DIR
 ECHAP=0
 etape() { echo ""; echo "== $1 =="; }
 ok()    { echo "   [ok] $1"; }
+warn()  { echo "   [warn] $1"; }
 ko()    { echo "   [fail] $1"; ECHAP=1; }
 
 etape "1. Scaffolding d'affaire de test"
@@ -55,6 +56,25 @@ if docker image inspect oreoa-ai-tools:1.0.0 >/dev/null 2>&1; then
     && ok "log2timeline conteneurise" || ko "log2timeline conteneurise"
 else
   echo "   [skip] image oreoa-ai-tools absente (provisioner avec : python3 scripts/doctor.py fix)"
+fi
+
+etape "5bis. Memoire volatile (optionnel - dump hors depot)"
+DUMP_MEM="/tests/samples/dump.raw"
+if ! docker image inspect oreoa-ai-tools:1.0.0 >/dev/null 2>&1; then
+  echo "   [skip] image oreoa-ai-tools absente (provisioner avec : python3 scripts/doctor.py fix)"
+elif [[ ! -f tests/samples/dump.raw ]]; then
+  echo "   [skip] aucun dump de test (tests/samples/dump.raw, hors depot - procedure : connaissances/memoire/exploitation-volatility.md)"
+else
+  SORTIE_MEM=$(./scripts/dt vol -f "$DUMP_MEM" windows.pslist 2>&1 || true)
+  if echo "$SORTIE_MEM" | grep -qiE "volatility 3"; then
+    if echo "$SORTIE_MEM" | grep -qiE "unsatisfied requirement"; then
+      warn "volatility3 execute mais symboles requis (connaissances/memoire/exploitation-volatility.md)"
+    else
+      ok "volatility3 conteneurise sur dump de test"
+    fi
+  else
+    ko "volatility3 sur dump de test (aucune sortie exploitable)"
+  fi
 fi
 
 etape "6. Resume"

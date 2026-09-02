@@ -30,12 +30,12 @@ Fichier d'etat : lu en debut de session, mis a jour a la fin de chaque etape. Il
 | 8 | Mise a jour fichiers de reference du vault associe | termine | 2026-09-02 |
 | 9 | Sprint 2 - guide multi-laptops : docs/DEPLOY.md + skills/deploiement.md (guidage agent) | termine | 2026-09-02 |
 | 10 | Sprint 2 - accueil agentique : agent.sh, bootstrap_prompt.py, /analyse, /deploy, GUIDE-UTILISATION, CLAUDE.md | termine | 2026-09-02 |
-| 11 | Sprint 2 - memoire volatile outillee (volatility3) | a faire | -- |
+| 11 | Sprint 2 - memoire volatile outillee (volatility3) | termine | 2026-09-02 |
 | 12 | Sprint 2 - reseau outille (tshark) + skills timeline/ioc | a faire | -- |
 
 ## Prochaine action
 
-Aucune etape en cours : le guide de deploiement multi-laptops et l'accueil agentique sont livres (agent.sh, /analyse, /deploy, GUIDE-UTILISATION). Prochaine session : sprint 2 - etape 11 (memoire volatile outillee) puis etape 12 (reseau + skills timeline/ioc).
+Etape 11 terminee : memoire volatile outillee (connaissances, catalogue SF-M, chaines C-M-01/R-04/R-05/R-06, ingestion type memoire, E2E memoire optionnel, perimetre v1.1 dans AGENTS/CLAUDE/README). Prochaine session : sprint 2 - etape 12 (reseau tshark outille + skills timeline et ioc completes). A relire en session docker active : doctor test + E2E conteneurise (etape 5bis memoire), voir journal.
 
 ## Journal de construction
 
@@ -52,6 +52,7 @@ Aucune etape en cours : le guide de deploiement multi-laptops et l'accueil agent
 - 2026-09-02 -- Fichiers de reference du vault mis a jour : fiche projet renommee Projet OREOA-AI.md, fiche ressource Fiche -- OREOA-AI.md, section projet du fichier de memoire actualisee
 - 2026-09-02 -- Sprint 2 (1/3) : docs/DEPLOY.md (protocole depuis OS vierge : prerequis Debian/Ubuntu, acquisition, provisioning, arbre de decision LLM - /connect pour le cloud, bloc provider pour passerelle et Ollama/vLLM en air-gap, echange d'affaires, coherence de version entre instances autonomes, checklist) + skills/deploiement.md (guidage agent : diagnostic initial, pas-a-pas avec verification des retours, qualification consignee dans le MEMORY.md de l'instance - pas de registre central, instances autonomes) + accroches (AGENTS.md, opencode.json, README, profils)
 - 2026-09-02 -- Sprint 2 (2/3) : accueil agentique zero-frappe - agent.sh (preflight LLM hors agent : auth.json ou endpoint local joignable, sinon guide de connexion + proposition opencode auth login ; puis lancement avec message initial genere), scripts/bootstrap_prompt.py (gate sur image presente -> prompt deploiement ou accueil, l'agent lance lui-meme doctor check/test a l'ouverture), commandes personnalisees /analyse (investigation complete) et /deploy, docs/GUIDE-UTILISATION.md (mode d'emploi analyste), exemple provider air-gap (config globale, kit pristine), CLAUDE.md genere + synchronisation automatisee dans doctor fix, AGENTS.md : sante elevee en comportement d'accueil (autotest spontane, routage guidage/accueil, commande /analyse)
+- 2026-09-02 -- Sprint 2, etape 11 (memoire volatile outillee, v1.1) : connaissances/memoire/exploitation-volatility.md (sequencement plugins Windows/Linux, execution via dt, symboles ISF et ecarts, procedure dump de test hors depot) ; catalogue/memoire.md (10 signaux SF-M-001 a SF-M-021 : processus masque, injection, hollowing, cmdline, consoles, netscan, vol de credentials, services, rootkit Linux) ; correlation.md : chaine C-M-01 + croisements R-04/R-05/R-06 ; skills/analyse.md : section exploitation memoire ; ingest.py : types memoire (.raw/.lime/.mem/.dmp) + correction casse .E01 (jamais reconnu auparavant) ; e2e.sh : etape 5bis memoire optionnelle (skip sans dump, warn si symboles requis) ; arbres-decision.md : arbre memoire ; AGENTS/CLAUDE : perimetre v1.1 ; README : etat + roadmap ; connaissances/README : organisation corrigee (memoire/, windows/, linux/). Verifie : E2E hors conteneur OK, typage 9 cas OK, syntaxes bash/python OK. Session docker inactive (groupe non effectif, sg exige un mot de passe) : doctor test + E2E conteneurise (dont 5bis) a rejouer en session docker active
 
 ## Decisions verrouillees (rappel)
 

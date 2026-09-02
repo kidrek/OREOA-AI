@@ -7,8 +7,9 @@ Cette dossier regroupe les connaissances appliquees par l'agent en mode guidance
 | Dossier | Contenu |
 |---------|---------|
 | `acquisition/` | capture RAM, acquisition disque, live response |
-| `windows.md` | specifics Windows (artefacts, journaux, structure) |
-| `linux.md` | specifics Linux (journaux, wtmp/btmp, structure) |
+| `memoire/` | exploitation de la memoire volatile (volatility3) |
+| `windows/` | specifics Windows (artefacts, journaux, structure) |
+| `linux/` | specifics Linux (journaux, wtmp/btmp, structure) |
 
 ## Principe
 

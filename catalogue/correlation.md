@@ -50,6 +50,19 @@ Les conclusions fortes reposent sur des chaines de signaux, pas sur des signaux 
 
 - **Conclusion** : persistance par compte dedie cree avec privileges
 
+## Chaines d'investigation memoire
+
+### C-M-01 - Processus malveillant vivant confirme par la RAM
+
+| Ordre | Signal | Fenetre |
+|-------|--------|---------|
+| 1 | SF-M-001 (processus masque) ou SF-M-002 (code injecte) | T capture |
+| 2 | SF-M-004 (ligne de commande anormale du meme processus) | T capture |
+| 3 | SF-M-006 (connexion externe du processus) ou SF-M-005 (console) | T capture |
+
+- **Conclusion si chaine complete** : processus malveillant vivant au moment de la capture, meme si les journaux de la machine ont ete effaces (croise SF-W-040)
+- **Sources requises** : dump RAM (hash au manifest), sorties des plugins dans `01_work/memoire/`, symboles documentes
+
 ## Correlations croisees multi-plateformes
 
 | Chaine | Signaux | Signification |
@@ -57,6 +70,9 @@ Les conclusions fortes reposent sur des chaines de signaux, pas sur des signaux 
 | R-01 | SF-W-030 (lsass) + SF-L-010 (sudo) sur machine adjacente | propagation des credentials volees |
 | R-02 | SF-W-013 (USB inconnu) + SF-W-002 (Run par utilisateur) | introduction par media amovible |
 | R-03 | SF-W-040 (effacement journal) + periode muette dans toute autre collection | incident majeur, investiguer les sources externes (SIEM, sauvegardes) |
+| R-04 | SF-W-030 ou SF-W-031 (dump lsass) + SF-M-007 (outil de vol vu en RAM) | vol de credentials confirme, rotation imperative sur tous les actifs partages |
+| R-05 | SF-W-040 (journal efface) + SF-M-005 (historique console en RAM) | traces reconstruites depuis la RAM, chronologie reconstituable |
+| R-06 | SF-L-001/SF-L-002 (brute force SSH puis succes) + SF-M-021 (processus masque) | compromission Linux suivie d'un masquage noyau, rootkit a qualifier |
 
 ## Regles d'usage
 

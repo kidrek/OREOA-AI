@@ -22,6 +22,7 @@ except ImportError:
     sys.exit(1)
 
 # Types d'artefacts reconnus : (extension, description, famille)
+# Cles en minuscules : detecter_type() normalise la casse de l'extension.
 TYPES = {
     ".evtx": ("journal evenements Windows", "windows"),
     ".evtx.json": ("journal evenements Windows (JSON)", "windows"),
@@ -36,7 +37,11 @@ TYPES = {
     ".txt": ("journal texte", "linux"),
     ".zip": ("archive", "divers"),
     ".tar.gz": ("archive", "divers"),
-    ".E01": ("image disque EnCase", "disque"),
+    ".raw": ("dump memoire brut (raw)", "memoire"),
+    ".lime": ("dump memoire LiME/AVML", "memoire"),
+    ".mem": ("dump memoire brut", "memoire"),
+    ".dmp": ("dump memoire Windows (minidump/crash)", "memoire"),
+    ".e01": ("image disque EnCase", "disque"),
     ".aff4": ("image disque AFF4", "disque"),
 }
 

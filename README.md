@@ -123,7 +123,7 @@ Deploiement multi-laptops :
 | 5. Observables | `analyse` | tableau des IOC avec niveau de confiance |
 | 6. Rapport | `reporting` | rapport final : full, executive ou technique |
 
-Le mode `guidance` couvre quant a lui les actions manuelles d'investigation : capture memoire, acquisition disque, live response - l'agent guide l'analyste etape par etape (voir [skills/guidance.md](skills/guidance.md) et [connaissances/](connaissances/)).
+Le mode `guidance` couvre quant a lui les actions manuelles d'investigation : capture memoire, acquisition disque, live response - l'agent guide l'analyste etape par etape (voir [skills/guidance.md](skills/guidance.md) et [connaissances/](connaissances/)). Le dump obtenu est ensuite exploite par le kit (volatility3, v1.1).
 
 ## Catalogue des signaux faibles
 
@@ -143,7 +143,8 @@ faux positifs: antivirus et EDR legitimes
 
 - [catalogue/windows.md](catalogue/windows.md) - 14 signaux (persistance, execution, mouvement lateral, credentials, anti-forensique)
 - [catalogue/linux.md](catalogue/linux.md) - 12 signaux (authentification, execution, persistance, anti-forensique)
-- [catalogue/correlation.md](catalogue/correlation.md) - chaines d'investigation multi-signaux (C-W-01, C-L-01, correlations croisees)
+- [catalogue/memoire.md](catalogue/memoire.md) - 10 signaux SF-M (processus masque, injection, reseau vivant, credentials, persistance, rootkit Linux)
+- [catalogue/correlation.md](catalogue/correlation.md) - chaines d'investigation multi-signaux (C-W-01/02, C-L-01/02, C-M-01, correlations croisees R-01 a R-06)
 
 Chaque signal teste en investigation est enregistre (detecte / non detecte / non applicable + evidence citee) - le rapport inclut l'annexe des signaux testes.
 
@@ -165,14 +166,15 @@ Chaque signal teste en investigation est enregistre (detecte / non detecte / non
 | Ingestion (detection de type, SHA256, manifest) | operationnel |
 | Verificateur d'integrite (doctor check / fix / test) | operationnel |
 | Chaine d'outils conteneurisee (7 outils + 3 bibliotheques) | operationnel |
-| Catalogue de signaux faibles (26 signaux + 5 chaines) | operationnel |
+| Catalogue de signaux faibles (36 signaux + 6 chaines) | operationnel |
+| Memoire volatile (volatility3 outille, catalogue SF-M, connaissances dediees) | operationnel |
 | Competences d'agent (5 skills) | operationnelles |
 | Templates de livrables (5 templates) | operationnels |
 | Deploiement multi-laptops (profils online / air-gap) | operationnel |
 
 ## Roadmap
 
-- **v1.1 Memoire volatile** : acquisition RAM (guidance - deja documentee dans connaissances/), analyse volatility3 outillee, catalogues et competences dedies
+- **v1.1 Memoire volatile** : livree - exploitation volatility3 outillee en affaire (wrapper `dt`), catalogue SF-M, connaissances dediees, acquisition RAM en guidance (deja documentee)
 - **v1.2 Reseau** : analyse tshark outillee, regles de correlation reseau
 - **v2 Disque complet** : acquisition image, montage, The Sleuth Kit et plaso sur images E01/AFF4/raw
 - **v2.1 Cloud et conteneurs** : journaux cloud, artefacts d'orchestrateurs

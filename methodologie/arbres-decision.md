@@ -78,6 +78,28 @@ Abus interne suspecte
 Sources : journaux d'acces, journaux d'application, artefacts utilisateur
 ```
 
+## Arbre memoire volatile
+
+Applique quand un dump RAM fait partie des collections (type memoire au manifest) :
+
+```
+Dump RAM disponible (hash au manifest)
+    |
+    +-- Symboles disponibles ? --- non ----> ecart documente, exploitation suspendue
+    |                           +-- oui ---> sequencement windows.* ou linux.*
+    |
+    +-- Inventaire : pslist + psscan (ecart = SF-M-001, processus masque)
+    +-- Execution : cmdline, consoles (SF-M-004, SF-M-005)
+    +-- Injection : malfind, vadinfo, dlllist (SF-M-002, SF-M-003)
+    +-- Reseau : netscan (SF-M-006) - croiser avec les journaux de la machine
+    +-- Persistance : svcscan (SF-M-008) - croiser avec SF-W-001
+    +-- Credentials : artefacts d'outils de vol (SF-M-007) - croiser avec SF-W-030/031
+    v
+Conclusions sourcees : hash du dump + plugin + sortie ; chaines C-M-01, R-04, R-05
+```
+
+Regles : la RAM est une collection de confirmation et de reconstruction, elle ne remplace jamais l'evenementiel ; les ecarts (symboles absents, dump partiel) sont documentes, jamais combles.
+
 ## Regles de priorite multi-collections
 
 1. **Collection principale d'abord** : la collection identifiee au triage comme principale est traitee en premier

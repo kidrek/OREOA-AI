@@ -29,12 +29,13 @@ Fichier d'etat : lu en debut de session, mis a jour a la fin de chaque etape. Il
 | 7 | Push GitHub kidrek/OREOA-AI (depot public) | termine | 2026-09-02 |
 | 8 | Mise a jour fichiers de reference du vault associe | termine | 2026-09-02 |
 | 9 | Sprint 2 - guide multi-laptops : docs/DEPLOY.md + skills/deploiement.md (guidage agent) | termine | 2026-09-02 |
-| 10 | Sprint 2 - memoire volatile outillee (volatility3) | a faire | -- |
-| 11 | Sprint 2 - reseau outille (tshark) + skills timeline/ioc | a faire | -- |
+| 10 | Sprint 2 - accueil agentique : agent.sh, bootstrap_prompt.py, /analyse, /deploy, GUIDE-UTILISATION, CLAUDE.md | termine | 2026-09-02 |
+| 11 | Sprint 2 - memoire volatile outillee (volatility3) | a faire | -- |
+| 12 | Sprint 2 - reseau outille (tshark) + skills timeline/ioc | a faire | -- |
 
 ## Prochaine action
 
-Aucune etape en cours : le guide de deploiement multi-laptops est livre (docs/DEPLOY.md + skills/deploiement.md, guidage agent integre). Prochaine session : sprint 2 - etape 10 (memoire volatile outillee) puis etape 11 (reseau + skills timeline/ioc).
+Aucune etape en cours : le guide de deploiement multi-laptops et l'accueil agentique sont livres (agent.sh, /analyse, /deploy, GUIDE-UTILISATION). Prochaine session : sprint 2 - etape 11 (memoire volatile outillee) puis etape 12 (reseau + skills timeline/ioc).
 
 ## Journal de construction
 
@@ -50,6 +51,7 @@ Aucune etape en cours : le guide de deploiement multi-laptops est livre (docs/DE
 - 2026-09-02 -- Push GitHub : remote git@github.com:kidrek/OREOA-AI.git (URL canonique majuscules), main = 35a5f8a verifiee par ls-remote - depot public operationnel
 - 2026-09-02 -- Fichiers de reference du vault mis a jour : fiche projet renommee Projet OREOA-AI.md, fiche ressource Fiche -- OREOA-AI.md, section projet du fichier de memoire actualisee
 - 2026-09-02 -- Sprint 2 (1/3) : docs/DEPLOY.md (protocole depuis OS vierge : prerequis Debian/Ubuntu, acquisition, provisioning, arbre de decision LLM - /connect pour le cloud, bloc provider pour passerelle et Ollama/vLLM en air-gap, echange d'affaires, coherence de version entre instances autonomes, checklist) + skills/deploiement.md (guidage agent : diagnostic initial, pas-a-pas avec verification des retours, qualification consignee dans le MEMORY.md de l'instance - pas de registre central, instances autonomes) + accroches (AGENTS.md, opencode.json, README, profils)
+- 2026-09-02 -- Sprint 2 (2/3) : accueil agentique zero-frappe - agent.sh (preflight LLM hors agent : auth.json ou endpoint local joignable, sinon guide de connexion + proposition opencode auth login ; puis lancement avec message initial genere), scripts/bootstrap_prompt.py (gate sur image presente -> prompt deploiement ou accueil, l'agent lance lui-meme doctor check/test a l'ouverture), commandes personnalisees /analyse (investigation complete) et /deploy, docs/GUIDE-UTILISATION.md (mode d'emploi analyste), exemple provider air-gap (config globale, kit pristine), CLAUDE.md genere + synchronisation automatisee dans doctor fix, AGENTS.md : sante elevee en comportement d'accueil (autotest spontane, routage guidage/accueil, commande /analyse)
 
 ## Decisions verrouillees (rappel)
 

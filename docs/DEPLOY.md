@@ -227,16 +227,32 @@ Le digest de la nouvelle image est journalise dans les affaires traitees apres l
 [ ] doctor check : verdict OK
 [ ] doctor fix : image provisionnee, digest consigne
 [ ] doctor test : verdict OK (7 outils + bibliotheques + copyright + E2E)
-[ ] LLM configure et verifie (/connect reussie ou curl local OK)
-[ ] Premiere affaire de test creee (create_case.sh) et journal initie
+[ ] LLM configure et verifie (/connect, auth login ou curl local OK)
+[ ] Premiere session via ./agent.sh : autoteste + accueil affiches
+[ ] Premiere affaire de test creee (/analyse ou create_case.sh) et journal initie
 ```
 
-## 9. Mode guidance
+## 9. Premier lancement et mode guidance
 
-L'agent peut conduire l'integralite de ce parcours avec toi :
+Le lanceur unique du kit :
+
+```bash
+./agent.sh                    # profil en-ligne
+./agent.sh --profil airgap    # variante air-gap (endpoint local)
+```
+
+Sequence automatique :
+
+1. **Preflight LLM (hors agent)** : verification de la connexion (identifiants cloud ou endpoint local joignable) ; si absente, guide de connexion affiche et proposition d'executer `opencode auth login` immediatement - l'agent ne peut pas demarrer sans modele
+2. **Lancement avec message initial genere** (`scripts/bootstrap_prompt.py`) selon l'etat reel
+3. **L'agent verifie la sante lui-meme** (doctor check + test, verdict en 3 lignes) et route : guidage de deploiement si incomplet, sinon accueil
+4. **Accueil** : guide d'utilisation (`docs/GUIDE-UTILISATION.md`) + commande d'analyse
+
+Commandes rapides dans l'agent :
 
 ```text
-> Guide-moi pour deployer OREOA-AI sur ce laptop
+/analyse chemin/vers/collection   # lancer une investigation complete
+/deploy                           # relancer le guidage de deploiement
 ```
 
-Il diagnostique l'etat reel (Docker, groupe, kit, image, LLM), reprend a la bonne etape, te fournit les commandes sudo pretes a copier, verifie chaque retour, execute lui-meme doctor, et conclut par la qualification. Pour un parc : le guidage est repete laptop par laptop, chaque instance restant autonome (pas de registre central).
+Configuration LLM alternative en ligne de commande : `opencode auth login` (equivalent de `/connect`, identifiants dans `~/.local/share/opencode/auth.json`). Pour un endpoint local (air-gap) : bloc provider dans la config globale `~/.config/opencode/opencode.json` - exemple pret a adapter dans `config/profiles/opencode-airgap.example.json`.

@@ -24,27 +24,21 @@ Un exemple de rendu est fourni : [docs/exemple-rapport.md](docs/exemple-rapport.
 5. **Sante de l'outillage** - commande `doctor` : verification de sante, provisioning autonome, tests fonctionnels par outil sur echantillons embarques
 6. **Memoire de session** - `MEMORY.md` lu en debut de session et mis a jour a chaque etape : le travail reprend exactement ou il s'est arrete
 
-## Deploiement : le dossier suffit
-
-```text
-1. Copier ou cloner le dossier du kit sur le laptop
-2. Lancer l'agent dans le dossier
-3. L'agent verifie et provisionne lui-meme (doctor check / fix / test)
-4. Investiguer
-```
-
-Le provisioning autonome couvre : presence de l'image `oreoa-ai-tools` (sinon construction, ou chargement du bundle air-gap si present dans `tools/`), verification de chaque outil pine dans le conteneur, tests de bout en bout. Une **barriere d'espace disque** bloque toute ecriture si l'espace libre est inferieur aux seuils definis (3 Go build, 2 Go chargement de bundle) - configuree dans `config/tools.yaml`.
-
-L'alternative manuelle pour un humain :
+## Demarrage : deux commandes
 
 ```bash
+git clone https://github.com/kidrek/OREOA-AI.git
 cd OREOA-AI
-./install.sh check    # sante de l'environnement (docker, git, image, disque)
-./install.sh fix      # provisioning (bundle air-gap ou build)
-./install.sh test     # tests fonctionnels par outil + E2E
+./agent.sh                  # preflight LLM, provisioning guide, accueil
 ```
 
-**Guide complet de deploiement** (prerequis Debian/Ubuntu, profils en-ligne et air-gap, configurations LLM, montees de version, checklist) : [docs/DEPLOY.md](docs/DEPLOY.md). L'agent peut te guider pas a pas dans tout le parcours - demande-lui simplement : *"guide-moi pour deployer OREOA-AI"*.
+puis dans l'agent :
+
+```text
+/analyse chemin/vers/ta-collection
+```
+
+L'agent verifie lui-meme la sante des outils a chaque lancement (doctor check + test), guide le deploiement si quelque chose manque (`/deploy`), et presente le guide d'utilisation (`docs/GUIDE-UTILISATION.md`). L'alternative manuelle pour un humain : `./install.sh check|fix|test` - protocole complet dans [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Prerequis
 

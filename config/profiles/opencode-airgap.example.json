@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "_notice": "Exemple de provider local pour profil air-gap. A copier dans la config GLOBALE (~/.config/opencode/opencode.json) : la config projet du kit reste inchangee. Adapter le nom du modele a celui importe dans Ollama ou servi par vLLM.",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": { "baseURL": "http://localhost:11434/v1" },
+      "models": {
+        "qwen3:14b": { "name": "Qwen3 14B (local)" }
+      }
+    }
+  },
+  "model": "ollama/qwen3:14b"
+}

@@ -29,11 +29,14 @@ STRUCTURE = [
     ("LICENSE", True, "fichier"),
     ("install.sh", True, "fichier"),
     ("create_case.sh", True, "fichier"),
+    ("agent.sh", True, "fichier"),
     ("Dockerfile", True, "fichier"),
     ("opencode.json", True, "fichier"),
     ("config/tools.yaml", True, "fichier"),
     ("scripts/ingest.py", True, "fichier"),
+    ("scripts/bootstrap_prompt.py", True, "fichier"),
     ("docs/NOTICE", True, "fichier"),
+    ("docs/GUIDE-UTILISATION.md", True, "fichier"),
     ("skills", True, "dossier"),
     ("methodologie", True, "dossier"),
     ("catalogue", True, "dossier"),
@@ -146,12 +149,20 @@ def run_check():
             (r.fail if requis else r.warn).append((rel, "absent"))
             if genre == "dossier":
                 r.actions_fix.append(lambda c=chemin: c.mkdir(parents=True, exist_ok=True))
-    for rel in ("install.sh", "create_case.sh", "scripts/doctor.py",
-                "scripts/ingest.py", "scripts/dt"):
+    for rel in ("install.sh", "create_case.sh", "agent.sh", "scripts/doctor.py",
+                "scripts/ingest.py", "scripts/dt", "scripts/bootstrap_prompt.py"):
         chemin = KIT / rel
         if chemin.exists() and not chemin.stat().st_mode & 0o111:
             r.warn.append((rel, "non executable"))
             r.actions_fix.append(lambda c=chemin: c.chmod(c.stat().st_mode | 0o755))
+
+    # Synchronisation CLAUDE.md (parite Claude Code)
+    agents_md = KIT / "AGENTS.md"
+    claude_md = KIT / "CLAUDE.md"
+    if agents_md.exists() and (not claude_md.exists()
+                               or agents_md.stat().st_mtime > claude_md.stat().st_mtime):
+        r.warn.append(("CLAUDE.md", "absent ou desynchronise d'AGENTS.md"))
+        r.actions_fix.append(lambda a=agents_md, c=claude_md: shutil.copy2(a, c))
 
     # Image
     if ok:

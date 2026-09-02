@@ -88,7 +88,7 @@ Par l'agent (autonome) ou manuellement :
 ```bash
 python3 scripts/doctor.py check   # sante : prerequis, image, bundle, espace disque
 python3 scripts/doctor.py fix     # provisioning : bundle air-gap si present, sinon build
-python3 scripts/doctor.py test    # 7 outils + bibliotheques + copyright + E2E
+python3 scripts/doctor.py test    # 8 outils + bibliotheques + copyright + E2E
 ```
 
 Comportements cles :
@@ -226,7 +226,7 @@ Le digest de la nouvelle image est journalise dans les affaires traitees apres l
 [ ] Kit deploye (clone ou media, empreinte verifiee en air-gap)
 [ ] doctor check : verdict OK
 [ ] doctor fix : image provisionnee, digest consigne
-[ ] doctor test : verdict OK (7 outils + bibliotheques + copyright + E2E)
+[ ] doctor test : verdict OK (8 outils + bibliotheques + copyright + E2E)
 [ ] LLM configure et verifie (/connect, auth login ou curl local OK)
 [ ] Premiere session via ./agent.sh : autoteste + accueil affiches
 [ ] Premiere affaire de test creee (/analyse ou create_case.sh) et journal initie

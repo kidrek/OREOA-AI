@@ -3,12 +3,12 @@
 
 image:
   name: oreoa-ai-tools
-  tag: "1.0.0"
+  tag: "1.1.0"
   dockerfile: Dockerfile
 
 # Provisioning autonome (doctor.py fix)
 provisioning:
-  bundle: "tools/oreoa-ai-tools-1.0.0.tar.gz"   # docker save (air-gap), hors depot
+  bundle: "tools/oreoa-ai-tools-1.1.0.tar.gz"   # docker save (air-gap), hors depot
   seuil_espace_build_go: 3    # barriere dure : espace libre requis avant docker build
   seuil_espace_load_go: 2     # barriere dure : espace libre requis avant docker load
 
@@ -43,8 +43,13 @@ outils:
   tshark:
     binaire: tshark
     test: "-v"
-    role: lecture et filtrage de captures reseau
+    role: lecture, filtrage et extraction sur captures reseau
     version_pinnee: "4.4.18"
+  suricata:
+    binaire: suricata
+    test: "-V"
+    role: detection par signatures (ET Open + regles kit) et journaux de protocoles sur capture offline (-r)
+    version_pinnee: "7.0.10"
   yara:
     binaire: yara
     test: "--version"

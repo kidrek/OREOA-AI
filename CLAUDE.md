@@ -121,6 +121,8 @@ Se referer aux documents de methodologie pour le detail :
 | `ingestion.md` | Import de collections : scan, typage, SHA256, manifest |
 | `triage.md` | Phase 1 : reception et triage de l'affaire |
 | `analyse.md` | Phases 2-5 : analyse initiale, correlation, investigation, observables |
+| `timeline.md` | Phases 2-5 : timeline consolidee multi-collections (evenementiel, memoire, reseau) |
+| `ioc.md` | Phases 2-5 : observables, verification, confiance |
 | `reporting.md` | Phase 6 : redaction du rapport |
 | `guidance.md` | Mode guidance : accompagnement d'analyste |
 | `deploiement.md` | Mode guidance : deploiement du kit sur un laptop ou un parc (voir `docs/DEPLOY.md`) |
@@ -134,7 +136,8 @@ Le catalogue reference les signaux faibles par plateforme. Chaque fiche a un ide
 - `catalogue/windows.md` -- signaux Windows
 - `catalogue/linux.md` -- signaux Linux
 - `catalogue/memoire.md` -- signaux memoire volatile (SF-M, pre-requis : dump hash + symboles)
-- `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M)
+- `catalogue/reseau.md` -- signaux reseau (SF-R, pre-requis : capture hash, tshark + suricata offline)
+- `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M, C-R)
 
 ---
 
@@ -180,9 +183,10 @@ N'attends pas que l'analyste demande la verification : elle fait partie de l'acc
 
 ---
 
-## Perimetre et limites de v1.1
+## Perimetre et limites de v1.2
 
-- Perimetre couvert : investigation sur artefacts Windows (evenementiel Security, Sysmon, persistent, structure du systeme), logs Linux (auth, syslog, wtmp/btmp, cron, ssh) et memoire volatile Windows (volatility3, v1.1 - voir `connaissances/memoire/exploitation-volatility.md`)
+- Perimetre couvert : investigation sur artefacts Windows (evenementiel Security, Sysmon, persistent, structure du systeme), logs Linux (auth, syslog, wtmp/btmp, cron, ssh), memoire volatile Windows (volatility3, v1.1) et captures reseau (tshark + suricata offline, v1.2 - voir `connaissances/reseau/exploitation-capture.md`)
 - Memoire volatile Linux : conditionnee aux symboles noyau du dump - symboles absents = ecart documente, aucune speculation
-- Hors perimetre : reseau (v1.2), disque complet (v2), cloud, conteneurs, navigateurs, mobile
+- Capture reseau : metadonnees uniquement pour le trafic chiffre (TLS) ; periode couverte = periode capturee
+- Hors perimetre : disque complet (v2), cloud, conteneurs, navigateurs, mobile
 - Toute collection hors perimetre est documentee en attente dans le manifest, jamais exploitee en speculation

@@ -93,7 +93,7 @@ L'agent lit `AGENTS.md`, charge les competences, execute la methodologie, journa
 Deux couches dans un depot unique :
 
 - **Couche hote (legere)** : scanner, verificateur d'integrite, wrappers - fonctionne sur tout laptop equipe de Docker
-- **Couche outils (conteneurisee)** : image `oreoa-ai-tools:1.0.0` - plaso (log2timeline, psort), volatility3, The Sleuth Kit (fls, icat), tshark, yara, regipy, evtx - le tout pine par version, construit depuis le `Dockerfile` du kit
+- **Couche outils (conteneurisee)** : image `oreoa-ai-tools:1.1.0` - plaso (log2timeline, psort), volatility3, The Sleuth Kit (fls, icat), tshark, suricata (ET Open trie + regles kit), yara, regipy, evtx - le tout pine par version, construit depuis le `Dockerfile` du kit
 
 Regles d'execution : conteneurs sans reseau (`--network none`), `00_evidence` monte en lecture seule, sortie sous l'identite de l'analyste (pas de root), tous les appels passent par le wrapper `scripts/dt`.
 
@@ -102,7 +102,7 @@ Profils de deploiement :
 | Profil | Comportement |
 |--------|--------------|
 | [online](config/profiles/online.md) | build de l'image depuis les sources officielles, LLM via endpoint compatible OpenAI |
-| [air-gap](config/profiles/airgap.md) | chargement du bundle `tools/oreoa-ai-tools-1.0.0.tar.gz` (`docker load`), modele LLM local (Ollama/vLLM), aucun acces reseau |
+| [air-gap](config/profiles/airgap.md) | chargement du bundle `tools/oreoa-ai-tools-1.1.0.tar.gz` (`docker load`), modele LLM local (Ollama/vLLM), aucun acces reseau |
 
 Deploiement multi-laptops :
 
@@ -144,7 +144,8 @@ faux positifs: antivirus et EDR legitimes
 - [catalogue/windows.md](catalogue/windows.md) - 14 signaux (persistance, execution, mouvement lateral, credentials, anti-forensique)
 - [catalogue/linux.md](catalogue/linux.md) - 12 signaux (authentification, execution, persistance, anti-forensique)
 - [catalogue/memoire.md](catalogue/memoire.md) - 10 signaux SF-M (processus masque, injection, reseau vivant, credentials, persistance, rootkit Linux)
-- [catalogue/correlation.md](catalogue/correlation.md) - chaines d'investigation multi-signaux (C-W-01/02, C-L-01/02, C-M-01, correlations croisees R-01 a R-06)
+- [catalogue/reseau.md](catalogue/reseau.md) - 10 signaux SF-R (beaconing, DNS C2 et exfiltration, transferts, scans, SMB lateral, TLS, alertes suricata)
+- [catalogue/correlation.md](catalogue/correlation.md) - chaines d'investigation multi-signaux (C-W-01/02, C-L-01/02, C-M-01, C-R-01, correlations croisees R-01 a R-09)
 
 Chaque signal teste en investigation est enregistre (detecte / non detecte / non applicable + evidence citee) - le rapport inclut l'annexe des signaux testes.
 
@@ -165,9 +166,10 @@ Chaque signal teste en investigation est enregistre (detecte / non detecte / non
 |--------|------|
 | Ingestion (detection de type, SHA256, manifest) | operationnel |
 | Verificateur d'integrite (doctor check / fix / test) | operationnel |
-| Chaine d'outils conteneurisee (7 outils + 3 bibliotheques) | operationnel |
-| Catalogue de signaux faibles (36 signaux + 6 chaines) | operationnel |
+| Chaine d'outils conteneurisee (8 outils + 3 bibliotheques) | operationnel |
+| Catalogue de signaux faibles (46 signaux + 7 chaines) | operationnel |
 | Memoire volatile (volatility3 outille, catalogue SF-M, connaissances dediees) | operationnel |
+| Reseau (tshark + suricata offline, triage ET Open, catalogue SF-R) | operationnel |
 | Competences d'agent (5 skills) | operationnelles |
 | Templates de livrables (5 templates) | operationnels |
 | Deploiement multi-laptops (profils online / air-gap) | operationnel |
@@ -175,7 +177,7 @@ Chaque signal teste en investigation est enregistre (detecte / non detecte / non
 ## Roadmap
 
 - **v1.1 Memoire volatile** : livree - exploitation volatility3 outillee en affaire (wrapper `dt`), catalogue SF-M, connaissances dediees, acquisition RAM en guidance (deja documentee)
-- **v1.2 Reseau** : analyse tshark outillee, regles de correlation reseau
+- **v1.2 Reseau** : livree - tshark + suricata offline (ET Open trie + regles kit), catalogue SF-R, echantillons pcap synthetiques, triage validable en E2E
 - **v2 Disque complet** : acquisition image, montage, The Sleuth Kit et plaso sur images E01/AFF4/raw
 - **v2.1 Cloud et conteneurs** : journaux cloud, artefacts d'orchestrateurs
 - **v2.2 Navigateurs** : historiques, caches, sessions

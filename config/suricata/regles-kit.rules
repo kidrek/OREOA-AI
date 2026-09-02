@@ -1,0 +1,13 @@
+# Regles suricata du kit OREOA-AI - espace de sids 1000001+
+# Reference : catalogue/reseau.md (signaux SF-R) - chaines dans catalogue/correlation.md
+# Ces regles sont garanties presentes dans l'image (bakes a la build, après ET Open).
+# Elles servent de garde-fou precis : regles de test E2E deterministes et patterns
+# de reference mappes sur le catalogue. La couverture large vient d'ET Open (triage
+# decrit dans connaissances/reseau/exploitation-capture.md).
+
+# --- Jeu de test E2E (echantillons synthetiques tests/samples/c2.pcap) ---
+alert dns $HOME_NET any -> any any (msg:"KIT-TEST requete DNS vers domaine C2 (SF-R-002, echantillon c2.pcap)"; dns.query; content:"c2.kit-test.invalid"; endswith; nocase; sid:1000001; rev:1;)
+alert http $HOME_NET any -> any any (msg:"KIT-TEST beacon HTTP periodique (SF-R-001, echantillon c2.pcap)"; http.host; content:"beacon.kit-test.invalid"; startswith; nocase; sid:1000002; rev:1;)
+
+# --- Regle de reference (pattern SF-R-004) - adapter le domaine au perimetre de l'affaire ---
+# alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"KIT envoi vers service de transfert public (SF-R-004)"; http.host; content:"<domaine-de-service-public>"; nocase; sid:1000011; rev:1;)

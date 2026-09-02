@@ -12,10 +12,12 @@ Application quand le laptop a acces a Internet (directement ou par proxy).
 ## Acquisition de l'image d'outils
 
 ```bash
-docker build -t dfir-tools:1.0.0 .
+docker build -t oreoa-ai-tools:1.1.0 .
 # ou via registre interne si disponible
-docker pull <registre-interne>/dfir-tools:1.0.0
+docker pull <registre-interne>/oreoa-ai-tools:1.1.0
 ```
+
+Note : le build embarque le ruleset suricata (ET Open snapshot trie + regles kit) - l'empreinte du ruleset est bakee dans l'image (`/etc/suricata/kit/regles-trace.txt`).
 
 ## Verification
 

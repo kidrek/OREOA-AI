@@ -13,12 +13,23 @@ Ce fichier recense les logiciels tiers embarques dans l'image conteneur `oreoa-a
 | evtx | 0.12.1 | MIT / Apache-2.0 (double) | https://github.com/omerbenamram/evtx |
 | The Sleuth Kit (fls, icat) | 4.12.1 | GPL-2.0-or-later (composants mixtes) | https://github.com/sleuthkit/sleuthkit |
 | Wireshark (tshark) | 4.4.18 | GPL-2.0-or-later | https://www.wireshark.org |
+| Suricata | 7.0.10 | GPL-2.0 | https://suricata.io (OISF) |
+| suricata-update | 1.3.3 | GPL-2.0 | https://github.com/OISF/suricata-update |
 | YARA | 4.5.2 | BSD-3-Clause | https://github.com/VirusTotal/yara |
 | hashdeep | (version Debian) | GPL-2.0-or-later | https://github.com/jessek/hashdeep |
 | lzip | (version Debian) | GPL-2.0-or-later | https://www.nongnu.org/lzip/ |
 | PyYAML | 6.0.2 | MIT | https://github.com/yaml/pyyaml |
 
 Les versions exactes et les textes de licence des paquets Debian sont embarques dans l'image (`/usr/share/doc/*/copyright`). L'inventaire factuel complet est regenere par `doctor.py test` et archive dans `docs/licences-image.txt`.
+
+## Regles de detection embarquees (suricata)
+
+| Ensemble | Contenu | Licence | Source |
+|----------|---------|---------|--------|
+| ET Open | signatures de detection (snapshot pris a la build, trie selon `config/suricata/disable.conf`) | ET Open - usage libre, attribution exigee | https://rules.emergingthreats.net |
+| Regles kit | regles de reference et de test E2E (sids 1000001+) | AGPL-3.0 (depot du kit) | `config/suricata/regles-kit.rules` |
+
+La trace du ruleset bake (source, SHA256, nombre de regles, date de build) est embarquee dans l'image : `/etc/suricata/kit/regles-trace.txt`. Le snapshot ET Open etant pris a la build, la reproductibilite stricte d'une image passe par le bundle air-gap (`docker save` de l'image construite).
 
 ## Cas particulier : Volatility Software License v1.0
 

@@ -12,7 +12,7 @@
 set -euo pipefail
 
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE="oreoa-ai-tools:1.0.0"
+IMAGE="oreoa-ai-tools:1.1.0"
 
 CASE_ID=""
 while [[ "${1:-}" == "-c" ]]; do
@@ -22,7 +22,7 @@ done
 
 if [[ $# -lt 1 ]]; then
   echo "Usage : dt [-c CASE_ID] <outil> [args...]" >&2
-  echo "Outils : log2timeline psort vol fls icat tshark yara" >&2
+  echo "Outils : log2timeline psort vol fls icat tshark suricata yara" >&2
   exit 2
 fi
 

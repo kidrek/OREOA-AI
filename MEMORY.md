@@ -14,7 +14,7 @@ Fichier d'etat : lu en debut de session, mis a jour a la fin de chaque etape. Il
 - Nom : OREOA-AI (branche agentique d'OREOA)
 - Depot GitHub : public - a pour remote `git@github.com:kidrek/oreoa-ai.git`
 - Licence : AGPL-3.0 (fichier LICENSE ; mentions tierces : docs/NOTICE)
-- Image conteneur : `oreoa-ai-tools:1.0.0`
+- Image conteneur : `oreoa-ai-tools:1.1.0`
 
 ## Etat de la construction
 
@@ -31,11 +31,12 @@ Fichier d'etat : lu en debut de session, mis a jour a la fin de chaque etape. Il
 | 9 | Sprint 2 - guide multi-laptops : docs/DEPLOY.md + skills/deploiement.md (guidage agent) | termine | 2026-09-02 |
 | 10 | Sprint 2 - accueil agentique : agent.sh, bootstrap_prompt.py, /analyse, /deploy, GUIDE-UTILISATION, CLAUDE.md | termine | 2026-09-02 |
 | 11 | Sprint 2 - memoire volatile outillee (volatility3) | termine | 2026-09-02 |
-| 12 | Sprint 2 - reseau outille (tshark) + skills timeline/ioc | a faire | -- |
+| 12 | Sprint 2 - reseau outille (tshark + suricata) + skills timeline/ioc | termine | 2026-09-02 |
+| 13 | Requalification session docker : build image 1.1.0 + doctor test + E2E complet (5/5bis/5ter) + regen licences-image | a faire | -- |
 
 ## Prochaine action
 
-Etape 11 terminee : memoire volatile outillee (connaissances, catalogue SF-M, chaines C-M-01/R-04/R-05/R-06, ingestion type memoire, E2E memoire optionnel, perimetre v1.1 dans AGENTS/CLAUDE/README). Prochaine session : sprint 2 - etape 12 (reseau tshark outille + skills timeline et ioc completes). A relire en session docker active : doctor test + E2E conteneurise (etape 5bis memoire), voir journal.
+Sprint 2 termine (etapes 9-12) : deploiement multi-laptops, accueil agentique, memoire volatile (v1.1) et reseau (v1.2) livres. Prochaine session (etape 13, en session docker active) : build de l'image oreoa-ai-tools:1.1.0 (suricata + ruleset bake), doctor test complet, E2E conteneurise (etapes 5, 5bis, 5ter), regen docs/licences-image.txt via scripts/gen_licences.sh, ajustements eventuels du tri ET Open selon les alertes residuelles sur clean.pcap. Ensuite : roadmap v2 (disque complet).
 
 ## Journal de construction
 
@@ -53,6 +54,7 @@ Etape 11 terminee : memoire volatile outillee (connaissances, catalogue SF-M, ch
 - 2026-09-02 -- Sprint 2 (1/3) : docs/DEPLOY.md (protocole depuis OS vierge : prerequis Debian/Ubuntu, acquisition, provisioning, arbre de decision LLM - /connect pour le cloud, bloc provider pour passerelle et Ollama/vLLM en air-gap, echange d'affaires, coherence de version entre instances autonomes, checklist) + skills/deploiement.md (guidage agent : diagnostic initial, pas-a-pas avec verification des retours, qualification consignee dans le MEMORY.md de l'instance - pas de registre central, instances autonomes) + accroches (AGENTS.md, opencode.json, README, profils)
 - 2026-09-02 -- Sprint 2 (2/3) : accueil agentique zero-frappe - agent.sh (preflight LLM hors agent : auth.json ou endpoint local joignable, sinon guide de connexion + proposition opencode auth login ; puis lancement avec message initial genere), scripts/bootstrap_prompt.py (gate sur image presente -> prompt deploiement ou accueil, l'agent lance lui-meme doctor check/test a l'ouverture), commandes personnalisees /analyse (investigation complete) et /deploy, docs/GUIDE-UTILISATION.md (mode d'emploi analyste), exemple provider air-gap (config globale, kit pristine), CLAUDE.md genere + synchronisation automatisee dans doctor fix, AGENTS.md : sante elevee en comportement d'accueil (autotest spontane, routage guidage/accueil, commande /analyse)
 - 2026-09-02 -- Sprint 2, etape 11 (memoire volatile outillee, v1.1) : connaissances/memoire/exploitation-volatility.md (sequencement plugins Windows/Linux, execution via dt, symboles ISF et ecarts, procedure dump de test hors depot) ; catalogue/memoire.md (10 signaux SF-M-001 a SF-M-021 : processus masque, injection, hollowing, cmdline, consoles, netscan, vol de credentials, services, rootkit Linux) ; correlation.md : chaine C-M-01 + croisements R-04/R-05/R-06 ; skills/analyse.md : section exploitation memoire ; ingest.py : types memoire (.raw/.lime/.mem/.dmp) + correction casse .E01 (jamais reconnu auparavant) ; e2e.sh : etape 5bis memoire optionnelle (skip sans dump, warn si symboles requis) ; arbres-decision.md : arbre memoire ; AGENTS/CLAUDE : perimetre v1.1 ; README : etat + roadmap ; connaissances/README : organisation corrigee (memoire/, windows/, linux/). Verifie : E2E hors conteneur OK, typage 9 cas OK, syntaxes bash/python OK. Session docker inactive (groupe non effectif, sg exige un mot de passe) : doctor test + E2E conteneurise (dont 5bis) a rejouer en session docker active
+- 2026-09-02 -- Sprint 2, etape 12 (reseau outille, v1.2) : image oreoa-ai-tools:1.1.0 (Dockerfile : suricata=7.0.10-1+deb13u4, suricata-update==1.3.3 pips, COPY config/suricata/ vers /etc/suricata/kit/, ruleset bake via suricata-update --no-test avec triage kit + regles kit appendees + trace /etc/suricata/kit/regles-trace.txt, LABEL 1.1.0 en fin) ; config/suricata/ : regles-kit.rules (sids 1000001+ : 2 regles KIT-TEST E2E + exemple reference), disable.conf (triage ET Open : policy, scan, user_agents, info, evenements de protocole exclus), threshold.config (dedup par hote/minute + pattern pour ET Open) ; knowledge : connaissances/reseau/exploitation-capture.md (sequencement tshark/suricata, eve.json, tri des regles en 4 leviers, validation bruit/recall, arbitrage recall/precision DFIR) ; catalogue/reseau.md : 10 signaux SF-R-001 a SF-R-010 (beaconing, DNS suspect, exfiltration DNS, HTTP exfiltratoire, telechargement, scan, SMB lateral, TLS inhabituel, volume anormal, alerte suricata) ; correlation.md : chaine C-R-01 + croisements R-07/R-08/R-09 ; skills/timeline.md + skills/ioc.md completes ; tests : gen_samples.py etendu - generateur pcap python pur (checksums corrects), c2.pcap (DNS C2 + 8 beacons a 60 s) et clean.pcap (trafic legitime irregulier) valides via tcpdump sur l'hote (checksums 90/90 et 52/52) ; e2e.sh : etape 5ter (tshark extraction DNS, suricata recall sur c2.pcap via regles kit, test de bruit sur clean.pcap - alertes ET Open residuelles en warn non bloquant) ; refactor 1.1.0 transversal (tools.yaml, dt, e2e, profils online/airgap - online.md corrigee du residuel dfir-tools, DEPLOY, README, NOTICE suricata/ET Open/suricata-update, GUIDE-UTILISATION, gen_licences.sh) ; doctor.py : structure etendue (config/suricata, catalogue/reseau.md, connaissances/reseau, skills timeline/ioc) + copyright suricata ; skills/analyse.md : section exploitation reseau. Verifie : syntaxes OK, E2E hors conteneur OK (etapes 1-4), doctor check structure OK (fail docker = limite de session connue), pcaps valides. Build image 1.1.0 + doctor test complet + E2E conteneurise (5/5bis/5ter) + regen licences-image.txt : etape 13 en session docker active
 
 ## Decisions verrouillees (rappel)
 
@@ -62,7 +64,7 @@ Etape 11 terminee : memoire volatile outillee (connaissances, catalogue SF-M, ch
 4. Deux modes : autonome + guidance (base de connaissance complete embarquee)
 5. doctor.py : check/fix/test avant toute investigation ; provisioning autonome avec barriere disque
 6. Affaires dans cases/, jamais versionnees ; echantillons de test versionnes uniquement
-7. Nom OREOA-AI, depot GitHub public kidrek/oreoa-ai, licence AGPL-3.0, image oreoa-ai-tools:1.0.0
+7. Nom OREOA-AI, depot GitHub public kidrek/oreoa-ai, licence AGPL-3.0, image oreoa-ai-tools:1.1.0
 
 ## Limites connues
 

@@ -77,7 +77,7 @@ Les preuves ramenees sont depositees dans `00_evidence/` et l'investigation repr
 
 ## 6. Signaux faibles
 
-L'agent teste systematiquement les signaux du catalogue (`catalogue/windows.md`, `catalogue/linux.md`) et les chaines de correlation (`catalogue/correlation.md`). Le rapport inclut une annexe "signaux testes" (detecte / non detecte / non applicable + evidence) - la base de la reproducibilite de l'analyse.
+L'agent teste systematiquement les signaux du catalogue (`catalogue/windows.md`, `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`) et les chaines de correlation (`catalogue/correlation.md`). Le rapport inclut une annexe "signaux testes" (detecte / non detecte / non applicable + evidence) - la base de la reproducibilite de l'analyse.
 
 ## 7. Securite - ce qui est garanti
 

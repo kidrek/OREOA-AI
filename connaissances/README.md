@@ -8,6 +8,7 @@ Cette dossier regroupe les connaissances appliquees par l'agent en mode guidance
 |---------|---------|
 | `acquisition/` | capture RAM, acquisition disque, live response |
 | `memoire/` | exploitation de la memoire volatile (volatility3) |
+| `reseau/` | exploitation des captures reseau (tshark, suricata offline) |
 | `windows/` | specifics Windows (artefacts, journaux, structure) |
 | `linux/` | specifics Linux (journaux, wtmp/btmp, structure) |
 

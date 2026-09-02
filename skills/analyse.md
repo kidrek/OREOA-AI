@@ -43,7 +43,8 @@ Les signaux faibles detects lors de l'analyse sont croises avec `catalogue/` :
 - `catalogue/windows.md` -- signaux Windows
 - `catalogue/linux.md` -- signaux Linux
 - `catalogue/memoire.md` -- signaux memoire volatile (SF-M)
-- `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M)
+- `catalogue/reseau.md` -- signaux reseau (SF-R)
+- `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M, C-R)
 
 ## Exploitation memoire volatile (v1.1)
 
@@ -54,3 +55,13 @@ Lorsqu'un dump RAM est present dans l'affaire (type memoire au manifest) :
 3. Sorties brutes dans `01_work/memoire/`, extractions d'artefacts dans `00_evidence/exports/` avec SHA256
 4. Croiser les signaux detectes avec `catalogue/memoire.md` (SF-M) et les chaines C-M-01 / R-04 / R-05 de `catalogue/correlation.md`
 5. Chaque conclusion cite : hash du dump + plugin + fichier de sortie ; symboles absents = ecart documente, jamais de speculation
+
+## Exploitation reseau (v1.2)
+
+Lorsqu'une capture (pcap/pcapng) est presente dans l'affaire (type reseau au manifest) :
+
+1. Suivre le sequencement de `connaissances/reseau/exploitation-capture.md` : vue d'ensemble (conversations), detection suricata (eve.json), extractions tshark ciblees (DNS, HTTP, TLS, SMB), periodicite
+2. Executer via le wrapper : `dt -c <CASE_ID> tshark -r 00_evidence/originals/<capture> ... > 01_work/reseau/<extraction>.txt` ; `dt -c <CASE_ID> suricata -r 00_evidence/originals/<capture> -l 01_work/reseau/suricata`
+3. Sorties dans `01_work/reseau/`, objets extraits dans `00_evidence/exports/` avec SHA256
+4. Croiser avec `catalogue/reseau.md` (SF-R), la chaine C-R-01 et les croisements R-07/R-08/R-09 de `catalogue/correlation.md`
+5. Chaque alerte est verifiee par suivi de flux avant d'entrer aux observables ; trafic chiffre = metadonnees seules ; la periode couverte est celle de la capture

@@ -33,6 +33,9 @@ STRUCTURE = [
     ("Dockerfile", True, "fichier"),
     ("opencode.json", True, "fichier"),
     ("config/tools.yaml", True, "fichier"),
+    ("config/suricata/regles-kit.rules", True, "fichier"),
+    ("config/suricata/disable.conf", True, "fichier"),
+    ("config/suricata/threshold.config", True, "fichier"),
     ("scripts/ingest.py", True, "fichier"),
     ("scripts/bootstrap_prompt.py", True, "fichier"),
     ("docs/NOTICE", True, "fichier"),
@@ -40,7 +43,9 @@ STRUCTURE = [
     ("skills", True, "dossier"),
     ("methodologie", True, "dossier"),
     ("catalogue", True, "dossier"),
+    ("catalogue/reseau.md", True, "fichier"),
     ("connaissances", True, "dossier"),
+    ("connaissances/reseau", True, "dossier"),
     ("templates", True, "dossier"),
     ("tests/samples", True, "dossier"),
     ("cases", True, "dossier"),
@@ -302,7 +307,7 @@ def run_test():
 
         # Conformite licences : fichiers copyright embarques dans l'image
         fichiers = " ".join(f"/usr/share/doc/{p}/copyright"
-                            for p in ("tshark", "sleuthkit", "yara", "hashdeep", "lzip"))
+                            for p in ("tshark", "sleuthkit", "yara", "suricata", "hashdeep", "lzip"))
         out = docker_cmd(["run", "--rm", "--network", "none", "--user", "0", ref,
                           "sh", "-c", f"for f in {fichiers}; do test -f $f || exit 1; done; echo ok"],
                          timeout=120)

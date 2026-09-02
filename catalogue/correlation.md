@@ -63,6 +63,20 @@ Les conclusions fortes reposent sur des chaines de signaux, pas sur des signaux 
 - **Conclusion si chaine complete** : processus malveillant vivant au moment de la capture, meme si les journaux de la machine ont ete effaces (croise SF-W-040)
 - **Sources requises** : dump RAM (hash au manifest), sorties des plugins dans `01_work/memoire/`, symboles documentes
 
+## Chaines d'investigation reseau
+
+### C-R-01 - Canal C2 confirme par la capture
+
+| Ordre | Signal | Fenetre |
+|-------|--------|---------|
+| 1 | SF-R-002 (resolution DNS du domaine suspect) | T0 |
+| 2 | SF-R-001 (connexions periodiques vers la destine resolue) | T0 a +1 min, puis regularite |
+| 3 | SF-R-005 (telechargement d'executable) ou SF-R-008 (TLS vers la destine) | suite |
+| 4 | SF-R-010 (alerte suricata verifiee par flux) | a tout moment |
+
+- **Conclusion si chaine complete** : canal de commande et controle actif depuis la machine ; identifier le processus local (SF-M-006 si dump RAM disponible) et le patient zero
+- **Sources requises** : capture (hash au manifest), eve.json, extractions tshark ; verification par suivi de flux pour chaque alerte
+
 ## Correlations croisees multi-plateformes
 
 | Chaine | Signaux | Signification |
@@ -73,6 +87,9 @@ Les conclusions fortes reposent sur des chaines de signaux, pas sur des signaux 
 | R-04 | SF-W-030 ou SF-W-031 (dump lsass) + SF-M-007 (outil de vol vu en RAM) | vol de credentials confirme, rotation imperative sur tous les actifs partages |
 | R-05 | SF-W-040 (journal efface) + SF-M-005 (historique console en RAM) | traces reconstruites depuis la RAM, chronologie reconstituable |
 | R-06 | SF-L-001/SF-L-002 (brute force SSH puis succes) + SF-M-021 (processus masque) | compromission Linux suivie d'un masquage noyau, rootkit a qualifier |
+| R-07 | SF-R-007 (SMB ADMIN$ depuis workstation) + SF-W-020 (service distant sur la destination) | mouvement lateral confirmee par deux sources independantes |
+| R-08 | SF-M-006 (connexion externe en RAM) + SF-R-001/SF-R-002 (beaconing et DNS dans la capture) | processus et canal C2 rattaches au meme flux |
+| R-09 | SF-R-004 ou SF-R-009 (exfiltration) + SF-W-031/SF-M-007 (dump de credentials) | sequence vol de credentials puis exfiltration, rotation imperative
 
 ## Regles d'usage
 

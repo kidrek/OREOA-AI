@@ -8,9 +8,9 @@ Application quand le laptop est isole du reseau. Tout le necessaire est apporte 
 
 ```bash
 # Image d'outils
-docker build -t oreoa-ai-tools:1.0.0 .
+docker build -t oreoa-ai-tools:1.1.0 .
 mkdir -p tools
-docker save oreoa-ai-tools:1.0.0 | gzip > tools/oreoa-ai-tools-1.0.0.tar.gz
+docker save oreoa-ai-tools:1.1.0 | gzip > tools/oreoa-ai-tools-1.1.0.tar.gz
 
 # Modele LLM (exemple Ollama)
 ollama pull <modele>
@@ -20,7 +20,7 @@ ollama pull <modele>
 ## Installation sur le laptop isole
 
 ```bash
-docker load < tools/oreoa-ai-tools-1.0.0.tar.gz
+docker load < tools/oreoa-ai-tools-1.1.0.tar.gz
 # importer les modeles Ollama depuis le media
 python3 scripts/doctor.py check && python3 scripts/doctor.py test
 ```

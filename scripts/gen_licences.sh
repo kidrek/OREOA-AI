@@ -2,7 +2,7 @@
 # gen_licences.sh - inventaire factuel des licences embarquees dans l'image du kit
 # Usage (depuis l'hote, session avec acces docker) :
 #   cd "<dossier du kit>"
-#   docker run -i --rm --network none --user 0 oreoa-ai-tools:1.0.0 sh \
+#   docker run -i --rm --network none --user 0 oreoa-ai-tools:1.1.0 sh \
 #     < scripts/gen_licences.sh > docs/licences-image.txt
 # Executer apres chaque changement de l'image (Dockerfile) et joindre ce fichier
 # a tout bundle distribue (regle du profil air-gap).

@@ -46,6 +46,7 @@ STRUCTURE = [
     ("scripts/fetch_referentiels.py", True, "fichier"),
     ("scripts/referentiels.py", True, "fichier"),
     ("scripts/disk.py", True, "fichier"),
+    ("scripts/browsers.py", True, "fichier"),
     ("docs/NOTICE", True, "fichier"),
     ("docs/USER-GUIDE.md", True, "fichier"),
     ("docs/USER-GUIDE.fr.md", True, "fichier"),
@@ -63,11 +64,13 @@ STRUCTURE = [
     ("catalogue", True, "dossier"),
     ("catalogue/reseau.md", True, "fichier"),
     ("catalogue/disque.md", True, "fichier"),
+    ("catalogue/navigateurs.md", True, "fichier"),
     ("catalogue/artefacts.md", True, "fichier"),
     ("catalogue/dfiq.md", True, "fichier"),
     ("connaissances", True, "dossier"),
     ("connaissances/reseau", True, "dossier"),
     ("connaissances/disque", True, "dossier"),
+    ("connaissances/navigateurs", True, "dossier"),
     ("templates", True, "dossier"),
     ("tests/samples", True, "dossier"),
     ("cases", True, "dossier"),
@@ -206,7 +209,7 @@ def run_check():
     for rel in ("install.sh", "scripts/doctor.py",
                 "scripts/ingest.py", "scripts/dt",
                 "scripts/fetch_referentiels.py", "scripts/referentiels.py",
-                "scripts/disk.py"):
+                "scripts/disk.py", "scripts/browsers.py"):
         chemin = KIT / rel
         if chemin.exists() and not chemin.stat().st_mode & 0o111:
             r.warn.append((rel, "not executable"))

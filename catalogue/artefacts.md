@@ -45,6 +45,11 @@ chaines de correlation. Rattachement principal (amont 731 definitions, extraits)
 | SF-D-008 USB | `WindowsMountedDevices`, `USBSTOR` | ruche SYSTEM extraite, regipy |
 | SF-D-009 UserAssist/ShellBags | `WindowsRegistryFilesAndTransactionLogs` | ruche NTUSER.DAT par utilisateur |
 | SF-D-010 USN/visibilite | image disque : `$UsnJrnl` hors referentiel fichiers | super-timeline plaso (parser usnjrnl) |
+| SF-B-001/004/005 downloads et visites | `BrowserHistory`, `ChromiumBasedBrowsersHistoryDatabaseFile`, `FirefoxHistory` | `browsers.py` (profil isole) ou super-timeline plaso |
+| SF-B-002 recherches | `ChromiumBasedBrowsersHistoryDatabaseFile` (keyword_search_terms) | `browsers.py searches` |
+| SF-B-006 cookies | `ChromiumBasedBrowsersCookiesDatabaseFile`, `FirefoxCookies` | `browsers.py cookies` (metadonnees ; valeurs chiffrees = ecart) |
+| SF-B-007 extensions | `ChromiumBasedBrowsersExtensions`, `ChromeExtensionRegistryKeys` | plaso `chrome_extension_activity` + fichiers |
+| SF-B-010 credentials stockes | `ChromiumBasedBrowsersLoginDataDatabaseFile`, `ChromiumBasedBrowsersWebDataDatabaseFile` | presence seulement (chiffre - ecart documente) |
 
 ## Regles
 

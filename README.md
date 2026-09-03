@@ -101,7 +101,7 @@ configuration (provider, air-gap) in [docs/DEPLOY.md](docs/DEPLOY.md) section 5.
 Two layers in a single repository:
 
 - **Host layer (light)**: scanner, integrity checker, wrappers - runs on any laptop with Docker
-- **Tool layer (containerized)**: image `oreoa-ai-tools:1.1.0` - plaso (log2timeline, psort), volatility3, The Sleuth Kit (fls, icat, mmls, fsstat), tshark, suricata (ET Open triaged + kit rules), yara, regipy, evtx, artifacts library, pytsk3 + libewf (raw/E01 disk images) - all pinned by version, built from the kit `Dockerfile`
+- **Tool layer (containerized)**: image `oreoa-ai-tools:1.1.0` - plaso (log2timeline, psort), volatility3, The Sleuth Kit (fls, icat, mmls, fsstat), tshark, suricata (ET Open triaged + kit rules), yara, regipy, evtx, artifacts library, pytsk3 + libewf (raw/E01 disk images), sqlite3 stdlib (browser databases) - all pinned by version, built from the kit `Dockerfile`
 - **Upstream referentials baked into the image at every build**: ForensicArtifacts (collection definitions, Apache-2.0) and DFIQ (scenarios/facets/questions, Apache-2.0) - downloaded by the `Dockerfile` (cache-bust ARG, SHA256 verification, baked traces), usable via `scripts/referentiels.py` (see [docs/REFERENTIALS.md](docs/REFERENTIALS.md))
 
 Execution rules: network-less containers (`--network none`), `00_evidence` mounted
@@ -162,6 +162,7 @@ SF-W-030 - lsass memory access
 | [catalogue/memoire.md](catalogue/memoire.md) | volatile memory signals (SF-M) |
 | [catalogue/reseau.md](catalogue/reseau.md) | network signals (SF-R) |
 | [catalogue/disque.md](catalogue/disque.md) | disk signals (SF-D, v2.0: raw/dd/E01 images) |
+| [catalogue/navigateurs.md](catalogue/navigateurs.md) | browser signals (SF-B, v2.1: Chromium/Firefox/Safari/IE) |
 | [catalogue/correlation.md](catalogue/correlation.md) | multi-signal correlation rules (C-XX chains) |
 | [catalogue/artefacts.md](catalogue/artefacts.md) | generated ForensicArtifacts index + signal/artifact mapping |
 | [catalogue/dfiq.md](catalogue/dfiq.md) | generated DFIQ index + scenario/case-type mapping |
@@ -175,17 +176,18 @@ SF-W-030 - lsass memory access
 | Traceability | every conclusion cites collection + artifact + hash; image digest recorded |
 | Disk barrier | provisioning refused if free space is insufficient (nothing written) |
 
-## State v2.0
+## State v2.1
 
 | Module | State |
 |--------|-------|
 | Ingestion (typing, SHA256, provenance, artifact matching, manifest, disk magic disambiguation) | operational |
 | Integrity checker (doctor check / fix / test, referentials) | operational |
-| Containerized toolchain (11 tools + 6 libraries) | operational |
-| Weak-signal catalogue (56 signals + 8 chains) | operational |
+| Containerized toolchain (11 tools + 7 libraries) | operational |
+| Weak-signal catalogue (66 signals + 9 chains) | operational |
 | Volatile memory (volatility3 tooled, SF-M catalogue, dedicated knowledge) | operational |
 | Network (tshark + suricata offline, ET Open triage, SF-R catalogue) | operational |
 | Full disk (raw/dd/E01, TSK without mounting + plaso super-timeline, targeted artifact extraction, SF-D catalogue) | operational |
+| Browsers (Chromium/Firefox/Safari + IE via plaso, browsers.py, SF-B catalogue, encrypted values never read) | operational |
 | Upstream referentials (ForensicArtifacts + DFIQ baked at build, referentiels.py engine) | operational |
 | Case context intake at opening (/case) | operational |
 | Languages (schema EN, scripts EN, knowledge FR, deliverables per case language) | operational |
@@ -201,7 +203,7 @@ SF-W-030 - lsass memory access
 - **v1.3bis Simplified launch**: delivered - agent.sh removed, `/case` command (create/switch/panorama), analyst deposits with integrity-verified scan, first-launch guide
 - **v1.4 Internationalization**: delivered - EN schema and scripts, EN-primary docs, language rules + /lang
 - **v2.0 Full disk**: delivered - raw/dd/E01 images, The Sleuth Kit without mounting (`disk.py`: info/verify/listing/bodyfile/extract), plaso super-timeline, targeted artifact extraction, 3x-image disk barrier, SF-D catalogue; AFF4 and composite/encrypted volumes documented as gaps
-- **v2.1 Browsers**: history, caches, sessions (backed by webbrowser.yaml + DFIQ Q1020)
+- **v2.1 Browsers**: delivered - all browsers (Chromium/Firefox/Safari/IE legacy), `browsers.py` (info/visits/downloads/searches/cookies, sqlite read-only), plaso WEBHIST parsing, isolated profiles and disk-image extraction, SF-B catalogue + C-B-01 chain; encrypted cookie values / Login Data never read (documented gap)
 - **v2.2 Containers**: docker/containerd/kubernetes.yaml, orchestrator logs
 - **v2.3 Cloud**: cloud_services.yaml (DFIQ S1005 frame), documented gaps
 - **Mobile**: outside upstream referentials (no Android/iOS definitions) - dedicated kit artifacts to produce

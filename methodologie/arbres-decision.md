@@ -128,6 +128,33 @@ Conclusions sourcees : hash de l'image + chemin + inode + sha256 extrait ; chain
 
 Regles : exploitation sans montage (jamais de root, jamais de mount) ; barriere 3x avant super-timeline ; les extraits sont empreintes et journalises ; AFF4 et volumes hors perimetre restent en attente dans le manifest.
 
+## Arbre bases navigateurs
+
+Applique quand une base de profil navigateur fait partie des collections (profils isoles ou extraits d'image) :
+
+```
+Base navigateur disponible (hash au manifest)
+    |
+    +-- browsers.py info : base identifiee (chromium/firefox/safari), periode, compteurs
+    |
+    +-- visits : chronologie de navigation (transitions : TYPED/LINK/FORM_SUBMIT)
+    |       +-- SF-B-003 (file://, partages internes), SF-B-005 (visites periodiques)
+    |
+    +-- downloads (Chromium) : executables et documents -----> SF-B-001
+    |       +-- rapprocher SF-B-004 (visite puis telechargement), SF-D-002/SF-D-005 (execution)
+    |
+    +-- searches (Chromium) : termes de recherche -----------> SF-B-002
+    +-- cookies (metadonnees) : sessions de services -------> SF-B-006
+    +-- extensions : plaso chrome_extension_activity + referentiel -> SF-B-007
+    |
+    +-- coherence de couverture : trou dans la base vs autres collections
+            +-- SF-B-008 (effacement), SF-B-009 (mode prive - hypothese seulement)
+    v
+Conclusions sourcees : base (hash) + table + URL + horodatage UTC ; chaine C-B-01
+```
+
+Regles : valeurs chiffrees (cookies, Login Data) jamais lues - metadonnees seules ; une absence de visite n'est pas une preuve d'absence ; downloads Firefox/Safari et IE passent par plaso (ecarts documentes).
+
 ## Regles de priorite multi-collections
 
 1. **Collection principale d'abord** : la collection identifiee au triage comme principale est traitee en premier

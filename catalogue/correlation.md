@@ -91,6 +91,20 @@ Les conclusions fortes reposent sur des chaines de signaux, pas sur des signaux 
 - **Conclusion si chaine complete** : chaine d'infection complete reconstruite depuis l'image disque (introduction, execution, persistance, dissimulation), meme sans evenementiel exploitable
 - **Sources requises** : image disque (hash au manifest), super-timeline plaso, extraits registre (regipy), rapport d'extraction (SHA256 par fichier)
 
+## Chaines d'investigation navigateurs
+
+### C-B-01 - Acces initial par phishing avec telechargement
+
+| Ordre | Signal | Fenetre |
+|-------|--------|---------|
+| 1 | SF-B-004 (visite domaine inconnu puis telechargement) ou SF-B-001 (telechargement d'executable) | T0 |
+| 2 | SF-D-005 (binaire depose dans chemin utilisateur) et/ou SF-D-002 (Prefetch : execution) | T0 a +5 min |
+| 3 | SF-B-002 (recherche operationnelle) ou SF-B-003 (acces internes) | T0 a +1 h |
+| 4 | SF-B-007 (extension) ou SF-D-003 (persistance registre) | suite |
+
+- **Conclusion si chaine complete** : vecteur d'acces initial par navigation confirme de bout en bout (visite, telechargement, execution, persistance) - chaque maillon source (base navigateur + hash, image + inode, eventiel)
+- **Sources requises** : base de profil (hash au manifest), super-timeline image disque, eventuellement capture reseau (SF-R-005 pour le telechargement)
+
 ## Correlations croisees multi-plateformes
 
 | Chaine | Signaux | Signification |
@@ -107,6 +121,9 @@ Les conclusions fortes reposent sur des chaines de signaux, pas sur des signaux 
 | R-10 | SF-D-002/SF-D-005 (execution deposee sur disque) + SF-R-005 (telechargement du meme binaire dans la capture) | ingress d'outil confirme par deux sources independantes |
 | R-11 | SF-D-010 (perte de visibilite sur volume) + SF-W-040 (journal efface) | effacement coordonne, incident majeur - sources externes imperatives |
 | R-12 | SF-D-007 (compte/service local dans SAM) + SF-L-021 (nouveau compte Linux sur machine adjacente) | campagne multi-systemes, meme operateur |
+| R-13 | SF-B-001/SF-B-004 (telechargement navigateur) + SF-R-005 (objet binaire dans la capture) | telechargement confirme par deux sources independantes, hash de l'objet recoupable |
+| R-14 | SF-B-005 (visites periodiques navigateur) + SF-R-001 (beaconing reseau du meme domaine) | canal C2 navigateur confirme par la base et la capture |
+| R-15 | SF-B-008/SF-B-009 (effacement ou absence d'historique) + SF-W-040 (journal efface) | dissimulation coordonnee, periode a reconstruire depuis les sources externes |
 
 ## Rattachement aux referentiels amont
 

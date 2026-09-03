@@ -117,13 +117,30 @@ Disk images (raw, dd, E01) are exploited directly, without mounting:
 Limits documented in the report: AFF4 pending (recorded, not exploited), composite
 volumes (LVM/RAID), VSS and encryption out of scope.
 
+### Browser databases (v2.1)
+
+Browser profile databases (Chromium `History`/`Cookies`, Firefox
+`places.sqlite`/`cookies.sqlite`, Safari `History.db`) are exploited read-only:
+
+1. drop the database files in `00_evidence/originals/` (keep `-wal`/`-shm` if
+   collected from a running system) or extract them from a disk image
+   (`referentiels.py artifacts paths ChromiumBasedBrowsersHistoryDatabaseFile` +
+   `disk.py extract`)
+2. the agent runs `browsers.py` (info, visits, downloads, searches, cookies
+   metadata) and merges the plaso WEBHIST events into the case timeline
+3. encrypted values (cookie contents, Login Data) are never read - metadata only
+
+Limits: Firefox/Safari downloads and IE legacy go through plaso; opaque cache and
+IndexedDB/LocalStorage out of scope.
+
 ## 6. Weak signals and referentials
 
 The agent systematically tests the catalogue signals (`catalogue/windows.md`,
 `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`,
-`catalogue/disque.md`) and the correlation chains (`catalogue/correlation.md`). The
-report includes a "tested signals" appendix (detected / not detected / not applicable +
-evidence) - the basis of analysis reproducibility.
+`catalogue/disque.md`, `catalogue/navigateurs.md`) and the correlation chains
+(`catalogue/correlation.md`). The report includes a "tested signals" appendix
+(detected / not detected / not applicable + evidence) - the basis of analysis
+reproducibility.
 
 Two upstream referentials are baked into the image at every build (details:
 [docs/REFERENTIALS.md](REFERENTIALS.md)):
@@ -159,5 +176,7 @@ Two upstream referentials are baked into the image at every build (details:
 | `./scripts/dt python3 /work/scripts/referentiels.py artifacts paths <Name>` | machine output: resolved paths (piping to disk.py extract) |
 | `./scripts/dt python3 /work/scripts/disk.py info 00_evidence/originals/<image>` | disk image overview (format, partitions, filesystems, barrier) |
 | `./scripts/dt python3 /work/scripts/disk.py extract <image> --paths <paths.txt> --out 01_work/disque/extraits` | targeted extraction with SHA256 report |
+| `./scripts/dt python3 /work/scripts/browsers.py info 00_evidence/originals/History` | browser database overview (kind, counts, period) |
+| `./scripts/dt python3 /work/scripts/browsers.py visits 00_evidence/originals/History --out 01_work/navigateurs/visits.csv` | visits export (UTC, transitions) |
 | `./scripts/dt python3 /work/scripts/referentiels.py dfiq arbre S1008` | question tree of a DFIQ scenario |
 | `./install.sh check\|fix\|test` | manual alternative (ops/CI, agent-less) |

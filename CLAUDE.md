@@ -188,7 +188,8 @@ Le catalogue reference les signaux faibles par plateforme. Chaque fiche a un ide
 - `catalogue/memoire.md` -- signaux memoire volatile (SF-M, pre-requis : dump hash + symboles)
 - `catalogue/reseau.md` -- signaux reseau (SF-R, pre-requis : capture hash, tshark + suricata offline)
 - `catalogue/disque.md` -- signaux disque (SF-D, pre-requis : image hash, TSK sans montage + plaso super-timeline)
-- `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M, C-R, C-D)
+- `catalogue/navigateurs.md` -- signaux navigateurs (SF-B, pre-requis : base de profil hash, browsers.py + plaso WEBHIST)
+- `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M, C-R, C-D, C-B)
 - `catalogue/artefacts.md` -- index genere du referentiel ForensicArtifacts + mapping signaux <-> artefacts
 - `catalogue/dfiq.md` -- index genere du corpus DFIQ + mapping scenarios <-> types d'affaire
 
@@ -259,11 +260,12 @@ dans ce fichier.
 
 ---
 
-## Perimetre et limites de v2.0
+## Perimetre et limites de v2.1
 
-- Perimetre couvert : investigation sur artefacts Windows (evenementiel Security, Sysmon, persistent, structure du systeme), logs Linux (auth, syslog, wtmp/btmp, cron, ssh), memoire volatile Windows (volatility3, v1.1), captures reseau (tshark + suricata offline, v1.2 - voir `connaissances/reseau/exploitation-capture.md`) et images disque completes (raw/dd/E01, The Sleuth Kit sans montage + plaso super-timeline, v2.0 - voir `connaissances/disque/`)
+- Perimetre couvert : investigation sur artefacts Windows (evenementiel Security, Sysmon, persistent, structure du systeme), logs Linux (auth, syslog, wtmp/btmp, cron, ssh), memoire volatile Windows (volatility3, v1.1), captures reseau (tshark + suricata offline, v1.2 - voir `connaissances/reseau/exploitation-capture.md`), images disque completes (raw/dd/E01, The Sleuth Kit sans montage + plaso super-timeline, v2.0 - voir `connaissances/disque/`) et bases navigateurs (Chromium/Firefox/Safari + IE via plaso, `browsers.py` + WEBHIST, v2.1 - voir `connaissances/navigateurs/`)
 - Memoire volatile Linux : conditionnee aux symboles noyau du dump - symboles absents = ecart documente, aucune speculation
 - Capture reseau : metadonnees uniquement pour le trafic chiffre (TLS) ; periode couverte = periode capturee
 - Image disque : exploitation sans montage (jamais de root) ; extraction ciblee par artefacts (`referentiels.py artifacts paths` + `disk.py extract`) ; barriere d'espace disque 3x la plus grande image avant super-timeline
-- Hors perimetre : AFF4 (ecart documente, consigne en attente), volumes composites (LVM/RAID), VSS multiples, chiffrement (BitLocker/LUKS), cloud (v2.3), conteneurs (v2.2), navigateurs (v2.1), mobile
+- Bases navigateurs : lecture seule (sqlite ro, fallback WAL) ; valeurs chiffrees (cookies, Login Data) JAMAIS lues - metadonnees seules ; downloads Firefox/Safari et IE legacy via plaso
+- Hors perimetre : AFF4 (ecart documente, consigne en attente), volumes composites (LVM/RAID), VSS multiples, chiffrement (BitLocker/LUKS), dechiffrement navigateur (DPAPI/App Bound), caches binaires et IndexedDB/LocalStorage navigateurs, cloud (v2.3), conteneurs (v2.2), mobile
 - Toute collection hors perimetre est documentee en attente dans le manifest, jamais exploitee en speculation

@@ -84,6 +84,7 @@ imports:
   artifacts: "lecture des definitions d'artefacts ForensicArtifacts (version au build)"
   pytsk3: "bindings The Sleuth Kit : lecture directe des images raw et E01 (dependance plaso/dfvfs, 20260715)"
   pyewf: "bindings libewf : lecture des segments E01 (dependance plaso/dfvfs, 20240506)"
+  sqlite3: "bases de donnees navigateurs (stdlib) - exploitation scripts/browsers.py"
 
 # Referentiels amont telecharges et bakes dans l'image a chaque build (doctor fix)
 referentiels:

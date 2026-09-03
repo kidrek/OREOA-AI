@@ -14,6 +14,7 @@ Produire et tenir la timeline consolidee de l'affaire : fusion horodatee des eve
 | memoire volatile | processus vivants, connexions actives, consoles | volatility3 (v1.1) |
 | capture reseau | resolutions DNS, connexions, transfers | tshark + suricata (v1.2) |
 | image disque | super-timeline systeme (MFT, registre, Prefetch, USN, journaux embarques), fichiers supprimes | log2timeline/psort sur image + fls bodyfile (v2.0) |
+| bases navigateurs | visites, telechargements, recherches, sessions web | browsers.py + log2timeline/psort (WEBHIST) (v2.1) |
 
 ## Regles
 
@@ -28,7 +29,7 @@ Produire et tenir la timeline consolidee de l'affaire : fusion horodatee des eve
 1. Extraire les evenements de la collection principale (triage, phase 1)
 2. Extraire les evenements des collections secondaires au fil des phases 2-4
 3. Fusionner et trier chronologiquement
-4. Marquer les chaines de correlation (C-W, C-L, C-M, C-R, C-D) au fil des maillons confirmes
+4. Marquer les chaines de correlation (C-W, C-L, C-M, C-R, C-D, C-B) au fil des maillons confirmes
 5. Documenter les ecarts : periodes muettes, horloges douteuses, evenements attendus absents
 6. Verifier les criteres de sortie de chaque phase (methodologie/workflow.md)
 
@@ -40,6 +41,6 @@ Produire et tenir la timeline consolidee de l'affaire : fusion horodatee des eve
 
 ## Lien avec les catalogues
 
-Les chaines de correlation structurent la lecture de la timeline : `catalogue/correlation.md` (C-W-01/02, C-L-01/02, C-M-01, C-R-01, C-D-01, R-01 a R-12). Les signaux sources : `catalogue/windows.md`, `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`, `catalogue/disque.md`.
+Les chaines de correlation structurent la lecture de la timeline : `catalogue/correlation.md` (C-W-01/02, C-L-01/02, C-M-01, C-R-01, C-D-01, C-B-01, R-01 a R-15). Les signaux sources : `catalogue/windows.md`, `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`, `catalogue/disque.md`, `catalogue/navigateurs.md`.
 
 Image disque (v2.0) : la super-timeline plaso de l'image (eventiel, registre, MFT, Prefetch, USN embarques) constitue la colonne vertebrale ; les autres collections se fusionnent autour ; un `bodyfile` TSK (`disk.py bodyfile`) complementaire couvre les metadonnees de tous les fichiers (utile quand un parser plaso manque). Grain explicite : evenement journal vs entree MFT vs Prefetch (preuve d'execution, non d'intention).

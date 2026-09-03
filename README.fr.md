@@ -162,7 +162,8 @@ faux positifs: antivirus et EDR legitimes
 - [catalogue/memoire.md](catalogue/memoire.md) - 10 signaux SF-M (processus masque, injection, reseau vivant, credentials, persistance, rootkit Linux)
 - [catalogue/reseau.md](catalogue/reseau.md) - 10 signaux SF-R (beaconing, DNS C2 et exfiltration, transferts, scans, SMB lateral, TLS, alertes suricata)
 - [catalogue/disque.md](catalogue/disque.md) - 10 signaux SF-D (timestomping, Prefetch, persistance registre, fichiers supprimes, depots, ADS, comptes/services, USB, UserAssist, perte de visibilite)
-- [catalogue/correlation.md](catalogue/correlation.md) - chaines d'investigation multi-signaux (C-W-01/02, C-L-01/02, C-M-01, C-R-01, C-D-01, correlations croisees R-01 a R-12)
+- [catalogue/navigateurs.md](catalogue/navigateurs.md) - 10 signaux SF-B (telechargements, recherches, ressources internes, phishing, beaconing navigateur, cookies de session, extensions, effacement, mode prive, credentials stockes)
+- [catalogue/correlation.md](catalogue/correlation.md) - chaines d'investigation multi-signaux (C-W-01/02, C-L-01/02, C-M-01, C-R-01, C-D-01, C-B-01, correlations croisees R-01 a R-15)
 
 Chaque signal teste en investigation est enregistre (detecte / non detecte / non applicable + evidence citee) - le rapport inclut l'annexe des signaux testes.
 
@@ -177,17 +178,18 @@ Chaque signal teste en investigation est enregistre (detecte / non detecte / non
 | Tracabilite | toute conclusion cite collection + artefact + hash ; digest de l'image consigne |
 | Barriere disque | provisioning refuse si espace libre insuffisant (aucune ecriture) |
 
-## Etat v2.0
+## Etat v2.1
 
 | Module | Etat |
 |--------|------|
 | Ingestion (detection de type, SHA256, provenance, rapprochement artefacts, manifest, desambiguation .raw par magic) | operationnel |
 | Verificateur d'integrite (doctor check / fix / test, referentiels) | operationnel |
-| Chaine d'outils conteneurisee (11 outils + 6 bibliotheques) | operationnelle |
-| Catalogue de signaux faibles (56 signaux + 8 chaines) | operationnel |
+| Chaine d'outils conteneurisee (11 outils + 7 bibliotheques) | operationnelle |
+| Catalogue de signaux faibles (66 signaux + 9 chaines) | operationnel |
 | Memoire volatile (volatility3 outille, catalogue SF-M, connaissances dediees) | operationnel |
 | Reseau (tshark + suricata offline, triage ET Open, catalogue SF-R) | operationnel |
 | Disque complet (raw/dd/E01, TSK sans montage + plaso super-timeline, extraction ciblee par artefacts, catalogue SF-D) | operationnel |
+| Navigateurs (Chromium/Firefox/Safari + IE via plaso, browsers.py, catalogue SF-B, valeurs chiffrees jamais lues) | operationnel |
 | Referentiels amont (ForensicArtifacts + DFIQ bakes au build, moteur referentiels.py) | operationnel |
 | Intake de contexte a l'ouverture d'affaire (/analyse) | operationnel |
 | Competences d'agent (10 skills) | operationnelles |
@@ -201,7 +203,7 @@ Chaque signal teste en investigation est enregistre (detecte / non detecte / non
 - **v1.3 Referentiels amont** : livree - ForensicArtifacts + DFIQ telecharges et bakes a chaque build, moteur `referentiels.py` (rapprochement, expansion, plans DFIQ), intake de contexte a l'ouverture d'affaire
 - **v1.4 Internationalisation** : livree - schema EN et scripts EN, docs EN primaires, regles langues + /lang
 - **v2.0 Disque complet** : livree - images raw/dd/E01, The Sleuth Kit sans montage (`disk.py` : info/verify/listing/bodyfile/extract), super-timeline plaso, extraction ciblee par artefacts, barriere disque 3x image, catalogue SF-D ; AFF4 et volumes composites/chiffres documentes en ecarts
-- **v2.1 Navigateurs** : historiques, caches, sessions (adosse a webbrowser.yaml + DFIQ Q1020)
+- **v2.1 Navigateurs** : livree - tous navigateurs (Chromium/Firefox/Safari/IE legacy), `browsers.py` (info/visits/downloads/searches/cookies, sqlite lecture seule), parsing plaso WEBHIST, profils isoles et extraction image, catalogue SF-B + chaine C-B-01 ; valeurs chiffrees des cookies/Login Data jamais lues (ecart documente)
 - **v2.2 Conteneurs** : docker/containerd/kubernetes.yaml, journaux d'orchestrateurs
 - **v2.3 Cloud** : cloud_services.yaml (cadre DFIQ S1005), gaps documentes
 - **Mobile** : hors referentiels amont (pas de definitions Android/iOS) - artefacts kit dedies a produire

@@ -270,6 +270,58 @@ EOF
   rm -rf cases/CASE-TEST-DISK
 fi
 
+etape "5septies. Browser databases (sqlite + plaso, v2.1)"
+if ! docker image inspect oreoa-ai-tools:1.1.0 >/dev/null 2>&1; then
+  echo "   [skip] oreoa-ai-tools image missing (provision with: python3 scripts/doctor.py fix)"
+else
+  # temporary browser case (independent from the other test cases)
+  rm -rf cases/CASE-TEST-BROWSER
+  mkdir -p cases/CASE-TEST-BROWSER/{00_evidence/{originals,exports,images},01_work/navigateurs,02_analysis/timeline}
+  if ! python3 tests/samples/gen_browser_db.py cases/CASE-TEST-BROWSER/00_evidence/originals --cookies >/dev/null 2>&1; then
+    ko "synthetic browser database generation"
+  else
+    python3 scripts/ingest.py cases/CASE-TEST-BROWSER --scan \
+      --provenance "E2E synthetic browser" >/dev/null 2>&1 \
+      && ok "browser database ingested (deposit scan)" || ko "browser database ingested"
+
+    # browsers.py: info + targeted exports (deterministic markers)
+    ./scripts/dt -c CASE-TEST-BROWSER python3 /work/scripts/browsers.py info \
+      /affaires/00_evidence/originals/History 2>/dev/null | grep -q "kind: chromium-history" \
+      && ok "browsers.py info (chromium history identified)" || ko "browsers.py info"
+    ./scripts/dt -c CASE-TEST-BROWSER python3 /work/scripts/browsers.py visits \
+      /affaires/00_evidence/originals/History --out /affaires/01_work/navigateurs/visits.csv >/dev/null 2>&1 \
+      && grep -q "KIT-BROWSER-SEARCH" cases/CASE-TEST-BROWSER/01_work/navigateurs/visits.csv \
+      && ok "browsers.py visits (WebKit timestamps normalized)" || ko "browsers.py visits"
+    ./scripts/dt -c CASE-TEST-BROWSER python3 /work/scripts/browsers.py downloads \
+      /affaires/00_evidence/originals/History --out /affaires/01_work/navigateurs/downloads.csv >/dev/null 2>&1 \
+      && grep -q "payload.exe" cases/CASE-TEST-BROWSER/01_work/navigateurs/downloads.csv \
+      && ok "browsers.py downloads (url chain + target path)" || ko "browsers.py downloads"
+    ./scripts/dt -c CASE-TEST-BROWSER python3 /work/scripts/browsers.py cookies \
+      /affaires/00_evidence/originals/Cookies --out /affaires/01_work/navigateurs/cookies.csv >/dev/null 2>&1 \
+      && grep -q "malware-cdn.invalid" cases/CASE-TEST-BROWSER/01_work/navigateurs/cookies.csv \
+      && ok "browsers.py cookies (metadata only)" || ko "browsers.py cookies"
+
+    # plaso parses the exact-schema database (WEBHIST events)
+    ./scripts/dt -c CASE-TEST-BROWSER log2timeline --quiet \
+      --storage-file /affaires/02_analysis/timeline/browser.plaso \
+      /affaires/00_evidence/originals/History >/dev/null 2>&1 \
+      && ./scripts/dt -c CASE-TEST-BROWSER psort --output-format dynamic \
+      -w /affaires/02_analysis/timeline/browser.csv \
+      /affaires/02_analysis/timeline/browser.plaso >/dev/null 2>&1 \
+      && grep -q "chrome_27_history" cases/CASE-TEST-BROWSER/02_analysis/timeline/browser.csv \
+      && grep -q "KIT-BROWSER-SEARCH" cases/CASE-TEST-BROWSER/02_analysis/timeline/browser.csv \
+      && ok "plaso chrome_27_history on synthetic database" || ko "plaso chrome_27_history"
+
+    # referential resolution for disk-image extraction (v2.0 bridge)
+    PATHS=$(./scripts/dt -c CASE-TEST-BROWSER python3 /work/scripts/referentiels.py \
+      artifacts paths ChromiumBasedBrowsersHistoryDatabaseFile 2>/dev/null || true)
+    echo "$PATHS" | grep -q "User Data" \
+      && ok "browser artifact paths resolved (disk extraction bridge)" \
+      || ko "browser artifact paths resolved"
+  fi
+  rm -rf cases/CASE-TEST-BROWSER
+fi
+
 etape "6. Summary"
 if [[ $ECHAP -eq 0 ]]; then
   echo "   E2E: OK"

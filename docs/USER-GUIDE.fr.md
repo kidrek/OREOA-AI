@@ -99,9 +99,20 @@ Les images disque (raw, dd, E01) sont exploitees directement, sans montage :
 
 Limites documentees au rapport : AFF4 en attente (consigne, non exploite), volumes composites (LVM/RAID), VSS et chiffrement hors perimetre.
 
+### Bases navigateurs (v2.1)
+
+Les bases de profils navigateurs (Chromium `History`/`Cookies`, Firefox
+`places.sqlite`/`cookies.sqlite`, Safari `History.db`) sont exploitees en lecture seule :
+
+1. deposer les fichiers dans `00_evidence/originals/` (conserver `-wal`/`-shm` si collecte a chaud) ou les extraire d'une image disque (`referentiels.py artifacts paths ChromiumBasedBrowsersHistoryDatabaseFile` + `disk.py extract`)
+2. l'agent lance `browsers.py` (info, visits, downloads, searches, cookies en metadonnees) et fusionne les evenements WEBHIST plaso dans la timeline de l'affaire
+3. les valeurs chiffrees (contenu des cookies, Login Data) ne sont jamais lues - metadonnees seules
+
+Limites : downloads Firefox/Safari et IE legacy via plaso ; caches opaques et IndexedDB/LocalStorage hors perimetre.
+
 ## 6. Signaux faibles et referentiels
 
-L'agent teste systematiquement les signaux du catalogue (`catalogue/windows.md`, `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`, `catalogue/disque.md`) et les chaines de correlation (`catalogue/correlation.md`). Le rapport inclut une annexe "signaux testes" (detecte / non detecte / non applicable + evidence) - la base de la reproducibilite de l'analyse.
+L'agent teste systematiquement les signaux du catalogue (`catalogue/windows.md`, `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`, `catalogue/disque.md`, `catalogue/navigateurs.md`) et les chaines de correlation (`catalogue/correlation.md`). Le rapport inclut une annexe "signaux testes" (detecte / non detecte / non applicable + evidence) - la base de la reproducibilite de l'analyse.
 
 Deux referentiels amont sont embarques dans l'image a chaque build (details : [docs/REFERENTIALS.fr.md](REFERENTIALS.fr.md)) :
 
@@ -132,5 +143,7 @@ Deux referentiels amont sont embarques dans l'image a chaque build (details : [d
 | `./scripts/dt python3 /work/scripts/referentiels.py artifacts paths <Nom>` | sortie machine : chemins resolus (piping vers disk.py extract) |
 | `./scripts/dt python3 /work/scripts/disk.py info 00_evidence/originals/<image>` | vue d'ensemble image disque (format, partitions, filesystems, barriere) |
 | `./scripts/dt python3 /work/scripts/disk.py extract <image> --paths <paths.txt> --out 01_work/disque/extraits` | extraction ciblee avec rapport SHA256 |
+| `./scripts/dt python3 /work/scripts/browsers.py info 00_evidence/originals/History` | vue d'ensemble base navigateur (kind, compteurs, periode) |
+| `./scripts/dt python3 /work/scripts/browsers.py visits 00_evidence/originals/History --out 01_work/navigateurs/visits.csv` | export des visites (UTC, transitions) |
 | `./scripts/dt python3 /work/scripts/referentiels.py dfiq arbre S1008` | arbre de questions d'un scenario DFIQ |
 | `./install.sh check\|fix\|test` | alternative manuelle (ops/CI, hors agent) |

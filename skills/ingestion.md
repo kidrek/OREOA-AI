@@ -65,5 +65,8 @@ type, calcul d'empreintes, provenance, rapprochement artefacts, mise a jour du m
 | `.raw` (magic disque) / `.dd` / `.img` | image disque brute (MBR/GPT/ext detecte) | disk |
 | `.E01` | image disque EnCase (EWF) | disk |
 | `.aff4` | image AFF4 - **ecart documente** (hors perimetre v2.0, consigne en attente) | disk |
+| `History`, `Cookies`, `Web Data`, `Login Data` | bases Chromium (sans extension - identification par tables) | navigateur |
+| `places.sqlite`, `cookies.sqlite` | bases Firefox | navigateur |
+| `History.db` | base Safari | navigateur |
 
 Cas `.raw` ambigu (memoire vs disque) : l'ingestion sonde les magic bytes (MBR `55 AA`, GPT `EFI PART`, superblock ext `53 EF`) ; en cas de doute, demander a l'analyste et corriger le type du manifest explicitement. Les collections famille `disk` recoivent en plus `size_bytes` (barriere d'espace disque : 3x la plus grande image avant super-timeline, cf. `connaissances/disque/acquisition.md`).

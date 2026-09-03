@@ -76,6 +76,16 @@ Lorsqu'une image disque (raw, dd, E01) est presente dans l'affaire (type disk au
 4. Sorties dans `01_work/disque/`, extraits empreintes ; croiser avec `catalogue/disque.md` (SF-D), la chaine C-D-01 et les croisements R-10 a R-12 de `catalogue/correlation.md`
 5. Limites v2.0 documentees : AFF4 en attente, LVM/RAID/VSS et chiffrement hors perimetre - `disk.py info` documente ce qui est detecte, jamais de speculation
 
+## Exploitation des bases navigateurs (v2.1)
+
+Lorsqu'une base de profil navigateur est presente (collection isolee ou extraite d'image, cf. `connaissances/navigateurs/profils.md`) :
+
+1. `browsers.py info` (identification par tables, periode couverte, compteurs) puis extraction ciblee : `visits`, `downloads` (Chromium), `searches` (Chromium), `cookies` (metadonnees) - CSV dans `01_work/navigateurs/` (cf. `connaissances/navigateurs/exploitation-navigateurs.md`)
+2. Super-timeline plaso sur la base (parser `chrome_27_history`, `firefox_history`, `safari`...) et fusion dans la timeline de l'affaire
+3. Base presente seulement dans une image disque : extraction ciblee via `referentiels.py artifacts paths ChromiumBasedBrowsersHistoryDatabaseFile` + `disk.py extract` (v2.0)
+4. Croiser avec `catalogue/navigateurs.md` (SF-B), la chaine C-B-01 et les croisements R-13 a R-15 de `catalogue/correlation.md`
+5. Limites : valeurs chiffrees (cookies, Login Data) jamais lues - metadonnees seules ; downloads Firefox/Safari et IE via plaso ; chaque conclusion cite base (hash) + table + horodatage
+
 ## Exploitation des referentiels amont (v1.3)
 
 Le manifest porte le rapprochement automatique des collections avec le referentiel

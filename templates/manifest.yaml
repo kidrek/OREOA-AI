@@ -43,3 +43,7 @@ collections: []
 #   type: ".e01"                                  # .raw with disk magic -> ".rawdisk"
 #   size_bytes: 107374182400                      # image size (disk-space barrier: 3x)
 #   notes: ""                                     # out-of-scope notes (e.g. AFF4 gap)
+#
+# Browser profile databases (v2.1) are ingested as plain files (identified by
+# tables, not extension): History / Cookies / places.sqlite / History.db -
+# exploitation via scripts/browsers.py + plaso (see connaissances/navigateurs/)

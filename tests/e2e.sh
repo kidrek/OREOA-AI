@@ -102,6 +102,63 @@ else
   fi
 fi
 
+etape "5quater. Referentiel artefacts (ForensicArtifacts)"
+if ! docker image inspect oreoa-ai-tools:1.1.0 >/dev/null 2>&1; then
+  echo "   [skip] image oreoa-ai-tools absente (provisioner avec : python3 scripts/doctor.py fix)"
+else
+  # integrite du referentiel bake (MANIFEST.sha256 + traces)
+  ./scripts/dt python3 /work/scripts/referentiels.py artefacts check >/dev/null 2>&1 \
+    && ok "referentiel artefacts integre (manifest + traces)" \
+    || ko "referentiel artefacts integre (manifest + traces)"
+
+  # rapprochement automatique a l'ingestion (manifest de l'affaire de test)
+  python3 - <<'EOF' && ok "rapprochement artefacts (manifest de test)" || ko "rapprochement artefacts (manifest de test)"
+import sys, yaml
+from pathlib import Path
+m = yaml.safe_load(Path("cases/CASE-TEST-0001/manifest.yaml").read_text())
+refs = m.get("referentiels", {})
+assert refs.get("artefacts", {}).get("version"), "referentiels.absent du manifest"
+cols = {c["nom"]: c for c in m.get("collections", [])}
+assert "LinuxAuthLogs" in cols["auth.log"]["artefacts"], f"auth.log: {cols['auth.log']['artefacts']}"
+assert cols["auth.log"]["artefacts"], "auth.log sans artefact"
+sys.exit(0)
+EOF
+
+  # expansion resolue + outils kit
+  EXP=$(./scripts/dt python3 /work/scripts/referentiels.py artefacts expand WindowsEventLogs 2>/dev/null || true)
+  echo "$EXP" | grep -q "winevt" && echo "$EXP" | grep -q "log2timeline" \
+    && ok "expansion artefact resolue (chemins + outils)" \
+    || ko "expansion artefact resolue (chemins + outils)"
+fi
+
+etape "5quinquies. Referentiel DFIQ (questions d'investigation)"
+if ! docker image inspect oreoa-ai-tools:1.1.0 >/dev/null 2>&1; then
+  echo "   [skip] image oreoa-ai-tools absente (provisioner avec : python3 scripts/doctor.py fix)"
+else
+  # integrite du corpus + coherence parentale
+  ./scripts/dt python3 /work/scripts/referentiels.py dfiq check >/dev/null 2>&1 \
+    && ok "corpus DFIQ integre (manifest + parentes)" \
+    || ko "corpus DFIQ integre (manifest + parentes)"
+
+  # arbre du scenario de mouvement lateral (deterministe)
+  ARBRE=$(./scripts/dt python3 /work/scripts/referentiels.py dfiq arbre S1008 2>/dev/null || true)
+  echo "$ARBRE" | grep -q "Lateral Movement" && echo "$ARBRE" | grep -q "F1027" \
+    && ok "arbre DFIQ S1008 exploitable" || ko "arbre DFIQ S1008 exploitable"
+
+  # plan de reponse avec resolution croisee DFIQ -> artefact (Q1020 -> BrowserHistory)
+  PLAN=$(./scripts/dt python3 /work/scripts/referentiels.py dfiq plan Q1020 2>/dev/null || true)
+  echo "$PLAN" | grep -q "BrowserHistory" && echo "$PLAN" | grep -q "Plaso" \
+    && ok "plan DFIQ Q1020 avec resolution ForensicArtifact" \
+    || ko "plan DFIQ Q1020 avec resolution ForensicArtifact"
+
+  # regen des index generes (preservation du mapping entre marqueurs)
+  ./scripts/dt python3 /work/scripts/referentiels.py artefacts index /work/catalogue/artefacts.md >/dev/null 2>&1 \
+    && ./scripts/dt python3 /work/scripts/referentiels.py dfiq index /work/catalogue/dfiq.md >/dev/null 2>&1 \
+    && grep -q "SF-W-001" catalogue/artefacts.md && grep -q "S1008" catalogue/dfiq.md \
+    && ok "index catalogues regeneres (mapping preserve)" \
+    || ko "index catalogues regeneres (mapping preserve)"
+fi
+
 etape "6. Resume"
 if [[ $ECHAP -eq 0 ]]; then
   echo "   E2E : OK"

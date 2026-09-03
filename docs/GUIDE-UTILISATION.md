@@ -48,11 +48,12 @@ L'investigation suit les 7 phases (`methodologie/workflow.md`) :
 
 | Phase | Ce que produit l'agent | Ton role |
 |-------|------------------------|----------|
-| 0. Import | manifest.yaml (types, SHA256) | fournir les collections |
-| 1. Triage | type d'affaire, hypotheses | valider le triage |
-| 2-4. Analyse | timeline, correlations, hypotheses testees | valider a chaque gate |
+| 0. Import | manifest.yaml (types, SHA256, artefacts du referentiel) | fournir les collections |
+| Ouverture | demande de contexte sur l'incident (question ouverte, non bloquante) | partager ce que tu sais : description, declarant, periode, systemes, mesures deja prises |
+| 1. Triage | contexte consigne, type d'affaire, scenario DFIQ, hypotheses | valider le triage |
+| 2-4. Analyse | timeline, correlations, hypotheses et questions DFIQ testees | valider a chaque gate |
 | 5. Observables | tableau des IOC avec confiance | valider |
-| 6. Rapport | rapport final source | lecture et validation |
+| 6. Rapport | rapport final source (contexte + questions d'investigation) | lecture et validation |
 
 Chaque gate : l'agent s'arrete, presente sa synthese, attend ta decision. Le `journal.md` de l'affaire trace chaque action (append-only).
 
@@ -62,7 +63,7 @@ Chaque gate : l'agent s'arrete, presente sa synthese, attend ta decision. Le `jo
 cases/<ID>/02_analysis/report/rapport.md
 ```
 
-Structure en 13 sections (resume executif, procedure, inventaire, actifs, timeline, observables, hypotheses, conclusion, containment, remediation, recommandations, annexes). Chaque conclusion cite sa source (collection + artefact + hash). Formats disponibles a la demande : `full`, `executive`, `technique`. Les observables sont aussi exportables (`02_analysis/ioc/`).
+Structure en 14 sections (resume executif, description avec contexte analyste et scenario DFIQ, procedure, inventaire avec artefacts, questions d'investigation, actifs, timeline, observables, hypotheses, conclusion, containment, remediation, recommandations, annexes). Chaque conclusion cite sa source (collection + artefact + hash). Formats disponibles a la demande : `full`, `executive`, `technique`. Les observables sont aussi exportables (`02_analysis/ioc/`).
 
 ## 5. Mode guidance - les actions hors portee de l'agent
 
@@ -75,9 +76,14 @@ Certaines actions se font sur des machines vivantes - l'agent te guide alors pas
 
 Les preuves ramenees sont depositees dans `00_evidence/` et l'investigation reprend en mode autonome.
 
-## 6. Signaux faibles
+## 6. Signaux faibles et referentiels
 
 L'agent teste systematiquement les signaux du catalogue (`catalogue/windows.md`, `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`) et les chaines de correlation (`catalogue/correlation.md`). Le rapport inclut une annexe "signaux testes" (detecte / non detecte / non applicable + evidence) - la base de la reproducibilite de l'analyse.
+
+Deux referentiels amont sont embarques dans l'image a chaque build (details : [docs/REFERENTIELS.md](REFERENTIELS.md)) :
+
+- **ForensicArtifacts** : chaque collection importee est rapprochee automatiquement des definitions de collecte standard (champ `artefacts` du manifest) - le vocabulaire des rapports est celui du referentiel
+- **DFIQ** : l'investigation est structuree en scenarios/facets/questions - le rapport trace chaque question (repondue, sourcee / sans donnees / non posee)
 
 ## 7. Securite - ce qui est garanti
 
@@ -96,5 +102,7 @@ L'agent teste systematiquement les signaux du catalogue (`catalogue/windows.md`,
 | `/deploy` | relancer le guidage de deploiement |
 | `python3 scripts/doctor.py check\|fix\|test` | sante / provisioning / qualification |
 | `./create_case.sh "<nom>"` | nouvelle affaire |
-| `python3 scripts/ingest.py <affaire> <collection>` | importer une collection |
+| `python3 scripts/ingest.py <affaire> <collection>` | importer une collection (rapprochement artefacts automatique) |
+| `./scripts/dt python3 /work/scripts/referentiels.py artefacts expand <Nom>` | voir les chemins et outils d'un artefact |
+| `./scripts/dt python3 /work/scripts/referentiels.py dfiq arbre S1008` | arbre de questions d'un scenario DFIQ |
 | `./install.sh check\|fix\|test` | alternative manuelle (hors agent) |

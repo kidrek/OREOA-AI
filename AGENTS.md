@@ -57,11 +57,11 @@ Barriere d'espace disque : `doctor` refuse toute ecriture si l'espace libre sur 
 Chaque affaire progresse dans le dossier `cases/<ID>/` selon les 7 phases :
 
 ```
-0. Import        collections scannees, typees, hashées -> manifest.yaml
-1. Triage        type d'affaire, collection principale, secondaires
+0. Import        collections scannees, typees, hashées, rapprochees des artefacts -> manifest.yaml
+1. Triage        contexte analyste, type d'affaire, scenario DFIQ, collection principale, secondaires
 2. Analyse init  actifs affectes identifies, chronologie initiale
 3. Correlation   croisement multi-collections, timeline consolidee
-4. Investiguer   hypotheses testeues, ecarts explores
+4. Investiguer   hypotheses et questions DFIQ testees, ecarts explores
 5. Observer      tableau des observables (IOC)
 6. Rapport       rapport final selon le format commande
 ```
@@ -118,12 +118,14 @@ Se referer aux documents de methodologie pour le detail :
 
 | Fichier | Competence |
 |---------|-----------|
-| `ingestion.md` | Import de collections : scan, typage, SHA256, manifest |
-| `triage.md` | Phase 1 : reception et triage de l'affaire |
+| `ingestion.md` | Import de collections : scan, typage, SHA256, manifest, rapprochement artefacts |
+| `triage.md` | Phase 1 : reception et triage de l'affaire (contexte analyste, scenario DFIQ, couverture artefacts) |
 | `analyse.md` | Phases 2-5 : analyse initiale, correlation, investigation, observables |
 | `timeline.md` | Phases 2-5 : timeline consolidee multi-collections (evenementiel, memoire, reseau) |
 | `ioc.md` | Phases 2-5 : observables, verification, confiance |
-| `reporting.md` | Phase 6 : redaction du rapport |
+| `reporting.md` | Phase 6 : redaction du rapport (contexte, questions DFIQ) |
+| `artefacts.md` | Referentiel ForensicArtifacts : rapprochement, expansion, index, integrite |
+| `investigation.md` | Referentiel DFIQ : scenario, facets, questions, plans de reponse |
 | `guidance.md` | Mode guidance : accompagnement d'analyste |
 | `deploiement.md` | Mode guidance : deploiement du kit sur un laptop ou un parc (voir `docs/DEPLOY.md`) |
 
@@ -138,6 +140,26 @@ Le catalogue reference les signaux faibles par plateforme. Chaque fiche a un ide
 - `catalogue/memoire.md` -- signaux memoire volatile (SF-M, pre-requis : dump hash + symboles)
 - `catalogue/reseau.md` -- signaux reseau (SF-R, pre-requis : capture hash, tshark + suricata offline)
 - `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M, C-R)
+- `catalogue/artefacts.md` -- index genere du referentiel ForensicArtifacts + mapping signaux <-> artefacts
+- `catalogue/dfiq.md` -- index genere du corpus DFIQ + mapping scenarios <-> types d'affaire
+
+---
+
+## Referentiels amont embarques
+
+Deux referentiels tiers sont telecharges et bakes dans l'image a chaque build
+(`doctor fix`, phase en-ligne), jamais references a l'execution et jamais edits :
+
+| Referentiel | Contenu | Usage kit |
+|-------------|---------|-----------|
+| ForensicArtifacts (Apache-2.0) | definitions de collecte (fichiers, registre, WMI) par plateforme | rapprochement automatique a l'ingestion (champ `artefacts` du manifest), expansion -> chemins + outils, vocabulaire standard des rapports |
+| DFIQ - Google (Apache-2.0) | scenarios -> facets -> questions d'investigation (+ approches, tags MITRE) | structure de l'investigation (triage, phase 4), resolution croisee vers les artefacts, tableau des questions dans le rapport |
+
+- Outil unique : `scripts/referentiels.py` (execution via `dt`, in-image) - competence `skills/artefacts.md` et `skills/investigation.md`
+- Tracabilite : versions bakes dans `/referentiels/traces/` (in-image), consignees dans le champ `referentiels` du manifest et le journal d'affaire
+- Integrite : MANIFEST.sha256 par referentiel, verifie par `doctor test` et `referentiels.py check`
+- Definitions kit : `referentiels-kit/` (formats amont, prefixes dedies) - l'amont n'est jamais modifie
+- Mise a jour : automatique a chaque build ; reproductibilite stricte par bundle air-gap (`docker save`)
 
 ---
 
@@ -168,6 +190,11 @@ A chaque debut de session (via `./agent.sh` ou lancement direct) :
      /analyse chemin/vers/collection
      ```
      puis demande son intention (nouvelle analyse, reprise d'affaire, mode guidance, autre)
+
+A l'appel de `/analyse` : apres la creation d'affaire, demande a l'analyste s'il a du
+contexte a partager sur l'incident (question ouverte, relances ciblees si apport,
+non bloquant si rien) - consigne dans le manifest (section `contexte`) et journalise.
+Cf. la commande `.opencode/commands/analyse.md`.
 
 N'attends pas que l'analyste demande la verification : elle fait partie de l'accueil. Si `doctor` signale des problemes corretables, propose un `fix` avant de continuer.
 

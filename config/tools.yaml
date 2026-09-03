@@ -61,6 +61,19 @@ imports:
   regipy: "parsing des ruches de registre Windows (6.3.0)"
   evtx: "parsing des journaux evenements Windows, bindings omerbenamram (0.12.1)"
   Evtx: "parsing alternatif des journaux evtx, williballenthin (0.8.1)"
+  artifacts: "lecture des definitions d'artefacts ForensicArtifacts (version au build)"
+
+# Referentiels amont telecharges et bakes dans l'image a chaque build (doctor fix)
+referentiels:
+  mode: build                # telechargement au build, aucune reference a l'execution
+  chemin_image: /referentiels
+  traces_image: /referentiels/traces
+  vieillissement_jours: 30   # doctor check alerte au-dela de ce seuil d'age
+  sources:
+    artifacts: "https://github.com/ForensicArtifacts/artifacts (release la plus recente au build)"
+    dfiq: "https://github.com/google/dfiq (branche main au build)"
+  customs:
+    chemin_depot: referentiels-kit   # espaces kit-custom, montes en ro par dt
 
 regles:
   source: catalogue/  # catalogues de signaux faibles

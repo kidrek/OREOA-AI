@@ -6,6 +6,24 @@ affaire:
   date_creation: "2026-01-01"
   statut: ouverte
 
+# Contexte de l'affaire - renseigne a l'ouverture via /analyse (intake analyste).
+# Alimente le triage (type d'affaire, hypotheses) et la section "Contexte de l'affaire"
+# du rapport. Laisse vide si aucun contexte fourni (journalise alors dans journal.md).
+contexte:
+  description: ""
+  declarant: ""
+  date_signalement: ""
+  systemes_concernes: []
+  periode_suspecte: { debut: "", fin: "" }
+  mesures_deja_prises: []
+  contraintes: []
+
+# Referentiels amont utilises - renseigne automatiquement par scripts/referentiels.py
+# (rapprochement artefacts a l'ingestion). Versions bakes dans l'image au build.
+# referentiels:
+#   artefacts: { source: "...", version: "...", date_build: "..." }
+#   dfiq: { source: "...", commit: "...", date_build: "..." }
+
 collections: []
 # Chaque collection importee par scripts/ingest.py est enregistree ici :
 #
@@ -16,3 +34,4 @@ collections: []
 #   sha256: "<hash>"
 #   date_import: "2026-01-01T00:00:00"
 #   description: "Journal Security du serveur web"
+#   artefacts: ["WindowsEventLogs"]   # rapprochement automatique (referentiel embarque)

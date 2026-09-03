@@ -35,14 +35,21 @@ if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
 fi
 
 cd "$KIT_DIR"
-MOUNTS=(-v "$(pwd)/tests:/tests:ro")
+MOUNTS=(-v "$(pwd)/tests:/tests:ro"
+        -v "$(pwd)/scripts:/work/scripts:ro"
+        -v "$(pwd)/catalogue:/work/catalogue")
+if [[ -d "referentiels-kit" ]]; then
+  MOUNTS+=(-v "$(pwd)/referentiels-kit:/referentiels-kit:ro")
+fi
 if [[ -n "$CASE_ID" ]]; then
   CASE_DIR="cases/$CASE_ID"
   [[ -d "$CASE_DIR" ]] || { echo "Erreur : affaire inconnue : $CASE_DIR" >&2; exit 1; }
+  [[ -f "$CASE_DIR/manifest.yaml" ]] || printf 'affaire:\n  id: "%s"\ncollections: []\n' "$CASE_ID" > "$CASE_DIR/manifest.yaml"
   MOUNTS+=(
     -v "$(pwd)/$CASE_DIR/00_evidence:/affaires/00_evidence:ro"
     -v "$(pwd)/$CASE_DIR/01_work:/affaires/01_work"
     -v "$(pwd)/$CASE_DIR/02_analysis:/affaires/02_analysis"
+    -v "$(pwd)/$CASE_DIR/manifest.yaml:/affaires/manifest.yaml"
     -w /affaires
   )
 else

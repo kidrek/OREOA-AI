@@ -11,6 +11,7 @@ Pour chaque collection :
 """
 import hashlib
 import shutil
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -20,6 +21,8 @@ try:
 except ImportError:
     print("Erreur : module pyyaml requis (pip install pyyaml).")
     sys.exit(1)
+
+SCRIPTS = Path(__file__).resolve().parent
 
 # Types d'artefacts reconnus : (extension, description, famille)
 # Cles en minuscules : detecter_type() normalise la casse de l'extension.
@@ -72,6 +75,30 @@ def copier_collection(source: Path, dest: Path) -> None:
         shutil.copy2(source, dest)
 
 
+def rapprocher_artefacts(affaire: Path) -> None:
+    """Rapproche les collections des definitions d'artefacts (referentiel in-image).
+
+    Execution conteneurisee via dt (scripts/referentiels.py). Non bloquant :
+    en l'absence d'image, le manifest reste sans champ artefacts (doctor check
+    signale l'image absente).
+    """
+    cmd = [str(SCRIPTS / "dt"), "-c", affaire.name, "python3",
+           "/work/scripts/referentiels.py", "artefacts", "match",
+           "/affaires/manifest.yaml"]
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    except (OSError, subprocess.TimeoutExpired):
+        print("[warn] rapprochement artefacts non effectue (dt indisponible ou delai depasse)")
+        return
+    if out.returncode == 0:
+        for ligne in out.stdout.splitlines():
+            if ligne.startswith(("  ", "[artefacts match] manifest")):
+                print("  " + ligne.strip())
+    else:
+        print(f"[warn] rapprochement artefacts en echec : "
+              f"{(out.stderr or out.stdout).strip().splitlines()[-1][:100] if (out.stderr or out.stdout).strip() else 'retour ' + str(out.returncode)}")
+
+
 def main():
     if len(sys.argv) != 3:
         print(__doc__)
@@ -103,6 +130,7 @@ def main():
     manifest.write_text(yaml.safe_dump(donnees, sort_keys=False, allow_unicode=True))
 
     print(f"Collection {source.name} importee : sha256={entree['sha256'][:16]}...")
+    rapprocher_artefacts(affaire)
     return 0
 
 

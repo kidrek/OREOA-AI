@@ -45,3 +45,18 @@ Conformite : le kit OREOA-AI est publie publiquement (depot sous AGPL-3.0), ce q
 ## Distribution des bundles air-gap
 
 Tout bundle d'image distribue (media amovible, partage) doit etre accompagne de ce fichier NOTICE et de `docs/licences-image.txt` (distribution binaire = obligation de mentions de licences ; les sources GPL sont disponibles via les miroirs Debian et les depots amont cites ci-dessus).
+
+## Referentiels amont bakes dans l'image (donnees, licences propres)
+
+| Composant | Version | Licence | Source |
+|-----------|---------|---------|--------|
+| ForensicArtifacts (definitions d'artefacts) | release au build | Apache-2.0 | https://github.com/ForensicArtifacts/artifacts |
+| DFIQ (scenarios, facets, questions d'investigation) | branche main au build | Apache-2.0 | https://github.com/google/dfiq |
+
+Ces referentiels sont telecharges a chaque build de l'image (`scripts/fetch_referentiels.py`),
+bakes avec leur LICENSE amont et leur manifest d'integrite (`/referentiels/`), et traces
+(`/referentiels/traces/`). Ils ne sont ni modifies ni redistribues sous une autre licence :
+agregation simple, la licence amont s'applique aux donnees. Provenance et cycle de vie :
+`docs/REFERENTIELS.md`. L'inventaire factuel des empreintes est archive dans
+`docs/licences-image.txt` pour les paquets Debian ; les empreintes des referentiels sont
+dans les traces in-image et le `MANIFEST.sha256` embarque.

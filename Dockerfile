@@ -51,6 +51,16 @@ RUN suricata-update update --no-test \
     && echo "nombre_regles: $(grep -cE "^(alert|drop|pass|reject) " /var/lib/suricata/rules/suricata.rules)" >> /etc/suricata/kit/regles-trace.txt \
     && echo "date_build: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> /etc/suricata/kit/regles-trace.txt'
 
+# Referentiels amont (ForensicArtifacts + DFIQ) telecharges a chaque build.
+# ARG REFERENTIELS_DATE est passe par doctor fix a chaque build : il entre dans la
+# cle de cache de cette couche (echo) et l'invalide, garantissant la fraicheur des
+# referentiels sans reconstruire les couches apt/pip/suricata (placeholders ci-dessus).
+ARG REFERENTIELS_DATE
+COPY scripts/fetch_referentiels.py /tmp/fetch_referentiels.py
+RUN echo "referentiels_date: ${REFERENTIELS_DATE}" \
+ && python3 /tmp/fetch_referentiels.py /referentiels \
+ && rm /tmp/fetch_referentiels.py
+
 # Utilisateur non root - les fichiers produits appartiennent a l'analyste
 RUN useradd -m -u 1000 analyste
 USER analyste

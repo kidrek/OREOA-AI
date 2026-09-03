@@ -9,6 +9,7 @@ Usage :
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 try:
@@ -38,12 +39,20 @@ STRUCTURE = [
     ("config/suricata/threshold.config", True, "fichier"),
     ("scripts/ingest.py", True, "fichier"),
     ("scripts/bootstrap_prompt.py", True, "fichier"),
+    ("scripts/fetch_referentiels.py", True, "fichier"),
+    ("scripts/referentiels.py", True, "fichier"),
     ("docs/NOTICE", True, "fichier"),
     ("docs/GUIDE-UTILISATION.md", True, "fichier"),
+    ("docs/REFERENTIELS.md", True, "fichier"),
+    ("referentiels-kit", True, "dossier"),
+    ("referentiels-kit/artifacts", True, "dossier"),
+    ("referentiels-kit/dfiq", True, "dossier"),
     ("skills", True, "dossier"),
     ("methodologie", True, "dossier"),
     ("catalogue", True, "dossier"),
     ("catalogue/reseau.md", True, "fichier"),
+    ("catalogue/artefacts.md", True, "fichier"),
+    ("catalogue/dfiq.md", True, "fichier"),
     ("connaissances", True, "dossier"),
     ("connaissances/reseau", True, "dossier"),
     ("templates", True, "dossier"),
@@ -93,6 +102,28 @@ def image_info(ref):
         identifiant, taille = out.stdout.strip().split("|")
         return identifiant, int(taille)
     return None, None
+
+
+def traces_referentiels(ref):
+    """Versions des referentiels amont bakees in-image (None si absentes)."""
+    out = docker_cmd(["run", "--rm", "--network", "none", ref,
+                      "sh", "-c", "cat /referentiels/traces/*.txt 2>/dev/null"], timeout=60)
+    if out.returncode != 0 or not out.stdout.strip():
+        return None
+    versions, courant = {}, None
+    for ligne in out.stdout.splitlines():
+        ligne = ligne.strip()
+        if ligne.startswith("# Trace referentiel"):
+            courant = ligne.replace("# Trace referentiel", "").strip()
+            versions[courant] = {}
+        elif courant and ":" in ligne:
+            cle, valeur = ligne.split(":", 1)
+            versions[courant][cle.strip()] = valeur.strip()
+    return versions or None
+
+
+def version_courte(info):
+    return info.get("release") or str(info.get("commit", ""))[:12] or "?"
 
 
 def espace_libre(chemin):
@@ -174,6 +205,27 @@ def run_check():
         identifiant, taille = image_info(ref)
         if identifiant:
             r.ok.append((f"image {ref}", f"presente ({taille_lisible(taille)})"))
+            # Referentiels amont bakes in-image (fraicheur)
+            versions = traces_referentiels(ref)
+            seuil_age = cfg.get("referentiels", {}).get("vieillissement_jours", 30)
+            if not versions:
+                r.warn.append(("referentiels amont",
+                               "absents de l'image - rafraichir avec : python3 scripts/doctor.py fix"))
+            else:
+                for nom, info in versions.items():
+                    age_txt = ""
+                    try:
+                        age = (datetime.now(timezone.utc)
+                               - datetime.fromisoformat(info.get("date_build", ""))).days
+                        age_txt = f", ages de {age} j"
+                        if age >= seuil_age:
+                            r.warn.append((f"referentiel {nom}",
+                                           f"{version_courte(info)}{age_txt} - seuil {seuil_age} j depasse, "
+                                           "rafraichir : python3 scripts/doctor.py fix"))
+                            continue
+                    except ValueError:
+                        pass
+                    r.ok.append((f"referentiel {nom}", f"{version_courte(info)}{age_txt}"))
         else:
             r.warn.append((f"image {ref}", "absente - provisioner avec : python3 scripts/doctor.py fix"))
             if bundle.exists():
@@ -214,10 +266,9 @@ def run_fix():
 
     identifiant, _ = image_info(ref)
     if identifiant:
-        print(f"\nImage {ref} deja presente.")
-        print(f"  digest : {identifiant}")
-        print("  Journalisation conseillee : consigner ce digest dans le journal de l'affaire en cours.")
-        return 0
+        print(f"\nImage {ref} presente : rebuild systematique "
+              "(rafraichissement garanti des referentiels amont).")
+        print("  Cache preserve : seules les couches referentiels et LABEL se reconstruisent.")
 
     ok, detail = etat_daemon()
     if not ok:
@@ -251,9 +302,11 @@ def run_fix():
         print(f"Chargement du bundle air-gap : {bundle}")
         out = docker_cmd(["load", "-i", str(bundle)], timeout=900)
     else:
+        horodatage = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         print(f"Construction de l'image depuis {cfg['image']['dockerfile']} "
-              f"(premier build possible : plusieurs minutes)...")
-        out = subprocess.run(["docker", "build", "-t", ref, str(KIT)],
+              f"(referentiels amont rafraichis au build : {horodatage})...")
+        out = subprocess.run(["docker", "build", "--build-arg",
+                              f"REFERENTIELS_DATE={horodatage}", "-t", ref, str(KIT)],
                              capture_output=True, text=True)
     if out.returncode != 0:
         print(f"\nProvisioning en echec :")
@@ -266,7 +319,14 @@ def run_fix():
         return 1
     print(f"\nImage {ref} provisionnee ({taille_lisible(taille)}).")
     print(f"  digest : {identifiant}")
-    print("  Journalisation conseillee : consigner ce digest dans le journal de l'affaire en cours.")
+    versions = traces_referentiels(ref)
+    if versions:
+        for nom, info in versions.items():
+            print(f"  referentiel {nom} : {version_courte(info)}")
+    else:
+        print("  [warn] referentiels amont absents de l'image (verifier la couche Dockerfile)")
+    print("  Journalisation conseillee : consigner ce digest et les versions de referentiels "
+          "dans le journal de l'affaire en cours.")
     return 0
 
 
@@ -316,6 +376,22 @@ def run_test():
         else:
             echecs += 1
             print("  [fail] fichiers copyright des paquets Debian absents")
+
+        # Referentiels amont : integrite des empreintes bakees + corpus present
+        cmd = ("test -f /referentiels/traces/artifacts.txt"
+               " && test -f /referentiels/traces/dfiq.txt"
+               " && cd /referentiels/artifacts && sha256sum -c MANIFEST.sha256 --quiet"
+               " && cd /referentiels/dfiq && sha256sum -c MANIFEST.sha256 --quiet"
+               " && n=$(find /referentiels/artifacts/data -name '*.yaml' | wc -l)"
+               " && d=$(find /referentiels/dfiq/data -name '*.yaml' | wc -l)"
+               " && test $n -ge 10 && test $d -ge 100"
+               " && echo \"referentiels integres (artifacts=$n fichiers, dfiq=$d fichiers)\"")
+        out = docker_cmd(["run", "--rm", "--network", "none", ref, "sh", "-c", cmd], timeout=300)
+        if out.returncode == 0:
+            print(f"  [ok]   referentiels amont -- {out.stdout.strip().splitlines()[-1]}")
+        else:
+            echecs += 1
+            print(f"  [fail] referentiels amont -- {(out.stderr or out.stdout).strip()[:70]}")
 
     print("\nTest de bout en bout (scaffolding, ingestion, manifest, preuves, conteneur) :")
     script = KIT / "tests" / "e2e.sh"

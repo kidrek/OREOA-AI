@@ -16,7 +16,7 @@ Produire et tenir la timeline consolidee de l'affaire : fusion horodatee des eve
 
 ## Regles
 
-1. **Un evenement = une ligne** : horodatage (UTC si possible), actif, description, source complete (collection + artefact + empreinte)
+1. **Un evenement = une ligne** : horodatage (UTC si possible), actif, description, source complete (collection + artefact + empreinte) - l'artefact cite le nom standard du referentiel (champ `artefacts` du manifest)
 2. **Normalisation horaire** : toutes les horloges converties en un seul referentiel ; les decalages d'horloge observes sont documentes, jamais corrigees silencieusement
 3. **Periodes couvertes explicites** : la timeline porte les bornes de chaque collection (debut/fin) ; une periode sans source est un ecart, pas un silence innocents
 4. **Grain honnete** : un evenement RAM (instantane) ne se melange pas a un evenement journal (continu) sans mention du grain

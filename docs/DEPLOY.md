@@ -95,7 +95,8 @@ Comportements cles :
 
 - **Barriere d'espace disque** : `fix` refuse toute ecriture si l'espace libre sur la partition de stockage Docker est inferieur aux seuils (3 Go build / 2 Go chargement de bundle)
 - **Bundle air-gap** : si `tools/oreoa-ai-tools-<tag>.tar.gz` est present, `fix` le charge (`docker load`) sans reseau
-- **Qualification** : `test` verifie chaque outil pinné, les bibliotheques, la presence des fichiers copyright, et execute le test de bout en bout. Verdict `OK` = laptop operationnel
+- **Referentiels amont au build** : en build en-ligne, `fix` reconstruit systematiquement l'image (cache preserve) pour rafraichir les referentiels embarques (ForensicArtifacts release la plus recente + DFIQ main) - versions affichees apres le build, details dans [REFERENTIELS.md](REFERENTIELS.md)
+- **Qualification** : `test` verifie chaque outil pinné, les bibliotheques, la presence des fichiers copyright, l'integrite des referentiels embarques, et execute le test de bout en bout. Verdict `OK` = laptop operationnel
 
 ## 5. Configuration LLM
 

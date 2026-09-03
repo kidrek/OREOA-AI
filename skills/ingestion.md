@@ -14,9 +14,13 @@ Importer les collections de donnees dans le dossier d'affaire : scan, detection 
 
 1. Copier la collection dans `00_evidence/originals/` (original, jamais modifie)
 2. Calculer le SHA256 de la collection importee
-3. Determinter les structures presentes (journaux, formats, periodes couvertes)
+3. Determiner les structures presentes (journaux, formats, periodes couvertes)
 4. Enregistrer dans le manifest : nom, type, chemin, empreinte, description
-5. Journaliser l'import dans `journal.md` (section Phase 0)
+5. Rapprochement automatique des artefacts : `scripts/ingest.py` appelle
+   `dt python3 /work/scripts/referentiels.py artefacts match` - chaque collection
+   recoit le champ `artefacts` (definitions ForensicArtifacts du referentiel bake)
+   et le manifest recoit le champ `referentiels` (versions utilisees, tracabilite)
+6. Journaliser l'import dans `journal.md` (section Phase 0)
 
 ## Verifications de sortie
 
@@ -24,6 +28,7 @@ Importer les collections de donnees dans le dossier d'affaire : scan, detection 
 - [ ] SHA256 calcule et consigne
 - [ ] Type detecte ou marque inconnu
 - [ ] Structures presentes identifiees
+- [ ] Rapprochement artefacts effectue (ou ecart journalise si image absente)
 - [ ] Journal mis a jour
 
 ## Types d'artefacts reconnus

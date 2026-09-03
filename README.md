@@ -38,7 +38,7 @@ puis dans l'agent :
 /analyse chemin/vers/ta-collection
 ```
 
-L'agent verifie lui-meme la sante des outils a chaque lancement (doctor check + test), guide le deploiement si quelque chose manque (`/deploy`), et presente le guide d'utilisation (`docs/GUIDE-UTILISATION.md`). L'alternative manuelle pour un humain : `./install.sh check|fix|test` - protocole complet dans [docs/DEPLOY.md](docs/DEPLOY.md).
+L'agent verifie lui-meme la sante des outils a chaque lancement (doctor check + test), guide le deploiement si quelque chose manque (`/deploy`), et presente le guide d'utilisation (`docs/GUIDE-UTILISATION.md`). A l'ouverture d'une affaire via `/analyse`, il demande d'abord a l'analyste s'il a du contexte a partager sur l'incident (question ouverte, non bloquante) - ce contexte alimente le triage et le rapport. L'alternative manuelle pour un humain : `./install.sh check|fix|test` - protocole complet dans [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Prerequis
 
@@ -93,7 +93,8 @@ L'agent lit `AGENTS.md`, charge les competences, execute la methodologie, journa
 Deux couches dans un depot unique :
 
 - **Couche hote (legere)** : scanner, verificateur d'integrite, wrappers - fonctionne sur tout laptop equipe de Docker
-- **Couche outils (conteneurisee)** : image `oreoa-ai-tools:1.1.0` - plaso (log2timeline, psort), volatility3, The Sleuth Kit (fls, icat), tshark, suricata (ET Open trie + regles kit), yara, regipy, evtx - le tout pine par version, construit depuis le `Dockerfile` du kit
+- **Couche outils (conteneurisee)** : image `oreoa-ai-tools:1.1.0` - plaso (log2timeline, psort), volatility3, The Sleuth Kit (fls, icat), tshark, suricata (ET Open trie + regles kit), yara, regipy, evtx, bibliotheque artifacts - le tout pine par version, construit depuis le `Dockerfile` du kit
+- **Referentiels amont bakes dans l'image a chaque build** : ForensicArtifacts (definitions de collecte, Apache-2.0) et DFIQ (scenarios/facets/questions d'investigation, Apache-2.0) - telecharges par le `Dockerfile` (ARG cache-bust, verification SHA256, traces bakees), exploitables via `scripts/referentiels.py` (voir [docs/REFERENTIELS.md](docs/REFERENTIELS.md))
 
 Regles d'execution : conteneurs sans reseau (`--network none`), `00_evidence` monte en lecture seule, sortie sous l'identite de l'analyste (pas de root), tous les appels passent par le wrapper `scripts/dt`.
 
@@ -115,11 +116,11 @@ Deploiement multi-laptops :
 
 | Phase | Competence | Produit |
 |-------|-----------|---------|
-| 0. Import | `ingestion` | collections scannees, types, SHA256, manifest.yaml |
-| 1. Triage | `triage` | type d'affaire, collection principale, hypotheses |
+| 0. Import | `ingestion` | collections scannees, types, SHA256, rapprochement artefacts, manifest.yaml |
+| 1. Triage | `triage` | contexte analyste, type d'affaire, scenario DFIQ, collection principale, hypotheses |
 | 2. Analyse initiale | `analyse` | actifs affectes, chronologie initiale |
 | 3. Correlation | `analyse` | timeline consolidee, croisements multi-collections |
-| 4. Investigation | `analyse` | hypotheses testees, ecarts explores |
+| 4. Investigation | `analyse` + `investigation` | hypotheses et questions DFIQ testees, ecarts explores |
 | 5. Observables | `analyse` | tableau des IOC avec niveau de confiance |
 | 6. Rapport | `reporting` | rapport final : full, executive ou technique |
 
@@ -164,13 +165,15 @@ Chaque signal teste en investigation est enregistre (detecte / non detecte / non
 
 | Module | Etat |
 |--------|------|
-| Ingestion (detection de type, SHA256, manifest) | operationnel |
-| Verificateur d'integrite (doctor check / fix / test) | operationnel |
-| Chaine d'outils conteneurisee (8 outils + 3 bibliotheques) | operationnel |
+| Ingestion (detection de type, SHA256, rapprochement artefacts, manifest) | operationnel |
+| Verificateur d'integrite (doctor check / fix / test, referentiels) | operationnel |
+| Chaine d'outils conteneurisee (8 outils + 4 bibliotheques) | operationnel |
 | Catalogue de signaux faibles (46 signaux + 7 chaines) | operationnel |
 | Memoire volatile (volatility3 outille, catalogue SF-M, connaissances dediees) | operationnel |
 | Reseau (tshark + suricata offline, triage ET Open, catalogue SF-R) | operationnel |
-| Competences d'agent (5 skills) | operationnelles |
+| Referentiels amont (ForensicArtifacts + DFIQ bakes au build, moteur referentiels.py) | operationnel |
+| Intake de contexte a l'ouverture d'affaire (/analyse) | operationnel |
+| Competences d'agent (9 skills) | operationnelles |
 | Templates de livrables (5 templates) | operationnels |
 | Deploiement multi-laptops (profils online / air-gap) | operationnel |
 
@@ -178,9 +181,12 @@ Chaque signal teste en investigation est enregistre (detecte / non detecte / non
 
 - **v1.1 Memoire volatile** : livree - exploitation volatility3 outillee en affaire (wrapper `dt`), catalogue SF-M, connaissances dediees, acquisition RAM en guidance (deja documentee)
 - **v1.2 Reseau** : livree - tshark + suricata offline (ET Open trie + regles kit), catalogue SF-R, echantillons pcap synthetiques, triage validable en E2E
-- **v2 Disque complet** : acquisition image, montage, The Sleuth Kit et plaso sur images E01/AFF4/raw
-- **v2.1 Cloud et conteneurs** : journaux cloud, artefacts d'orchestrateurs
-- **v2.2 Navigateurs** : historiques, caches, sessions
+- **v1.3 Referentiels amont** : livree - ForensicArtifacts + DFIQ telecharges et bakes a chaque build, moteur `referentiels.py` (rapprochement, expansion, plans DFIQ), intake de contexte a l'ouverture d'affaire
+- **v2.0 Disque complet** : acquisition image (E01/AFF4/raw), The Sleuth Kit et plaso sur images, collection par artefacts (`--artifact_filters`)
+- **v2.1 Navigateurs** : historiques, caches, sessions (adosse a webbrowser.yaml + DFIQ Q1020)
+- **v2.2 Conteneurs** : docker/containerd/kubernetes.yaml, journaux d'orchestrateurs
+- **v2.3 Cloud** : cloud_services.yaml (cadre DFIQ S1005), gaps documentes
+- **Mobile** : hors referentiels amont (pas de definitions Android/iOS) - artefacts kit dedies a produire
 
 ## Licences
 

@@ -91,9 +91,23 @@ Les conclusions fortes reposent sur des chaines de signaux, pas sur des signaux 
 | R-08 | SF-M-006 (connexion externe en RAM) + SF-R-001/SF-R-002 (beaconing et DNS dans la capture) | processus et canal C2 rattaches au meme flux |
 | R-09 | SF-R-004 ou SF-R-009 (exfiltration) + SF-W-031/SF-M-007 (dump de credentials) | sequence vol de credentials puis exfiltration, rotation imperative
 
+## Rattachement aux referentiels amont
+
+Les referentiels bakes dans l'image structurent la trace de chaque maillon :
+
+- **ForensicArtifacts** : le champ `artefacts` du manifest (rapprochement automatique a
+  l'ingestion) rattache chaque collection a ses definitions - les rapports citent ces
+  noms standard (mapping signaux <-> artefacts : catalogue/artefacts.md)
+- **DFIQ** : le scenario choisi au triage fournit les questions d'investigation ; les
+  chaines ci-dessus repondent typiquement aux facets de persistance (S1007), de mouvement
+  lateral (S1008), d'exfiltration (S1001) et de DNS/C2 (S1003) - mapping :
+  catalogue/dfiq.md
+- Toute chaine cite : signal SF + artefact referentiel + collection + hash
+
 ## Regles d'usage
 
 1. Un signal isole de severite elevee declenche la verification des chaines possibles, jamais une conclusion immediate
 2. Une chaine complete avec sources multiples fonde une conclusion de rapport (chaque maillon cite)
 3. Un maillon manquant est documente comme ecart, la conclusion reste conditionnelle
 4. Les faux positifs de chaque signal sont verifies avant toute correlation
+5. Le rapprochement artefacts du manifest (`artefacts`) et le scenario DFIQ (triage) structurent la citation de chaque maillon dans le rapport

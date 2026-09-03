@@ -33,4 +33,5 @@ Le chemin `tools/oreoa-ai-tools-<tag>.tar.gz` est la convention attendue par `do
 2. Les conteneurs s'executent avec `--network none` (regle par defaut du kit)
 3. Les echanges d'affaires s'effectuent par media amovible, avec empreintes SHA256 verifiees a l'import
 4. Le bundle outils est reconstruit a chaque montee de version du kit, jamais patche a la main
-5. **Tout bundle distribue (media amovible, partage) doit etre accompagne de `docs/NOTICE` et `docs/licences-image.txt`** - distribution binaire = obligation de mention des licences tierces embarquees
+5. Le bundle embarque les referentiels amont (ForensicArtifacts + DFIQ) bakes au build - la mise a jour du referentiel passe par un nouveau bundle, jamais par un patch local
+6. **Tout bundle distribue (media amovible, partage) doit etre accompagne de `docs/NOTICE` et `docs/licences-image.txt`** - distribution binaire = obligation de mention des licences tierces embarquees

@@ -17,7 +17,7 @@ docker build -t oreoa-ai-tools:1.1.0 .
 docker pull <registre-interne>/oreoa-ai-tools:1.1.0
 ```
 
-Note : le build embarque le ruleset suricata (ET Open snapshot trie + regles kit) - l'empreinte du ruleset est bakee dans l'image (`/etc/suricata/kit/regles-trace.txt`).
+Note : le build embarque le ruleset suricata (ET Open snapshot trie + regles kit) - l'empreinte du ruleset est bakee dans l'image (`/etc/suricata/kit/regles-trace.txt`). Il embarque aussi les referentiels amont (ForensicArtifacts release la plus recente + DFIQ branche main) - versions et empreintes bakees dans `/referentiels/traces/`. `doctor fix` rebuild systematiquement pour garantir leur fraicheur (cache preserve).
 
 ## Verification
 

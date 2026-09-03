@@ -1,37 +1,38 @@
-# Template manifest.yaml - inventaire des collections d'une affaire
+# Template manifest.yaml - case collection inventory (schema EN, kit contract)
 
-affaire:
+case:
   id: "CASE-2026-0000"
-  nom: "Nom de l'affaire"
-  date_creation: "2026-01-01"
-  statut: ouverte
+  name: "Case name"
+  created: "2026-01-01"
+  status: open
+  language: en            # language of deliverables and journal (en | fr)
 
-# Contexte de l'affaire - renseigne a l'ouverture via /analyse (intake analyste).
-# Alimente le triage (type d'affaire, hypotheses) et la section "Contexte de l'affaire"
-# du rapport. Laisse vide si aucun contexte fourni (journalise alors dans journal.md).
-contexte:
+# Analyst-provided incident context - filled at case opening via /case (or /analyse).
+# Feeds triage (case type, hypotheses) and the "Case background" report section.
+# Left empty if no context provided (journalized in journal.md).
+context:
   description: ""
-  declarant: ""
-  date_signalement: ""
-  systemes_concernes: []
-  periode_suspecte: { debut: "", fin: "" }
-  mesures_deja_prises: []
-  contraintes: []
+  reported_by: ""
+  reported_at: ""
+  systems: []
+  suspected_period: { start: "", end: "" }
+  actions_taken: []
+  constraints: []
 
-# Referentiels amont utilises - renseigne automatiquement par scripts/referentiels.py
-# (rapprochement artefacts a l'ingestion). Versions bakes dans l'image au build.
-# referentiels:
-#   artefacts: { source: "...", version: "...", date_build: "..." }
-#   dfiq: { source: "...", commit: "...", date_build: "..." }
+# Upstream referentials in use - filled automatically by scripts/referentiels.py
+# (artifact matching at ingestion). Versions baked into the image at build time.
+# referentials:
+#   artifacts: { source: "...", version: "...", built_at: "..." }
+#   dfiq: { source: "...", commit: "...", built_at: "..." }
 
 collections: []
-# Chaque collection importee par scripts/ingest.py est enregistree ici :
+# Every collection ingested by scripts/ingest.py is recorded here:
 #
-# - nom: "Security.evtx"
+# - name: "Security.evtx"
 #   type: ".evtx"
-#   chemin_original: "/chemin/vers/Security.evtx"
-#   copie: "00_evidence/originals/Security.evtx"
+#   original_path: "/path/to/Security.evtx"       # or "analyst deposit - <declared source>"
+#   copy: "00_evidence/originals/Security.evtx"
 #   sha256: "<hash>"
-#   date_import: "2026-01-01T00:00:00"
-#   description: "Journal Security du serveur web"
-#   artefacts: ["WindowsEventLogs"]   # rapprochement automatique (referentiel embarque)
+#   imported_at: "2026-01-01T00:00:00"
+#   description: "Web server Security event log"
+#   artifacts: ["WindowsEventLogs"]               # automatic matching (baked referential)

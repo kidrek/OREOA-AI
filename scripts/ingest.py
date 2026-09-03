@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""ingest.py - scan, typage et empreinte des collections d'une affaire.
+"""ingest.py - collection ingestion: scan, typing, hashing, manifest.
 
-Usage :
-  python3 scripts/ingest.py <dossier_affaire> <chemin_collection>     # import d'une collection externe (copie)
-  python3 scripts/ingest.py <dossier_affaire> --scan [-p PROVENANCE]  # scan des depots dans 00_evidence/originals/
+Usage:
+  python3 scripts/ingest.py <case_dir> <collection_path>       # external import (copy)
+  python3 scripts/ingest.py <case_dir> --scan [-p PROVENANCE]  # scan analyst deposits in 00_evidence/originals/
 
-Modes :
-  - import externe : copie la collection vers 00_evidence/originals/, calcule le
-    SHA256 de la copie importee, met a jour le manifest, rapproche les artefacts
-  - scan des depots : parcourt 00_evidence/originals/ (depot de l'analyste),
-    importe (type, SHA256, manifest) tout element non encore enregistre, avec
-    provenance declaree ; reverifie l'integrite (SHA256) des elements deja
-    enregistres - toute derivation est une ALERTE d'integrite (code retour 2)
+Modes:
+  - external import: copies the collection to 00_evidence/originals/, hashes the
+    imported copy (SHA256), updates the manifest, matches referential artifacts
+  - deposit scan: walks 00_evidence/originals/ (analyst drop zone), ingests every
+    entry not yet recorded (type, SHA256, manifest) with declared provenance, and
+    re-verifies the integrity (SHA256) of recorded entries - any drift is an
+    INTEGRITY ALERT (exit code 2)
 """
 import argparse
 import hashlib
@@ -24,7 +24,7 @@ from pathlib import Path
 try:
     import yaml
 except ImportError:
-    print("Erreur : module pyyaml requis (pip install pyyaml).")
+    print("Error: pyyaml module required (pip install pyyaml).")
     sys.exit(1)
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -32,25 +32,25 @@ SCRIPTS = Path(__file__).resolve().parent
 # Types d'artefacts reconnus : (description, famille)
 # Cles en minuscules : detecter_type() normalise la casse de l'extension.
 TYPES = {
-    ".evtx": ("journal evenements Windows", "windows"),
-    ".evtx.json": ("journal evenements Windows (JSON)", "windows"),
-    ".reg": ("ruche registre exportee", "windows"),
-    ".pcap": ("capture reseau", "reseau"),
-    ".pcapng": ("capture reseau", "reseau"),
-    ".json": ("journal ou export JSON", "linux"),
-    ".log": ("journal texte", "linux"),
-    ".auth.log": ("journal authentification", "linux"),
-    ".syslog": ("journal syslog", "linux"),
-    ".wtm": ("wtmp/btmp (journal connexions)", "linux"),
-    ".txt": ("journal texte", "linux"),
-    ".zip": ("archive", "divers"),
-    ".tar.gz": ("archive", "divers"),
-    ".raw": ("dump memoire brut (raw)", "memoire"),
-    ".lime": ("dump memoire LiME/AVML", "memoire"),
-    ".mem": ("dump memoire brut", "memoire"),
-    ".dmp": ("dump memoire Windows (minidump/crash)", "memoire"),
-    ".e01": ("image disque EnCase", "disque"),
-    ".aff4": ("image disque AFF4", "disque"),
+    ".evtx": ("Windows event log", "windows"),
+    ".evtx.json": ("Windows event log (JSON)", "windows"),
+    ".reg": ("exported registry hive", "windows"),
+    ".pcap": ("network capture", "network"),
+    ".pcapng": ("network capture", "network"),
+    ".json": ("log or JSON export", "linux"),
+    ".log": ("text log", "linux"),
+    ".auth.log": ("authentication log", "linux"),
+    ".syslog": ("syslog log", "linux"),
+    ".wtm": ("wtmp/btmp (login log)", "linux"),
+    ".txt": ("text log", "linux"),
+    ".zip": ("archive", "misc"),
+    ".tar.gz": ("archive", "misc"),
+    ".raw": ("raw memory dump", "memory"),
+    ".lime": ("LiME/AVML memory dump", "memory"),
+    ".mem": ("raw memory dump", "memory"),
+    ".dmp": ("Windows memory dump (minidump/crash)", "memory"),
+    ".e01": ("EnCase disk image", "disk"),
+    ".aff4": ("AFF4 disk image", "disk"),
 }
 
 
@@ -77,7 +77,7 @@ def charger_manifest(affaire: Path) -> dict:
     manifest = affaire / "manifest.yaml"
     if manifest.exists():
         return yaml.safe_load(manifest.read_text())
-    return {"affaire": {"id": affaire.name}, "collections": []}
+    return {"case": {"id": affaire.name}, "collections": []}
 
 
 def ecrire_manifest(affaire: Path, donnees: dict) -> None:
@@ -93,21 +93,21 @@ def rapprocher_artefacts(affaire: Path) -> None:
     signale l'image absente).
     """
     cmd = [str(SCRIPTS / "dt"), "-c", affaire.name, "python3",
-           "/work/scripts/referentiels.py", "artefacts", "match",
+           "/work/scripts/referentiels.py", "artifacts", "match",
            "/affaires/manifest.yaml"]
     try:
         out = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     except (OSError, subprocess.TimeoutExpired):
-        print("[warn] rapprochement artefacts non effectue (dt indisponible ou delai depasse)")
+        print("[warn] artifact matching skipped (dt unavailable or timed out)")
         return
     if out.returncode == 0:
         for ligne in out.stdout.splitlines():
-            if ligne.startswith(("  ", "[artefacts match] manifest")):
+            if ligne.startswith(("  ", "[artifacts match] manifest")):
                 print("  " + ligne.strip())
     else:
         sortie = (out.stderr or out.stdout).strip()
-        print(f"[warn] rapprochement artefacts en echec : "
-              f"{sortie.splitlines()[-1][:100] if sortie else 'retour ' + str(out.returncode)}")
+        print(f"[warn] artifact matching failed: "
+              f"{sortie.splitlines()[-1][:100] if sortie else 'exit ' + str(out.returncode)}")
 
 
 def importer_copie(affaire: Path, source: Path) -> None:
@@ -121,75 +121,75 @@ def importer_copie(affaire: Path, source: Path) -> None:
         shutil.copy2(source, dest)
 
     entree = {
-        "nom": source.name,
+        "name": source.name,
         "type": detecter_type(source),
-        "chemin_original": str(source),
-        "copie": str(dest),
+        "original_path": str(source),
+        "copy": str(dest),
         "sha256": sha256_fichier(dest),
-        "date_import": datetime.now().isoformat(timespec="seconds"),
+        "imported_at": datetime.now().isoformat(timespec="seconds"),
     }
     donnees = charger_manifest(affaire)
     donnees.setdefault("collections", []).append(entree)
     ecrire_manifest(affaire, donnees)
 
-    print(f"Collection {source.name} importee : sha256={entree['sha256'][:16]}...")
+    print(f"Collection {source.name} imported: sha256={entree['sha256'][:16]}...")
     rapprocher_artefacts(affaire)
 
 
 def scan_depots(affaire: Path, provenance: str) -> int:
-    """Scan de 00_evidence/originals/ : imports nouveaux + integrite des enregistres."""
+    """Scan of 00_evidence/originals/: new imports + integrity of recorded entries."""
     originals = affaire / "00_evidence" / "originals"
     if not originals.is_dir():
-        print(f"Erreur : {originals} inexistant (affaire scaffoldee ?).")
+        print(f"Error: {originals} missing (case not scaffolded?).")
         return 1
     donnees = charger_manifest(affaire)
     collections = donnees.setdefault("collections", [])
-    enregistres = {c["nom"]: c for c in collections}
+    enregistres = {c["name"]: c for c in collections}
 
-    # 1. Integrite des elements deja enregistres
+    # 1. Integrity of already recorded entries
     alertes = 0
     for nom, entree in enregistres.items():
-        copie = Path(entree["copie"])
+        copie = Path(entree["copy"])
         if not copie.exists():
-            print(f"[ALERTE INTEGRITE] {nom} : element enregistre introuvable "
-                  f"({copie}) - ne pas continuer sans decision analyste")
+            print(f"[INTEGRITY ALERT] {nom}: recorded entry missing ({copie}) - "
+                  "do not proceed without an analyst decision")
             alertes += 1
             continue
         empreinte = sha256_fichier(copie)
         if empreinte != entree["sha256"]:
-            print(f"[ALERTE INTEGRITE] {nom} : empreinte deriver depuis l'import "
+            print(f"[INTEGRITY ALERT] {nom}: hash drifted since import "
                   f"({entree['sha256'][:16]}... -> {empreinte[:16]}...) - "
-                  "ne pas continuer sans decision analyste")
+                  "do not proceed without an analyst decision")
             alertes += 1
 
-    # 2. Import des depots non encore enregistres
-    depot_manuel = "depot manuel analyste" + (f" - {provenance}" if provenance else "")
+    # 2. Import of unrecorded deposits
+    depot = "analyst deposit" + (f" - {provenance}" if provenance else "")
     nouveaux = 0
     for element in sorted(originals.iterdir()):
         if element.name in enregistres:
             continue
         entree = {
-            "nom": element.name,
+            "name": element.name,
             "type": detecter_type(element),
-            "chemin_original": depot_manuel,
-            "copie": str(element),
+            "original_path": depot,
+            "copy": str(element),
             "sha256": sha256_fichier(element),
-            "date_import": datetime.now().isoformat(timespec="seconds"),
+            "imported_at": datetime.now().isoformat(timespec="seconds"),
         }
         collections.append(entree)
         nouveaux += 1
-        print(f"Depot importe : {element.name} ({entree['type']}, "
+        print(f"Deposit imported: {element.name} ({entree['type']}, "
               f"sha256={entree['sha256'][:16]}...)")
 
     if nouveaux:
         ecrire_manifest(affaire, donnees)
         rapprocher_artefacts(affaire)
 
-    print(f"[scan] {nouveaux} nouveau(x) depot(s) importe(s), "
-          f"{len(enregistres)} element(s) deja enregistre(s) verifies")
+    print(f"[scan] {nouveaux} new deposit(s) imported, "
+          f"{len(enregistres)} recorded entry(ies) verified")
     if alertes:
-        print(f"[scan] {alertes} ALERTE(S) D'INTEGRITE : journaliser et demander "
-              "la decision de l'analyste avant toute suite")
+        print(f"[scan] {alertes} INTEGRITY ALERT(S): journalize and ask the analyst "
+              "for a decision before anything else")
         return 2
     return 0
 
@@ -197,29 +197,29 @@ def scan_depots(affaire: Path, provenance: str) -> int:
 def main():
     parseur = argparse.ArgumentParser(description=__doc__,
                                       formatter_class=argparse.RawDescriptionHelpFormatter)
-    parseur.add_argument("dossier_affaire")
-    parseur.add_argument("collection", nargs="?", help="collection externe (mode copie)")
+    parseur.add_argument("case_dir")
+    parseur.add_argument("collection", nargs="?", help="external collection (copy mode)")
     parseur.add_argument("--scan", action="store_true",
-                         help="scan des depots de 00_evidence/originals/")
+                         help="scan analyst deposits in 00_evidence/originals/")
     parseur.add_argument("-p", "--provenance", default="",
-                         help="provenance declaree des depots (mode scan)")
+                         help="declared provenance of deposits (scan mode)")
     arguments = parseur.parse_args()
 
-    affaire = Path(arguments.dossier_affaire).resolve()
+    affaire = Path(arguments.case_dir).resolve()
     if not affaire.is_dir():
-        print("Erreur : dossier d'affaire introuvable.")
+        print("Error: case directory not found.")
         return 1
     if not arguments.scan and not arguments.collection:
-        parseur.error("fournir une collection (mode copie) ou --scan (mode depots)")
+        parseur.error("provide a collection (copy mode) or --scan (deposit mode)")
     if arguments.scan and arguments.collection:
-        parseur.error("--scan ne prend pas de collection : les depots sont deja dans originals/")
+        parseur.error("--scan takes no collection: deposits are already in originals/")
 
     if arguments.scan:
         return scan_depots(affaire, arguments.provenance)
 
     source = Path(arguments.collection).resolve()
     if not source.exists():
-        print("Erreur : collection introuvable.")
+        print("Error: collection not found.")
         return 1
     importer_copie(affaire, source)
     return 0

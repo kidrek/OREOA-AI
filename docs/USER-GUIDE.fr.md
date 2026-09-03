@@ -1,4 +1,6 @@
-# GUIDE-UTILISATION - mode d'emploi de l'analyste
+# GUIDE-UTILISATION (USER-GUIDE) - mode d'emploi de l'analyste
+
+Version francaise. Version anglaise : [USER-GUIDE.md](USER-GUIDE.md).
 
 Usage quotidien du kit OREOA-AI, une fois le deploiement termine. Le protocole d'installation est dans `docs/DEPLOY.md` ; ce document couvre ce que tu fais ensuite.
 
@@ -10,7 +12,7 @@ Lance ton outil agentique directement dans le dossier du kit :
 opencode        # ou claude, ou tout agent lisant AGENTS.md
 ```
 
-L'agent verifie automatiquement la sante des outils (doctor check + test) et t'accueille. Au premier lancement, il affiche le guide de demarrage (`docs/DEMARRAGE-RAPIDE.md`). Si quelque chose manque (image, modele), il te guide pas a pas sans que tu aies rien a demander. La connexion au modele LLM est geree par ton outil agentique lui-meme.
+L'agent verifie automatiquement la sante des outils (doctor check + test) et t'accueille. Au premier lancement, il affiche le guide de demarrage (`docs/QUICK-START.fr.md`). Si quelque chose manque (image, modele), il te guide pas a pas sans que tu aies rien a demander. La connexion au modele LLM est geree par ton outil agentique lui-meme.
 
 Ce que tu peux lui demander ensuite :
 
@@ -91,7 +93,7 @@ Les preuves ramenees sont depositees dans `00_evidence/` et l'investigation repr
 
 L'agent teste systematiquement les signaux du catalogue (`catalogue/windows.md`, `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`) et les chaines de correlation (`catalogue/correlation.md`). Le rapport inclut une annexe "signaux testes" (detecte / non detecte / non applicable + evidence) - la base de la reproducibilite de l'analyse.
 
-Deux referentiels amont sont embarques dans l'image a chaque build (details : [docs/REFERENTIELS.md](REFERENTIELS.md)) :
+Deux referentiels amont sont embarques dans l'image a chaque build (details : [docs/REFERENTIALS.fr.md](REFERENTIALS.fr.md)) :
 
 - **ForensicArtifacts** : chaque collection importee est rapprochee automatiquement des definitions de collecte standard (champ `artefacts` du manifest) - le vocabulaire des rapports est celui du referentiel
 - **DFIQ** : l'investigation est structuree en scenarios/facets/questions - le rapport trace chaque question (repondue, sourcee / sans donnees / non posee)

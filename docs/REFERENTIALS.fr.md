@@ -37,12 +37,12 @@ amont ne sont **jamais modifiees** ; les adaptations kit vont dans `referentiels
 ```bash
 python3 scripts/doctor.py check        # versions + age (seuil : config/tools.yaml)
 python3 scripts/doctor.py test         # integrite MANIFEST + corpus + traces
-./scripts/dt python3 /work/scripts/referentiels.py artefacts check   # integrite detaillee
+./scripts/dt python3 /work/scripts/referentiels.py artifacts check   # integrite detaillee
 ./scripts/dt python3 /work/scripts/referentiels.py dfiq check        # integrite + parentes
 ```
 
 Exploitation : competences `skills/artefacts.md` et `skills/investigation.md`,
-commandes `artefacts match|expand|index` et `dfiq arbre|plan|index`.
+commandes `artifacts match|expand|index` et `dfiq arbre|plan|index`.
 
 ## Mise a jour
 

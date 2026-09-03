@@ -72,6 +72,6 @@ Le manifest porte le rapprochement automatique des collections avec le referenti
 ForensicArtifacts (champ `artefacts`) et les versions utilisees (champ `referentiels`) :
 
 1. Citer les noms d'artefacts standard dans chaque source d'evenement (timeline, observables, conclusions)
-2. Resoudre un artefact en chemins et outils : `dt ... referentiels.py artefacts expand <NomArtefact>` (competence `skills/artefacts.md`)
+2. Resoudre un artefact en chemins et outils : `dt ... referentiels.py artifacts expand <NomArtefact>` (competence `skills/artefacts.md`)
 3. Structurer la phase 4 par les questions DFIQ du scenario choisi au triage : `dt ... referentiels.py dfiq plan <Q-id>` (competence `skills/investigation.md`)
 4. Les mappings signal <-> artefact et scenario <-> type d'affaire sont dans `catalogue/artefacts.md` et `catalogue/dfiq.md`

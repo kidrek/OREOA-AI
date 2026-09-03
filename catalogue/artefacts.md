@@ -8,10 +8,10 @@ du manifest d'affaire (consigne a l'ingestion).
 ## Usage (execution conteneurisee via dt)
 
 ```
-dt python3 /work/scripts/referentiels.py artefacts match  <manifest>   # rapprochement collections
-dt python3 /work/scripts/referentiels.py artefacts expand <NomArtefact> # sources resolues + outils
-dt python3 /work/scripts/referentiels.py artefacts index  /work/catalogue/artefacts.md  # regen index
-dt python3 /work/scripts/referentiels.py artefacts check                  # integrite
+dt python3 /work/scripts/referentiels.py artifacts match  <manifest>   # rapprochement collections
+dt python3 /work/scripts/referentiels.py artifacts expand <NomArtefact> # sources resolues + outils
+dt python3 /work/scripts/referentiels.py artifacts index  /work/catalogue/artefacts.md  # regen index
+dt python3 /work/scripts/referentiels.py artifacts check                  # integrite
 ```
 
 ## Rattachement aux signaux du catalogue
@@ -51,9 +51,9 @@ chaines de correlation. Rattachement principal (amont 731 definitions, extraits)
    (PR au depot ForensicArtifacts) - tracer dans le journal de l'affaire puis en REX
 
 <!-- genere:artefacts:debut -->
-Index genere depuis le referentiel bake (731 definitions, amont + kit) - ne pas editer cette section.
+Index generated from the baked referential (731 definitions, upstream + kit) - do not edit this section.
 
-| Artefact | OS | Sources | Description |
+| Artifact | OS | Sources | Description |
 |----------|----|---------|-------------|
 | `AllUsersAppDataEnvironmentVariable` | Windows | 1 REGISTRY_VALUE | The %ProgramData% environment variable. |
 | `AllUsersProfileEnvironmentVariable` | Windows | 1 REGISTRY_KEY | The %AllUsersProfile% environment variable. |
@@ -104,7 +104,7 @@ Index genere depuis le referentiel bake (731 definitions, amont + kit) - ne pas 
 | `DLLHijackLocations` | Windows | 1 FILE | DLL search order hijacking locations collected from base Windows 7. |
 | `DNSResolvConfFile` | Linux | 1 FILE | DNS Resolver configuration file. |
 | `DockerContainerConfig` | Linux | 1 FILE | Docker container configuration files |
-| `DockerRootDirectory` | tous | 1 PATH | Docker default root directory. |
+| `DockerRootDirectory` | all | 1 PATH | Docker default root directory. |
 | `DropboxClient` | Darwin,Linux,Windows | 2 FILE | Dropbox cloud storage client artifacts. |
 | `ElasticsearchAccessLog` | Linux | 1 FILE | Location where Elasticsearch access logs are stored. |
 | `ElasticsearchAuditLog` | Linux | 1 FILE | Location where Elasticsearch audit logs are stored. |
@@ -185,7 +185,7 @@ Index genere depuis le referentiel bake (731 definitions, amont + kit) - ne pas 
 | `LinuxAuditLogs` | Linux | 1 FILE | Linux audit log files. |
 | `LinuxAuthLogs` | Linux | 1 FILE | Linux authentication log files. |
 | `LinuxCACertificates` | Linux | 1 FILE | Linux CA Certificates. |
-| `LinuxCACertificatesConfiguration` | tous | 1 FILE | Linux CA Certificates configuration file. |
+| `LinuxCACertificatesConfiguration` | all | 1 FILE | Linux CA Certificates configuration file. |
 | `LinuxCronLogs` | Linux | 1 FILE | Linux cron log files. |
 | `LinuxCronTabs` | Linux | 1 FILE | Crontab files. |
 | `LinuxDaemonLogFiles` | Linux | 1 FILE | Linux daemon log files. |
@@ -413,7 +413,7 @@ Index genere depuis le referentiel bake (731 definitions, amont + kit) - ne pas 
 | `PythonDistInfoPath` | Linux | 1 PATH | Get the path of Python module files distributed in the dist-info format of PEP-0376 (curre... |
 | `PythonEggInfo` | Linux | 1 FILE | Python module files distributed in .egg formats (currently linux only). Python eggs can ha... |
 | `PythonHistoryFile` | Linux | 1 FILE | Python REPL history file. |
-| `PythonModuleInfo` | tous | 1 ARTIFACT_GROUP | Python module installation information. |
+| `PythonModuleInfo` | all | 1 ARTIFACT_GROUP | Python module installation information. |
 | `PythonWheelInfo` | Linux | 1 FILE | Python module files distributed in the wheel format (currently linux only). Zip archives w... |
 | `RedisConfigFile` | Darwin,Linux,Windows | 3 FILE | Redis configuration file |
 | `RedisConfigurationFile` | Linux | 1 FILE | Redis configuration files. |
@@ -787,6 +787,8 @@ Index genere depuis le referentiel bake (731 definitions, amont + kit) - ne pas 
 | `ZShellConfigurationFile` | Darwin,Linux,Windows | 3 FILE | Z shell (zsh) configuration files. |
 | `ZShellHistoryFile` | Darwin,Linux,Windows | 2 FILE | Z shell (zsh) history files. |
 <!-- genere:artefacts:fin -->
+
+
 
 
 

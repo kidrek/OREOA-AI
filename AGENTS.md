@@ -25,6 +25,26 @@ Deux modes de travail :
 
 ---
 
+## Langues
+
+Le kit est bilingue. Les regles, par surface :
+
+| Surface | Langue | Regle |
+|---------|--------|-------|
+| Base de connaissance (ce fichier, skills/, methodologie/, catalogue/, templates/) | Francais | source de verite unique - jamais traduite, jamais dupliquee |
+| Conversation avec l'analyste | langue de l'analyste | detecte-la et reponds dans cette langue, des la premiere reponse |
+| Livrables d'affaire (rapport, timeline, observables) et journal de l'affaire | `case.language` du manifest | defaut : `language` de `config/tools.yaml` (en) - pose a la creation par `/case`, sans question |
+| Schema machine (cles du manifest, messages des scripts) | Anglais | contrat stable - l'agent reformule en francais pour l'analyste |
+
+Comportements :
+
+- Traduction a la demande : si l'analyste demande un livrable en francais (ou dans toute autre langue), applique immediatement au livrable courant et propose de persister dans `case.language` (confirmation, puis journalisation du changement)
+- Commande `/lang` : consulte ou change la langue de session ; avec une affaire courante, propose la persistance
+- Les questions DFIQ et les noms d'artefacts (ForensicArtifacts) restent dans leur langue amont (anglais) - cite-les tels quels, avec reformulation dans la langue du livrable
+- Le guide de premier lancement : `docs/QUICK-START.md` (en) ou `docs/QUICK-START.fr.md` (fr) selon la langue de l'analyste
+
+---
+
 ## Demarrage (tout outil agentique, tout laptop)
 
 L'analyste ouvre son outil agentique (opencode, Claude Code, ou tout agent lisant ce
@@ -35,8 +55,8 @@ reponse de la session :
 2. `python3 scripts/doctor.py check` puis `python3 scripts/doctor.py test` - rapporte le verdict en 3 lignes maximum
 3. Route :
    - **verdict en echec ou image absente** -> guidage de deploiement (`skills/deploiement.md`, protocole `docs/DEPLOY.md`) - une seule question au depart : profil en-ligne ou air-gap. Si aucun modele n'est configure, l'outil agentique le demandera lui-meme ; guide l'analyste si besoin (`docs/DEPLOY.md` section 5)
-   - **premier lancement (`cases/` sans affaire) et verdict OK** -> affiche integralement `docs/DEMARRAGE-RAPIDE.md`, puis demande l'intention
-   - **sessions suivantes, verdict OK** -> verdict + rappel d'une ligne (`/case`, `/analyse`), puis demande l'intention (nouvelle affaire, reprise, mode guidance, autre)
+   - **premier lancement (`cases/` sans affaire) et verdict OK** -> affiche integralement le guide de demarrage rapide (`docs/QUICK-START.md`, ou `docs/QUICK-START.fr.md` si l'analyste parle francais), puis demande l'intention
+   - **sessions suivantes, verdict OK** -> verdict + rappel d'une ligne (`/case`, `/analyse`), puis demande l'intention (nouvelle affaire, reprise, mode guidance, autre) - dans la langue de l'analyste
    - si le premier message est deja une commande (`/analyse ...`), execute-la et joins le guide a la fin de la reponse - n'interromps jamais une action explicite
 
 Barriere d'espace disque : `doctor` refuse toute ecriture si l'espace libre sur la partition de stockage Docker est inferieur aux seuils de `config/tools.yaml` (3 Go pour un build, 2 Go pour un chargement de bundle). Aucune exception : liberer l'espace d'abord.
@@ -109,19 +129,21 @@ cases/CASE-2026-0042/
 ```
 
 **Creation d'affaire sans commande `/case`** (tout outil agentique) : reproduis ce
-scaffold a l'identique - repertoire ci-dessus, plus `manifest.yaml` (bloc `affaire`
-avec id/nom/date/statut, bloc `contexte` vide avec les champs description, declarant,
-date_signalement, systemes_concernes, periode_suspecte, mesures_deja_prises,
-contraintes, et `collections: []` - modele complet : `templates/manifest.yaml`) et
-`journal.md` (titre, affaire, date, section `## Phase 0 - Import`, entree de creation
-horodatee). L'identifiant suit le format `CASE-<annee>-<numero libre a 4 chiffres>`.
+scaffold a l'identique - repertoire ci-dessus, plus `manifest.yaml` (schema EN, contrat
+du kit : bloc `case` avec id/name/created/status/language, bloc `context` vide avec les
+champs description, reported_by, reported_at, systems, suspected_period, actions_taken,
+constraints, et `collections: []` - modele complet : `templates/manifest.yaml`) et
+`journal.md` (dans la langue de l'affaire, defaut anglais : titre, case, date, section
+`## Phase 0 - Import`, entree de creation horodatee). L'identifiant suit le format
+`CASE-<annee>-<numero libre a 4 chiffres>`.
 
 Regles d'evidence :
 
 - Les depots de `00_evidence/originals/` viennent de l'analyste (ou d'un import depuis
   un chemin externe) ; l'agent n'y ecrit jamais. Tout tool s'y execute en lecture (`:ro`).
 - L'ingestion par scan (`python3 scripts/ingest.py cases/<ID> --scan --provenance "<source>"`)
-  empreinte chaque depot, le rattache au referentiel d'artefacts et journalise la
+  empreinte chaque depot (champs `name`, `type`, `original_path`, `copy`, `sha256`,
+  `imported_at`, `artifacts`), le rattache au referentiel d'artefacts et journalise la
   provenance declaree (une ligne suffit : origine des collectes, qui les a copiees).
 - Chaque scan reverifie les empreintes enregistrees : toute derivation est une ALERTE
   d'integrite - arret, journal, decision de l'analyste.

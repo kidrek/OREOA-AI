@@ -1,218 +1,220 @@
-# OREOA-AI -- DFIR Agent Kit
+# OREOA-AI - agentic digital forensics kit
 
-Kit d'investigation numerique (DFIR) agentique, autoportant et deployable. Un agent d'intelligence artificielle lance dans le kit identifie les collections de donnees, conduit une investigation normalisee et produit un rapport d'affaire complet.
+**OREOA-AI** is the agentic branch of the OREOA project: a self-contained digital
+forensics (DFIR) kit deployable on multiple investigation laptops, where an agent
+(OpenCode, Claude Code, or any agent reading `AGENTS.md`) identifies the collections,
+runs a standardized investigation (ISO 27037, ISO 27035, ISO 27043, NIST SP 800-86)
+and produces a complete report (timeline, affected assets, observables, containment,
+remediation). French documentation: [README.fr.md](README.fr.md).
 
-**Licence : AGPL-3.0** - usage professionnel autorise ; toute version modifiee distribuee ou offerte en service doit partager ses sources. Voir [LICENSE](LICENSE) et [docs/NOTICE](docs/NOTICE) pour les licences tierces.
-
-## Description
-
-Le kit repose sur un depot git embarquant deux couches inseparables :
-
-- **Une couche outillage** : les outils forensiques sont pinnes dans une image Docker versionnee (`oreoa-ai-tools`). Aucune installation de paquets sur l'hote, aucun reseau requis a l'execution, aucun root requis.
-- **Une couche methodologique** : instructions d'agent, competences, methodologie, catalogues de signaux faibles, templates de livrables. Le contenu a ete concu et valide a l'avance : l'agent n'improvise pas, il applique.
-
-Le resultat produit pour chaque affaire est un rapport complet : description de l'affaire, procedure suivie, inventaire des collections avec empreintes, description des actifs affectes, timeline, observables, mesures de containment, remediation, recommandations de securisation. Chaque conclusion est sourcee par un artefact, une collection et un hash.
-
-Un exemple de rendu est fourni : [docs/exemple-rapport.md](docs/exemple-rapport.md) (donnees 100% synthetiques).
-
-## Principes
-
-1. **Autonomie totale** - le kit ne reference aucune ressource externe : deployable en reseau isole, fonctionnel hors ligne, synchronisable par cle USB
-2. **Integrite forensique** - evidence en lecture seule, SHA256 systematique, journal d'actions append-only, aucune conclusion sans source
-3. **Conteneurisation** - chaque outil s'execute dans un conteneur sans reseau, evidence montee en lecture seule, sortie produite dans le dossier d'affaire
-4. **Deux modes** - autonome (traitement de bout en bout) et guidance (accompagnement pas a pas d'un analyste)
-5. **Sante de l'outillage** - commande `doctor` : verification de sante, provisioning autonome, tests fonctionnels par outil sur echantillons embarques
-6. **Memoire de session** - `MEMORY.md` lu en debut de session et mis a jour a chaque etape : le travail reprend exactement ou il s'est arrete
-
-## Demarrage : trois gestes, aucun script
+## Getting started: three gestures, no scripts
 
 ```bash
 git clone https://github.com/kidrek/OREOA-AI.git
 cd OREOA-AI
-opencode              # ou claude, ou tout agent lisant AGENTS.md
+opencode              # or claude, or any agent reading AGENTS.md
 ```
 
-A la premiere reponse, l'agent verifie la sante du kit (doctor) et affiche le guide de
-demarrage. Ensuite, trois gestes suffisent :
+At the first response, the agent checks kit health (doctor) and displays the
+quick-start guide. Then three gestures are enough:
 
-| Geste | Commande | Ce qui se passe |
-|-------|----------|-----------------|
-| 1. Ouvrir une affaire | `/case "Incident serveur web"` | l'agent cree l'arborescence, te demande le contexte de l'incident (non bloquant) et te donne l'ID |
-| 2. Deposer tes collectes | copier tes fichiers dans `cases/<ID>/00_evidence/originals/` | l'agent detecte les depots, demande la provenance, empreinte (SHA256) et rattache au referentiel d'artefacts |
-| 3. Lancer l'investigation | `/analyse` | workflow complet (triage, analyse, correlation, investigation, observables, rapport) avec validation a chaque etape cle |
+| Gesture | Command | What happens |
+|---------|---------|--------------|
+| 1. Open a case | `/case "Web server incident"` | the agent scaffolds the tree, asks for the incident context (non-blocking) and gives you the ID |
+| 2. Drop your collections | copy your files into `cases/<ID>/00_evidence/originals/` | the agent detects the deposits, asks for provenance, hashes (SHA256) and matches the artifact referential |
+| 3. Run the investigation | `/analyse` | full workflow (triage, analysis, correlation, investigation, observables, report) with validation at every key step |
 
-Le rapport final est source : chaque conclusion cite sa collection, son artefact et son
-empreinte. La sante du kit est verifiee a chaque session (doctor) - si quelque chose
-manque (image, modele LLM), l'agent te guide pour corriger avant toute investigation.
-L'alternative manuelle pour un humain ou la CI : `./install.sh check|fix|test` -
-protocole complet dans [docs/DEPLOY.md](docs/DEPLOY.md).
+The final report is sourced: every conclusion cites its collection, its artifact and
+its hash. Kit health is verified at every session (doctor) - if something is missing
+(image, LLM), the agent guides you through the fix before any investigation. The
+manual alternative for a human or CI: `./install.sh check|fix|test` - full protocol in
+[docs/DEPLOY.md](docs/DEPLOY.md).
 
-## Prerequis
+## Languages
 
-| Composant | Version | Usage |
+The kit is bilingual. The knowledge base (skills, methodology, catalogues) stays French
+(single source of truth); the agent conversation mirrors the analyst's language;
+case deliverables and journal follow `case.language` of the manifest (default
+English, from `config/tools.yaml`). Command `/lang` views or changes the session
+language. Machine schema (manifest keys) and script messages are English.
+French docs: [README.fr.md](README.fr.md), [docs/USER-GUIDE.fr.md](docs/USER-GUIDE.fr.md),
+[docs/DEPLOY.fr.md](docs/DEPLOY.fr.md).
+
+## Prerequisites
+
+| Component | Version | Usage |
 |-----------|---------|-------|
-| git | >= 2.30 | depot, partage, sync |
-| Docker | >= 24, daemon actif | build image, execution des outils |
+| git | >= 2.30 | repo, sharing, sync |
+| Docker | >= 24, active daemon | image build, tool execution |
 | bash | >= 4.2 | scripts |
-| Python 3 | >= 3.10 + pyyaml | scripts du kit |
-| Agent | OpenCode ou Claude Code | pilotage |
+| Python 3 | >= 3.10 + pyyaml | kit scripts |
+| Agent | OpenCode or Claude Code (or any AGENTS.md reader) | driving |
 
-L' utilisateur executant les commandes docker doit etre membre du groupe `docker` (efficace a l'ouverture d'une nouvelle session).
+The user running docker commands must be a member of the `docker` group (effective at
+next session opening).
 
-Acces reseau requis uniquement pour : le premier `docker build`, le telechargement des modeles LLM. Une fois ces elements presents, tout fonctionne hors ligne.
+Network access is required only for: the first `docker build`, LLM model downloads.
+Once these are present, everything runs offline.
 
-## Creation d'une affaire
+## Opening a case
 
-Tout se fait en conversation : `/case "Incident serveur web 2026-45"` (identifiant
-auto-numerote) - l'agent scaffold l'arborescence, pose le contexte de l'incident, puis
-detecte les depots de collectes. `/case` seul affiche le panorama des affaires
-(reprendre une affaire, en ouvrir une autre). Sans commandes personnalisees (autre
-outil agentique), demande-le en langage naturel : il suit la procedure documentee dans
-`AGENTS.md` (section "Structure du dossier d'affaire").
+Everything happens in conversation: `/case "Web server incident 2026-45"` (auto-numbered
+ID) - the agent scaffolds the tree, asks for the incident context, then detects evidence
+deposits. `/case` alone shows the case panorama (resume a case, switch, open another).
+Without custom commands (another agent tool), ask in natural language: it follows the
+procedure documented in `AGENTS.md` (section "Structure du dossier d'affaire").
 
-Scaffold produit :
+Produced scaffold:
 
 ```
 cases/CASE-2026-0042/
-├── 00_evidence/                 # preuves - non versionnes
-│   ├── originals/               # depot de l'analyste (collectes brutes) - immuables apres import
-│   ├── exports/                 # extractions et transcodages empreintes
-│   └── images/                  # images disque, RAM, dumps
-├── 01_work/                     # espace de travail (copies de traitement)
+├── 00_evidence/                 # evidence - not versioned
+│   ├── originals/               # analyst drop zone (raw collections) - immutable after import
+│   ├── exports/                 # extractions and transcodes, hashed
+│   └── images/                  # disk images, RAM, dumps
+├── 01_work/                     # working space (processing copies)
 ├── 02_analysis/
-│   ├── logs/                    # journal d'actions par phase
-│   ├── timeline/                # timeline consolidee
+│   ├── logs/                    # per-phase action journal
+│   ├── timeline/                # consolidated timeline
 │   ├── ioc/                     # observables
-│   └── report/                  # rapport en cours de redaction
-├── manifest.yaml                # inventaire des collections + SHA256 + contexte
-└── journal.md                   # journal d'actions append-only
+│   └── report/                  # report being written
+├── manifest.yaml                # collection inventory + SHA256 + context
+└── journal.md                   # append-only action journal
 ```
 
-## Lancement de l'agent
+## Launching the agent
 
 ```bash
-opencode                        # dans le dossier du kit
-> /case "Incident serveur web"
-> (deposer les collectes dans cases/CASE-2026-0042/00_evidence/originals/)
+opencode                        # in the kit folder
+> /case "Web server incident"
+> (drop the collections into cases/CASE-2026-0042/00_evidence/originals/)
 > /analyse
 ```
 
-L'agent lit `AGENTS.md`, charge les competences, execute la methodologie, journalise
-chaque action et redige le rapport a partir des templates. La connexion au modele LLM
-est geree par ton outil agentique (opencode et Claude Code ont leur propre flux
-d'authentification) - le guide de configuration avancee (provider, air-gap) est dans
-[docs/DEPLOY.md](docs/DEPLOY.md) section 5.
+The agent reads `AGENTS.md`, loads the skills, runs the methodology, journalizes every
+action and writes the report from the templates. LLM connection is handled by your
+agent tool itself (OpenCode and Claude Code have their own auth flows) - advanced
+configuration (provider, air-gap) in [docs/DEPLOY.md](docs/DEPLOY.md) section 5.
 
 ## Architecture
 
-Deux couches dans un depot unique :
+Two layers in a single repository:
 
-- **Couche hote (legere)** : scanner, verificateur d'integrite, wrappers - fonctionne sur tout laptop equipe de Docker
-- **Couche outils (conteneurisee)** : image `oreoa-ai-tools:1.1.0` - plaso (log2timeline, psort), volatility3, The Sleuth Kit (fls, icat), tshark, suricata (ET Open trie + regles kit), yara, regipy, evtx, bibliotheque artifacts - le tout pine par version, construit depuis le `Dockerfile` du kit
-- **Referentiels amont bakes dans l'image a chaque build** : ForensicArtifacts (definitions de collecte, Apache-2.0) et DFIQ (scenarios/facets/questions d'investigation, Apache-2.0) - telecharges par le `Dockerfile` (ARG cache-bust, verification SHA256, traces bakees), exploitables via `scripts/referentiels.py` (voir [docs/REFERENTIELS.md](docs/REFERENTIELS.md))
+- **Host layer (light)**: scanner, integrity checker, wrappers - runs on any laptop with Docker
+- **Tool layer (containerized)**: image `oreoa-ai-tools:1.1.0` - plaso (log2timeline, psort), volatility3, The Sleuth Kit (fls, icat), tshark, suricata (ET Open triaged + kit rules), yara, regipy, evtx, artifacts library - all pinned by version, built from the kit `Dockerfile`
+- **Upstream referentials baked into the image at every build**: ForensicArtifacts (collection definitions, Apache-2.0) and DFIQ (scenarios/facets/questions, Apache-2.0) - downloaded by the `Dockerfile` (cache-bust ARG, SHA256 verification, baked traces), usable via `scripts/referentiels.py` (see [docs/REFERENTIALS.md](docs/REFERENTIALS.md))
 
-Regles d'execution : conteneurs sans reseau (`--network none`), `00_evidence` monte en lecture seule, sortie sous l'identite de l'analyste (pas de root), tous les appels passent par le wrapper `scripts/dt`.
+Execution rules: network-less containers (`--network none`), `00_evidence` mounted
+read-only, output under the analyst identity (no root), all calls through the
+`scripts/dt` wrapper.
 
-Profils de deploiement :
+Deployment profiles:
 
-| Profil | Comportement |
-|--------|--------------|
-| [online](config/profiles/online.md) | build de l'image depuis les sources officielles, LLM via endpoint compatible OpenAI |
-| [air-gap](config/profiles/airgap.md) | chargement du bundle `tools/oreoa-ai-tools-1.1.0.tar.gz` (`docker load`), modele LLM local (Ollama/vLLM), aucun acces reseau |
+| Profile | Behavior |
+|---------|----------|
+| [online](config/profiles/online.md) | image build from official sources, LLM via OpenAI-compatible endpoint |
+| [air-gap](config/profiles/airgap.md) | bundle loading `tools/oreoa-ai-tools-1.1.0.tar.gz` (`docker load`), local LLM (Ollama/vLLM), no network access |
 
-Deploiement multi-laptops :
+Multi-laptop deployment:
 
-1. Depot git partage (serveur interne ou GitHub)
-2. Image `oreoa-ai-tools` construite localement ou partagée en bundle (voir profil air-gap)
-3. Modeles LLM telecharges vers un cache partage ou installes localement
-4. Echange de dossiers d'affaire par depot git (metadonnees) + media amovible (evidence)
+1. Shared git repository (internal server or GitHub)
+2. `oreoa-ai-tools` image built locally or shared as a bundle (see air-gap profile)
+3. LLM models downloaded to a shared cache or installed locally
+4. Case exchange through git repository (metadata) + removable media (evidence)
 
-## Workflow en 7 phases
+## 7-phase workflow
 
-| Phase | Competence | Produit |
-|-------|-----------|---------|
-| 0. Import | `ingestion` | collections scannees, types, SHA256, rapprochement artefacts, manifest.yaml |
-| 1. Triage | `triage` | contexte analyste, type d'affaire, scenario DFIQ, collection principale, hypotheses |
-| 2. Analyse initiale | `analyse` | actifs affectes, chronologie initiale |
-| 3. Correlation | `analyse` | timeline consolidee, croisements multi-collections |
-| 4. Investigation | `analyse` + `investigation` | hypotheses et questions DFIQ testees, ecarts explores |
-| 5. Observables | `analyse` | tableau des IOC avec niveau de confiance |
-| 6. Rapport | `reporting` | rapport final : full, executive ou technique |
+| Phase | Skill | Output |
+|-------|-------|--------|
+| 0. Import | `ingestion` | collections scanned, typed, hashed, artifact-matched, manifest.yaml |
+| 1. Triage | `triage` | analyst context, case type, DFIQ scenario, main collection, hypotheses |
+| 2. Initial analysis | `analyse` | affected assets, initial chronology |
+| 3. Correlation | `analyse` | consolidated timeline, multi-collection crossings |
+| 4. Investigation | `analyse` + `investigation` | tested hypotheses and DFIQ questions, explored gaps |
+| 5. Observables | `analyse` | IOC table with confidence level |
+| 6. Report | `reporting` | final report: full, executive or technical |
 
-Le mode `guidance` couvre quant a lui les actions manuelles d'investigation : capture memoire, acquisition disque, live response - l'agent guide l'analyste etape par etape (voir [skills/guidance.md](skills/guidance.md) et [connaissances/](connaissances/)). Le dump obtenu est ensuite exploite par le kit (volatility3, v1.1).
+The `guidance` mode covers manual investigation actions: RAM capture, disk
+acquisition, live response - the agent guides the analyst step by step (see
+[skills/guidance.md](skills/guidance.md) and [connaissances/](connaissances/)). The
+collected dump is then processed by the kit (volatility3).
 
-## Catalogue des signaux faibles
+## Weak-signal catalogue
 
-Le coeur analytique du kit : pour chaque famille d'artefact, des signaux faibles formalises, recherchables et corrigeables.
+The analytical core of the kit: for each artifact family, formalized, searchable and
+cross-checkable weak signals.
 
-Format d'une fiche (exemple) :
+Signal sheet format (example):
 
 ```text
-SF-W-030 - Acces memoire de lsass
-artefact     : Sysmon 10 (ProcessAccess, TargetImage lsass.exe)
-logique      : GrantedAccess 0x1010 / 0x1410 / 0x1fffff par processus non systeme
-attaque      : T1003.001 (LSASS Memory) - MITRE ATT&CK
-severite     : critique
-fiabilite    : haute
-faux positifs: antivirus et EDR legitimes
+SF-W-030 - lsass memory access
+- artifact: Sysmon EventID 10 (lsass target)
+- logic: granted access 0x1010 / 0x147a by a non-managed process
+- attack: T1003.001 (LSASS Memory)
+- severity: high | confidence: high
+- false positives: managed EDR/backup dumpers (allowlist)
 ```
 
-- [catalogue/windows.md](catalogue/windows.md) - 14 signaux (persistance, execution, mouvement lateral, credentials, anti-forensique)
-- [catalogue/linux.md](catalogue/linux.md) - 12 signaux (authentification, execution, persistance, anti-forensique)
-- [catalogue/memoire.md](catalogue/memoire.md) - 10 signaux SF-M (processus masque, injection, reseau vivant, credentials, persistance, rootkit Linux)
-- [catalogue/reseau.md](catalogue/reseau.md) - 10 signaux SF-R (beaconing, DNS C2 et exfiltration, transferts, scans, SMB lateral, TLS, alertes suricata)
-- [catalogue/correlation.md](catalogue/correlation.md) - chaines d'investigation multi-signaux (C-W-01/02, C-L-01/02, C-M-01, C-R-01, correlations croisees R-01 a R-09)
+| Catalogue | Content |
+|-----------|---------|
+| [catalogue/windows.md](catalogue/windows.md) | Windows signals (SF-W) |
+| [catalogue/linux.md](catalogue/linux.md) | Linux signals (SF-L) |
+| [catalogue/memoire.md](catalogue/memoire.md) | volatile memory signals (SF-M) |
+| [catalogue/reseau.md](catalogue/reseau.md) | network signals (SF-R) |
+| [catalogue/correlation.md](catalogue/correlation.md) | multi-signal correlation rules (C-XX chains) |
+| [catalogue/artefacts.md](catalogue/artefacts.md) | generated ForensicArtifacts index + signal/artifact mapping |
+| [catalogue/dfiq.md](catalogue/dfiq.md) | generated DFIQ index + scenario/case-type mapping |
 
-Chaque signal teste en investigation est enregistre (detecte / non detecte / non applicable + evidence citee) - le rapport inclut l'annexe des signaux testes.
+## Built-in safeguards
 
-## Securite et garde-fous
+| Safeguard | Mechanism |
+|-----------|-----------|
+| Evidence immutable after import | deposits in `originals/` hashed at ingestion; every scan re-verifies the hashes - any drift is an integrity alert |
+| No network | containers `--network none`, air-gap profiles without access |
+| Traceability | every conclusion cites collection + artifact + hash; image digest recorded |
+| Disk barrier | provisioning refused if free space is insufficient (nothing written) |
 
-| Regle | Application |
-|-------|-------------|
-| Evidence lecture seule | `00_evidence/originals/` jamais modifie, monte `:ro` dans les conteneurs |
-| Integrite | SHA256 de chaque collection des l'import, verification avant traitement |
-| Journal d'actions | `journal.md` append-only, chaque action sourcee |
-| Pas de reseau | conteneurs `--network none`, profils air-gap sans acces |
-| Tracabilite | toute conclusion cite collection + artefact + hash ; digest de l'image consigne |
-| Barriere disque | provisioning refuse si espace libre insuffisant (aucune ecriture) |
+## State v1.4
 
-## Etat v1
-
-| Module | Etat |
-|--------|------|
-| Ingestion (detection de type, SHA256, rapprochement artefacts, manifest) | operationnel |
-| Verificateur d'integrite (doctor check / fix / test, referentiels) | operationnel |
-| Chaine d'outils conteneurisee (8 outils + 4 bibliotheques) | operationnel |
-| Catalogue de signaux faibles (46 signaux + 7 chaines) | operationnel |
-| Memoire volatile (volatility3 outille, catalogue SF-M, connaissances dediees) | operationnel |
-| Reseau (tshark + suricata offline, triage ET Open, catalogue SF-R) | operationnel |
-| Referentiels amont (ForensicArtifacts + DFIQ bakes au build, moteur referentiels.py) | operationnel |
-| Intake de contexte a l'ouverture d'affaire (/analyse) | operationnel |
-| Competences d'agent (9 skills) | operationnelles |
-| Templates de livrables (5 templates) | operationnels |
-| Deploiement multi-laptops (profils online / air-gap) | operationnel |
+| Module | State |
+|--------|-------|
+| Ingestion (typing, SHA256, provenance, artifact matching, manifest) | operational |
+| Integrity checker (doctor check / fix / test, referentials) | operational |
+| Containerized toolchain (8 tools + 4 libraries) | operational |
+| Weak-signal catalogue (46 signals + 7 chains) | operational |
+| Volatile memory (volatility3 tooled, SF-M catalogue, dedicated knowledge) | operational |
+| Network (tshark + suricata offline, ET Open triage, SF-R catalogue) | operational |
+| Upstream referentials (ForensicArtifacts + DFIQ baked at build, referentiels.py engine) | operational |
+| Case context intake at opening (/case) | operational |
+| Languages (schema EN, scripts EN, knowledge FR, deliverables per case language) | operational |
+| Agent skills (10 skills) | operational |
+| Deliverable templates (6 templates) | operational |
+| Multi-laptop deployment (online / air-gap profiles) | operational |
 
 ## Roadmap
 
-- **v1.1 Memoire volatile** : livree - exploitation volatility3 outillee en affaire (wrapper `dt`), catalogue SF-M, connaissances dediees, acquisition RAM en guidance (deja documentee)
-- **v1.2 Reseau** : livree - tshark + suricata offline (ET Open trie + regles kit), catalogue SF-R, echantillons pcap synthetiques, triage validable en E2E
-- **v1.3 Referentiels amont** : livree - ForensicArtifacts + DFIQ telecharges et bakes a chaque build, moteur `referentiels.py` (rapprochement, expansion, plans DFIQ), intake de contexte a l'ouverture d'affaire
-- **v2.0 Disque complet** : acquisition image (E01/AFF4/raw), The Sleuth Kit et plaso sur images, collection par artefacts (`--artifact_filters`)
-- **v2.1 Navigateurs** : historiques, caches, sessions (adosse a webbrowser.yaml + DFIQ Q1020)
-- **v2.2 Conteneurs** : docker/containerd/kubernetes.yaml, journaux d'orchestrateurs
-- **v2.3 Cloud** : cloud_services.yaml (cadre DFIQ S1005), gaps documentes
-- **Mobile** : hors referentiels amont (pas de definitions Android/iOS) - artefacts kit dedies a produire
+- **v1.1 Volatile memory**: delivered - tooled volatility3 exploitation in cases (wrapper `dt`), SF-M catalogue, dedicated knowledge, RAM acquisition in guidance
+- **v1.2 Network**: delivered - tshark + suricata offline (triaged ET Open + kit rules), SF-R catalogue, synthetic pcap samples, E2E-testable triage
+- **v1.3 Upstream referentials**: delivered - ForensicArtifacts + DFIQ downloaded and baked at every build, `referentiels.py` engine (matching, expansion, DFIQ plans), case context intake
+- **v1.3bis Simplified launch**: delivered - agent.sh removed, `/case` command (create/switch/panorama), analyst deposits with integrity-verified scan, first-launch guide
+- **v1.4 Internationalization**: delivered - EN schema and scripts, EN-primary docs, language rules + /lang
+- **v2.0 Full disk**: acquisition image (E01/AFF4/raw), The Sleuth Kit and plaso on images, artifact-based collection (`--artifact_filters`)
+- **v2.1 Browsers**: history, caches, sessions (backed by webbrowser.yaml + DFIQ Q1020)
+- **v2.2 Containers**: docker/containerd/kubernetes.yaml, orchestrator logs
+- **v2.3 Cloud**: cloud_services.yaml (DFIQ S1005 frame), documented gaps
+- **Mobile**: outside upstream referentials (no Android/iOS definitions) - dedicated kit artifacts to produce
 
-## Licences
+## Licenses
 
-- **Kit OREOA-AI (ce depot)** : [AGPL-3.0](LICENSE) - Copyright le ou les auteurs du projet
-- **Outils embarques dans l'image** : ils conservent leurs licences propres (Apache-2.0, MIT, BSD-3-Clause, GPL, Volatility Software License v1.0) - agregation simple, aucune relicence. Details et mentions : [docs/NOTICE](docs/NOTICE)
-- L'usage commercial du kit et des outils embarques est permis par leurs licences respectives, avec obligation de partage des modifications (copyleft) - voir le cas particulier volatility3 dans NOTICE
+- **OREOA-AI kit (this repo)**: [AGPL-3.0](LICENSE) - Copyright the project authors
+- **Tools embedded in the image**: they keep their own licenses (Apache-2.0, MIT, BSD-3-Clause, GPL, Volatility Software License v1.0) - simple aggregation, no relicensing. Details and notices: [docs/NOTICE](docs/NOTICE)
+- **Upstream referentials**: ForensicArtifacts and DFIQ (Apache-2.0) - downloaded at build, never edited, provenance in [docs/REFERENTIALS.md](docs/REFERENTIALS.md)
+- Commercial use of the kit and embedded tools is permitted by their respective licenses, with share-alike obligations (copyleft) - see the volatility3 special case in NOTICE
 
-## Verification de sante
+## Health check
 
 ```bash
-python3 scripts/doctor.py check     # sante : prerequis, image, bundle, disque
-python3 scripts/doctor.py fix       # provisioning : bundle air-gap ou build
-python3 scripts/doctor.py test      # outils du conteneur + tests fonctionnels + E2E
+python3 scripts/doctor.py check     # health: prerequisites, image, bundle, disk
+python3 scripts/doctor.py fix       # provisioning: air-gap bundle or build
+python3 scripts/doctor.py test      # container tools + functional tests + E2E
 ```

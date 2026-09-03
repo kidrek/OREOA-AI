@@ -20,10 +20,10 @@ dans les rapports.
 ## Commandes (execution conteneurisee via dt)
 
 ```bash
-dt python3 /work/scripts/referentiels.py artefacts match  <manifest>     # rapprochement collections
-dt python3 /work/scripts/referentiels.py artefacts expand <NomArtefact>  # sources resolues + outils
-dt python3 /work/scripts/referentiels.py artefacts index  /work/catalogue/artefacts.md
-dt python3 /work/scripts/referentiels.py artefacts check                  # integrite
+dt python3 /work/scripts/referentiels.py artifacts match  <manifest>     # rapprochement collections
+dt python3 /work/scripts/referentiels.py artifacts expand <NomArtefact>  # sources resolues + outils
+dt python3 /work/scripts/referentiels.py artifacts index  /work/catalogue/artefacts.md
+dt python3 /work/scripts/referentiels.py artifacts check                  # integrite
 ```
 
 Le rapprochement `match` est automatique a chaque `ingest.py` (champ `artefacts`

@@ -7,37 +7,38 @@ Lance une investigation numerique complete : $ARGUMENTS
 
 Trois formes d'appel :
 
-1. **`/analyse` sans argument** : opere sur l'affaire courante de la session (etablie
-   par `/case`). Si aucune affaire courante : ne devine pas - propose `/case "<nom>"`
-   (creation) ou `/case` (panorama pour switcher), puis arrete-toi
-2. **`/analyse <chemin>`** : collection externe a l'affaire (partage, dossier local) -
-   import par copie puis meme workflow. L'affaire cible : la courante, ou demandee
-3. **Premiere utilisation** : le guide `docs/DEMARRAGE-RAPIDE.md` est affiche a la fin
-   de la reponse (premier lancement uniquement - `cases/` sans affaire)
+1. **`/analyse` sans argument** : operates on the current case of the session (set by
+   `/case`). If no current case: do not guess - propose `/case "<name>"` (creation) or
+   `/case` (panorama to switch), then stop
+2. **`/analyse <path>`** : collection external to the case (share, local folder) -
+   import by copy then same workflow. Target case: the current one, or asked
+3. **First use**: the quick-start guide `docs/QUICK-START.md` is displayed at the end
+   of the response (first launch only - `cases/` with no case)
 
 ## Procedure
 
-1. **Ingestion des collectes** :
-   - depots dans `cases/<ID>/00_evidence/originals/` non encore enregistres ->
-     demande la provenance (une ligne : d'ou viennent ces collectes) puis
+1. **Collection ingestion**:
+   - deposits in `cases/<ID>/00_evidence/originals/` not yet recorded ->
+     ask for provenance (one line: where the collections come from) then
      `python3 scripts/ingest.py cases/<ID> --scan --provenance "<source>"` -
-     empreintes SHA256, manifest, rapprochement des artefacts, journalise
-   - si le scan signale une **ALERTE INTEGRITE** (empreinte derivee depuis l'import) :
-     arrete-toi, journalise, demande la decision de l'analyste - jamais de suite sans decision
-   - deja integre (manifest a jour) : passe directement au workflow
-2. **Intake de contexte** (si la section `contexte` du manifest n'est pas renseignee) :
-   demande a l'analyste le contexte de l'incident - question ouverte, relances ciblees
-   si apport, non bloquant si rien (journalise). Si deja renseigne (via `/case` ou
-   session precedente) : ne redemande pas, rappelle-le au triage
-3. Conduis les phases 1 a 6 (skills/triage.md, skills/analyse.md, skills/reporting.md) :
-   - pose le type d'affaire, la collection principale et les hypotheses (gate de
-     validation) en t'appuyant sur le contexte consigne et le scenario DFIQ correspondant
+     SHA256 hashes, manifest, artifact matching, journalized
+   - if the scan reports an **INTEGRITY ALERT** (hash drifted since import):
+     stop, journalize, ask for the analyst decision - never continue without one
+   - already ingested (manifest up to date): go straight to the workflow
+2. **Context intake** (if the `context` section of the manifest is empty):
+   ask the analyst for the incident context - open question, targeted follow-ups if
+   provided, non-blocking if nothing (journalized). If already filled (via `/case` or
+   a previous session): do not ask again, recall it at triage
+3. Run phases 1 to 6 (skills/triage.md, skills/analyse.md, skills/reporting.md):
+   - set the case type, the main collection and the working hypotheses (validation
+     gate) leaning on the recorded context and the matching DFIQ scenario
      (catalogue/dfiq.md, skills/investigation.md)
-   - analyse, correlation, investigation des hypotheses, observables ; exploite le
-     rapprochement artefacts du manifest (champ `artefacts`) et le catalogue des
-     signaux faibles (catalogue/)
-4. Journalise chaque action dans journal.md (append-only) ; cite artefact + collection +
-   hash pour chaque conclusion
-5. Produis le rapport final dans 02_analysis/report/rapport.md (format full), avec la
-   section contexte, le tableau des questions d'investigation DFIQ et l'annexe des
-   signaux testes
+   - analysis, correlation, hypothesis investigation, observables; use the artifact
+     matching of the manifest (`artifacts` field) and the weak-signal catalogue
+     (catalogue/)
+4. Journalize every action in journal.md (append-only, in the case language
+   `case.language`); cite artifact + collection + hash for every conclusion
+5. Produce the final report in 02_analysis/report/rapport.md (full format), in the case
+   language (`templates/rapport.md` FR or `templates/rapport-en.md` EN), with the case
+   background section, the DFIQ investigation questions table and the tested-signals
+   appendix

@@ -1,4 +1,6 @@
-# NOTICE - mentions de licences tierces embarquees
+# NOTICE - embedded third-party licenses / mentions de licences tierces embarquees
+
+## Version francaise
 
 Ce fichier recense les logiciels tiers embarques dans l'image conteneur `oreoa-ai-tools` et leurs licences. Le kit OREOA-AI lui-meme (depot) est diffuse sous licence AGPL-3.0 : la licence du depot ne s'applique pas aux logiciels tiers, qui conservent leurs propres termes (agregation simple - les programmes communiquent par ligne de commande, sans lien de code).
 

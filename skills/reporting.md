@@ -2,7 +2,17 @@
 
 ## Mission
 
-Rediger le rapport final de l'affaire a partir des produits d'analyse.
+Rediger le rapport final de l'affaire a partir des produits d'analyse, dans la langue
+de l'affaire (`case.language` du manifest).
+
+## Langue du rapport
+
+- `case.language` du manifest fait foi (defaut : `language` de `config/tools.yaml`, en)
+- Template : `templates/rapport-en.md` (en) ou `templates/rapport.md` (fr)
+- Traduction a la demande : si l'analyste demande le rapport dans une autre langue,
+  produis-le immediatement dans cette langue et propose de persister `case.language`
+  (confirmation puis journalisation)
+- Le journal d'affaire suit la meme langue que le rapport
 
 ## Formats de rapport
 
@@ -14,12 +24,13 @@ Rediger le rapport final de l'affaire a partir des produits d'analyse.
 
 ## Structure du rapport
 
-Le rapport suit le template `templates/rapport.md` :
+Le rapport suit le template selectionne par `case.language` (`templates/rapport-en.md`
+ou `templates/rapport.md`) :
 
 1. **Resume executif** -- synthese de l'affaire
-2. **Description de l'affaire** -- contexte (dont contexte analyste consigne au manifest), question posee, scenario DFIQ, perimetre, referentiels (versions consignees)
+2. **Description de l'affaire** -- contexte (dont contexte analyste consigne au manifest, champ `context`), question posee, scenario DFIQ, perimetre, referentiels (versions consignees)
 3. **Procedure suivie** -- phases 0-6, collections exploitees, outils utilises
-4. **Inventaire des collections** -- collections, hashes, artefacts (referentiel), descriptions
+4. **Inventaire des collections** -- collections, hashes, artefacts (referentiel, champ `artifacts`), descriptions
 5. **Questions d'investigation** -- structure DFIQ du scenario : facet, question, statut, reponse sourcee (ou ecart)
 6. **Actifs affectes** -- systemes, comptes, services
 7. **Timeline** -- chronologie consolidee des evenements

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# dt - wrapper d'execution conteneurisee des outils du kit OREOA-AI
-# Usage :
-#   dt [-c CASE_ID] <outil> [args...]
-# Exemples :
+# dt - containerized execution wrapper of the OREOA-AI kit tools
+# Usage:
+#   dt [-c CASE_ID] <tool> [args...]
+# Examples:
 #   dt yara /tests/samples/rules.yar /tests/samples/testfile.bin
 #   dt -c CASE-2026-0042 log2timeline --storage-file 02_analysis/timeline/timeline.plaso 00_evidence/exports/collection.jsonl
-# Regles appliquees :
-#   - 00_evidence monte en lecture seule ; 01_work et 02_analysis en ecriture
-#   - reseau desactive ; utilisateur non root (uid/gid de l'analyste)
-#   - image oreoa-ai-tools obligatoire (provisioning : python3 scripts/doctor.py fix)
+# Rules enforced:
+#   - 00_evidence mounted read-only; 01_work and 02_analysis writable
+#   - network disabled; non-root user (uid/gid of the analyst)
+#   - oreoa-ai-tools image required (provisioning: python3 scripts/doctor.py fix)
 set -euo pipefail
 
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -21,16 +21,16 @@ while [[ "${1:-}" == "-c" ]]; do
 done
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage : dt [-c CASE_ID] <outil> [args...]" >&2
-  echo "Outils : log2timeline psort vol fls icat tshark suricata yara" >&2
+  echo "Usage: dt [-c CASE_ID] <tool> [args...]" >&2
+  echo "Tools: log2timeline psort vol fls icat tshark suricata yara" >&2
   exit 2
 fi
 
 OUTIL="$1"; shift
 
-# L'image doit etre presente (provisioning : doctor.py fix)
+# The image must be present (provisioning: doctor.py fix)
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  echo "Erreur : image $IMAGE absente. Provisionner avec : python3 scripts/doctor.py fix" >&2
+  echo "Error: image $IMAGE missing. Provision with: python3 scripts/doctor.py fix" >&2
   exit 1
 fi
 
@@ -43,7 +43,7 @@ if [[ -d "referentiels-kit" ]]; then
 fi
 if [[ -n "$CASE_ID" ]]; then
   CASE_DIR="cases/$CASE_ID"
-  [[ -d "$CASE_DIR" ]] || { echo "Erreur : affaire inconnue : $CASE_DIR" >&2; exit 1; }
+  [[ -d "$CASE_DIR" ]] || { echo "Error: unknown case: $CASE_DIR" >&2; exit 1; }
   [[ -f "$CASE_DIR/manifest.yaml" ]] || printf 'affaire:\n  id: "%s"\ncollections: []\n' "$CASE_ID" > "$CASE_DIR/manifest.yaml"
   MOUNTS+=(
     -v "$(pwd)/$CASE_DIR/00_evidence:/affaires/00_evidence:ro"

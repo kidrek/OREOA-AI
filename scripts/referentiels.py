@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""referentiels.py - exploitation des referentiels amont embarques (artefacts + DFIQ).
+"""referentiels.py - upstream referentials tooling (artifacts + DFIQ).
 
-Execute DANS le conteneur (via dt) : lit /referentiels (bake a la build) et
-/referentiels-kit (custom kit, monte en ro si present).
+Runs INSIDE the container (via dt): reads /referentiels (baked at build) and
+/referentiels-kit (kit-custom, mounted ro when present).
 
-Usage :
-  artefacts match <manifest.yaml>     rapprochement collections <-> definitions, maj manifest
-  artefacts expand <NomArtefact>      resolution d'un artefact -> sources resolues + outils kit
-  artefacts index [fichier|-]         regenere la section generee du catalogue (marqueurs)
-  artefacts check                     integrite (MANIFEST.sha256) + parsage + traces
-  dfiq arbre [S-id|-]                 arbre scenario -> facets -> questions
-  dfiq plan <Q-id|F-id|S-id>          plan de reponse : approches + resolution ForensicArtifact
-  dfiq index [fichier|-]              regenere la section generee du catalogue DFIQ
-  dfiq check                          integrite + coherence parentale du corpus
+Usage:
+  artifacts match <manifest.yaml>     match collections <-> definitions, update manifest
+  artifacts expand <ArtifactName>     resolve an artifact -> resolved sources + kit tools
+  artifacts index [file|-]            regenerate the generated catalogue section (markers)
+  artifacts check                     integrity (MANIFEST.sha256) + parsing + traces
+  dfiq arbre [S-id|-]                 tree scenario -> facets -> questions
+  dfiq plan <Q-id|F-id|S-id>          answer plan: approaches + ForensicArtifact resolution
+  dfiq index [file|-]                 regenerate the generated DFIQ catalogue section
+  dfiq check                          integrity + parental consistency of the corpus
 """
 import fnmatch
 import hashlib
@@ -27,9 +27,9 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from artifacts import reader as artefacts_reader
+    from artifacts import reader as artifacts_reader
 except ImportError:
-    artefacts_reader = None
+    artifacts_reader = None
 
 ARTIFACTS_DATA = Path("/referentiels/artifacts/data")
 ARTIFACTS_MANIFEST = Path("/referentiels/artifacts/MANIFEST.sha256")
@@ -55,39 +55,39 @@ VARIABLES = {
 }
 
 OUTILS_PAR_TYPE = {
-    "FILE": "super-timeline log2timeline (dt) ; extraction fls/icat (dt) sur image disque",
-    "PATH": "super-timeline log2timeline (dt) ; enumeration fls (dt) sur image disque",
-    "REGISTRY_KEY": "parsing regipy (python in-image) ; ruche extraite via fls/icat (dt)",
-    "WMI": "hors perimetre runtime - referentiel informatif (collecte WMI en mode guidance)",
+    "FILE": "super-timeline log2timeline (dt); extraction fls/icat (dt) on disk image",
+    "PATH": "super-timeline log2timeline (dt); enumeration fls (dt) on disk image",
+    "REGISTRY_KEY": "regipy parsing (in-image python); hive extracted via fls/icat (dt)",
+    "WMI": "out of runtime scope - informational referential (WMI collection in guidance mode)",
 }
 
 
 # ---------------------------------------------------------------- chargement
 
 def charger_artefacts():
-    """Definitions amont + customs kit -> liste (artefact, origine)."""
+    """Upstream + kit-custom definitions -> list of (artifact, origin)."""
     definitions = []
-    if artefacts_reader is None:
-        print("Erreur : bibliotheque artifacts absente de l'image.", file=sys.stderr)
+    if artifacts_reader is None:
+        print("Error: artifacts library missing from the image.", file=sys.stderr)
         sys.exit(1)
     if ARTIFACTS_DATA.is_dir():
-        for artefact in artefacts_reader.YamlArtifactsReader().ReadDirectory(str(ARTIFACTS_DATA)):
-            definitions.append((artefact, "amont"))
+        for artefact in artifacts_reader.YamlArtifactsReader().ReadDirectory(str(ARTIFACTS_DATA)):
+            definitions.append((artefact, "upstream"))
     if KIT_ARTIFACTS.is_dir():
         for fichier in sorted(KIT_ARTIFACTS.glob("*.yaml")):
-            for artefact in artefacts_reader.YamlArtifactsReader().ReadFile(str(fichier)):
+            for artefact in artifacts_reader.YamlArtifactsReader().ReadFile(str(fichier)):
                 definitions.append((artefact, "kit"))
     return definitions
 
 
 def charger_dfiq():
-    """Corpus DFIQ amont + customs kit -> (scenarios, facets, questions) par id."""
+    """Upstream + kit-custom DFIQ corpus -> (scenarios, facets, questions) by id."""
     corpus = {"scenario": {}, "facet": {}, "question": {}, "kit": set()}
     for fichier in sorted(DFIQ_DATA.rglob("*.yaml")):
         try:
             docs = [d for d in yaml.safe_load_all(fichier.read_text()) if d]
         except yaml.YAMLError as exc:
-            print(f"Erreur parsage {fichier} : {exc}", file=sys.stderr)
+            print(f"Parsing error {fichier}: {exc}", file=sys.stderr)
             sys.exit(1)
         for doc in docs:
             if doc.get("id"):
@@ -102,7 +102,7 @@ def charger_dfiq():
 
 
 def lire_trace(nom):
-    """Lit /referentiels/traces/<nom>.txt -> dict cle: valeur."""
+    """Reads /referentiels/traces/<nom>.txt -> dict key: value."""
     chemin = TRACES / f"{nom}.txt"
     if not chemin.is_file():
         return None
@@ -147,7 +147,7 @@ def base_matche(nom: str, base: str) -> bool:
 
 
 def matcher_collection(nom_collection: str, definitions):
-    """Rapproche une collection (nom de fichier/dossier) des sources FILE/PATH."""
+    """Match a collection (file/folder name) against FILE/PATH sources."""
     nom = nom_collection.casefold()
     correspondances = []
     for artefact, origine in definitions:
@@ -162,39 +162,39 @@ def matcher_collection(nom_collection: str, definitions):
     return sorted(dict.fromkeys(correspondances))
 
 
-def cmd_artefacts_match(chemin_manifest: str):
+def cmd_artifacts_match(chemin_manifest: str):
     manifest = Path(chemin_manifest)
     if not manifest.is_file():
-        print(f"Erreur : manifest introuvable : {manifest}", file=sys.stderr)
+        print(f"Error: manifest not found: {manifest}", file=sys.stderr)
         return 1
     donnees = yaml.safe_load(manifest.read_text())
     definitions = charger_artefacts()
-    print(f"[artefacts match] {len(definitions)} definitions chargees "
-          f"(amont + kit), manifest : {manifest.name}")
+    print(f"[artifacts match] {len(definitions)} definitions loaded "
+          f"(upstream + kit), manifest: {manifest.name}")
     for collection in donnees.get("collections", []):
-        trouve = matcher_collection(collection.get("nom", ""), definitions)
-        collection["artefacts"] = [nom for nom, _ in trouve]
+        trouve = matcher_collection(collection.get("name", ""), definitions)
+        collection["artifacts"] = [nom for nom, _ in trouve]
         kit = [nom for nom, origine in trouve if origine == "kit"]
         detail = ", ".join(nom + (" [kit]" if origine == "kit" else "")
                            for nom, origine in trouve) or "-"
-        print(f"  {collection.get('nom','?')} -> {detail}")
+        print(f"  {collection.get('name','?')} -> {detail}")
         if kit:
-            print(f"    (definitions kit utilisees : {', '.join(kit)})")
+            print(f"    (kit definitions used: {', '.join(kit)})")
     info_a, info_d = lire_trace("artifacts"), lire_trace("dfiq")
-    donnees["referentiels"] = {
-        "artefacts": {
-            "source": (info_a or {}).get("source", "inconnue"),
-            "version": (info_a or {}).get("release", "inconnue"),
-            "date_build": (info_a or {}).get("date_build", "inconnue"),
+    donnees["referentials"] = {
+        "artifacts": {
+            "source": (info_a or {}).get("source", "unknown"),
+            "version": (info_a or {}).get("release", "unknown"),
+            "built_at": (info_a or {}).get("date_build", "unknown"),
         },
         "dfiq": {
-            "source": (info_d or {}).get("source", "inconnue"),
-            "commit": (info_d or {}).get("commit", "inconnu"),
-            "date_build": (info_d or {}).get("date_build", "inconnue"),
+            "source": (info_d or {}).get("source", "unknown"),
+            "commit": (info_d or {}).get("commit", "unknown"),
+            "built_at": (info_d or {}).get("date_build", "unknown"),
         },
     }
     manifest.write_text(yaml.safe_dump(donnees, sort_keys=False, allow_unicode=True))
-    print("[artefacts match] manifest mis a jour (champ artefacts par collection + referentiels)")
+    print("[artifacts match] manifest updated (artifacts field per collection + referentials)")
     return 0
 
 
@@ -208,30 +208,30 @@ def resoudre_chemin(pattern: str):
 
 
 def decrire_artefact(artefact, origine, verbose=True):
-    lignes = [f"## {artefact.name} [{'kit' if origine == 'kit' else 'amont'}]",
-              f"OS : {', '.join(artefact.supported_os or ['tous'])}"]
+    lignes = [f"## {artefact.name} [{'kit' if origine == 'kit' else 'upstream'}]",
+              f"OS: {', '.join(artefact.supported_os or ['all'])}"]
     doc = (artefact.description or "").strip().splitlines()
     if doc:
-        lignes.append(f"Description : {doc[0]}")
+        lignes.append(f"Description: {doc[0]}")
     for source in artefact.sources or []:
         lignes.append(f"- source {source.type_indicator}")
         if source.type_indicator == "ARTIFACT_GROUP":
             for nom in (source.AsDict() or {}).get("names", []):
-                lignes.append(f"  - membre : {nom}")
+                lignes.append(f"  - member: {nom}")
             continue
         attributs = source.AsDict() or {}
         for pattern in attributs.get("paths", attributs.get("keys", [])):
-            lignes.append(f"  - pattern : {pattern}")
+            lignes.append(f"  - pattern: {pattern}")
             if verbose:
                 resolu, variables = resoudre_chemin(pattern)
-                suffixe = f" (variables : {', '.join(variables)})" if variables else ""
-                lignes.append(f"    resolu : {resolu}{suffixe}")
+                suffixe = f" (variables: {', '.join(variables)})" if variables else ""
+                lignes.append(f"    resolved: {resolu}{suffixe}")
         if verbose and OUTILS_PAR_TYPE.get(source.type_indicator):
-            lignes.append(f"  outils kit : {OUTILS_PAR_TYPE[source.type_indicator]}")
+            lignes.append(f"  kit tools: {OUTILS_PAR_TYPE[source.type_indicator]}")
     return "\n".join(lignes)
 
 
-def cmd_artefacts_expand(nom: str):
+def cmd_artifacts_expand(nom: str):
     definitions = charger_artefacts()
     for artefact, origine in definitions:
         if artefact.name == nom:
@@ -239,17 +239,17 @@ def cmd_artefacts_expand(nom: str):
             return 0
     insensibles = [a.name for a, _ in definitions if a.name.casefold() == nom.casefold()]
     if insensibles:
-        print(f"Artefact '{nom}' introuvable ; orthographe exacte : {insensibles[0]}")
+        print(f"Artifact '{nom}' not found; exact spelling: {insensibles[0]}")
         return 1
-    print(f"Artefact '{nom}' introuvable dans le referentiel (amont + kit). "
-          "Utiliser : artefacts index")
+    print(f"Artifact '{nom}' not found in the referential (upstream + kit). "
+          "Use: artifacts index")
     return 1
 
 
 # ------------------------------------------------------------------- index
 
 def ecrire_genere(chemin: Path, marqueur: str, contenu: str, titre_defaut: str):
-    """Ecrit la section generee entre marqueurs, en preservant le reste du fichier."""
+    """Writes the generated section between markers, preserving the rest of the file."""
     debut = f"<!-- genere:{marqueur}:debut -->"
     fin = f"<!-- genere:{marqueur}:fin -->"
     bloc = f"{debut}\n{contenu}\n{fin}\n"
@@ -263,17 +263,17 @@ def ecrire_genere(chemin: Path, marqueur: str, contenu: str, titre_defaut: str):
     chemin.write_text(f"{titre_defaut}\n\n{bloc}")
 
 
-def cmd_artefacts_index(sortie: str):
+def cmd_artifacts_index(sortie: str):
     definitions = charger_artefacts()
     lignes = [
-        f"Index genere depuis le referentiel bake ({len(definitions)} definitions, "
-        "amont + kit) - ne pas editer cette section.",
+        f"Index generated from the baked referential ({len(definitions)} definitions, "
+        "upstream + kit) - do not edit this section.",
         "",
-        "| Artefact | OS | Sources | Description |",
+        "| Artifact | OS | Sources | Description |",
         "|----------|----|---------|-------------|",
     ]
     for artefact, origine in sorted(definitions, key=lambda a: a[0].name.casefold()):
-        os_txt = ",".join(o.split()[0] for o in (artefact.supported_os or ["tous"]))
+        os_txt = ",".join(o.split()[0] for o in (artefact.supported_os or ["all"]))
         types = {}
         for source in artefact.sources or []:
             types[source.type_indicator] = types.get(source.type_indicator, 0) + 1
@@ -286,18 +286,19 @@ def cmd_artefacts_index(sortie: str):
     if sortie == "-":
         print(contenu)
     else:
-        ecrire_genere(Path(sortie), "artefacts", contenu,
-                      "# Referentiel d'artefacts ForensicArtifacts\n\n"
-                      "Mapping kit et usage : sections ci-dessous et ci-dessus. "
-                      "Le referentiel amont est bake dans l'image a chaque build "
-                      "(versions : manifest de l'affaire, champ `referentiels`).")
-        print(f"Index artefacts ecrit : {sortie}")
+        ecrire_genere(Path(sortie), "artefacts", contenu,   # marqueur stable (compat fichiers existants)
+                      "# ForensicArtifacts artifact referential\n\n"
+                      "Kit mapping and usage: sections below and above. The upstream "
+                      "referential is baked into the image at each build (versions: "
+                      "case manifest, `referentials` field).")
+        print(f"Artifacts index written: {sortie}")
     return 0
 
 
 # ------------------------------------------------------------------- check
 
 def verifier_manifest(manifest: Path, racine: Path):
+    """Recomputes SHA256 of every MANIFEST.sha256 line."""
     if not manifest.is_file():
         return False, f"{manifest} absent"
     echecs = []
@@ -313,28 +314,28 @@ def verifier_manifest(manifest: Path, racine: Path):
     return (not echecs), "; ".join(echecs[:5]) or "integre"
 
 
-def cmd_artefacts_check():
+def cmd_artifacts_check():
     problems = []
     n_fichiers = len(list(ARTIFACTS_DATA.rglob("*.yaml")))
     ok_manifest, detail = verifier_manifest(ARTIFACTS_MANIFEST, ARTIFACTS_MANIFEST.parent)
     if not ok_manifest:
-        problems.append(f"integrite MANIFEST : {detail}")
+        problems.append(f"MANIFEST integrity: {detail}")
     if n_fichiers < 10:
-        problems.append(f"corpus anormalement petit ({n_fichiers} fichiers)")
+        problems.append(f"abnormally small corpus ({n_fichiers} files)")
     n_defs = len(charger_artefacts())
     for trace in ("artifacts", "dfiq"):
         if not (TRACES / f"{trace}.txt").is_file():
-            problems.append(f"trace absente : /referentiels/traces/{trace}.txt")
+            problems.append(f"missing trace: /referentiels/traces/{trace}.txt")
     customs = len(list(KIT_ARTIFACTS.glob("*.yaml"))) if KIT_ARTIFACTS.is_dir() else 0
     for nom, info in ({"artifacts": lire_trace("artifacts"), "dfiq": lire_trace("dfiq")}).items():
         if info:
             version = info.get("release") or str(info.get("commit", ""))[:12]
-            print(f"  referentiel {nom} : {version} (build {info.get('date_build')})")
-    print(f"  corpus : {n_fichiers} fichiers, {n_defs} definitions chargees, {customs} customs kit")
+            print(f"  referential {nom}: {version} (built {info.get('date_build')})")
+    print(f"  corpus: {n_fichiers} files, {n_defs} definitions loaded, {customs} kit customs")
     if problems:
-        print("[artefacts check] ECHEC : " + " ; ".join(problems))
+        print("[artifacts check] FAILED: " + " ; ".join(problems))
         return 1
-    print("[artefacts check] OK")
+    print("[artifacts check] OK")
     return 0
 
 
@@ -350,7 +351,7 @@ def cmd_dfiq_arbre(id_scenario: str):
     cibles = ([corpus["scenario"][id_scenario]] if id_scenario != "-"
               else sorted(corpus["scenario"].values(), key=lambda d: d["id"]))
     if id_scenario != "-" and id_scenario not in corpus["scenario"]:
-        print(f"Scenario '{id_scenario}' introuvable. Scenarios : "
+        print(f"Scenario '{id_scenario}' not found. Scenarios: "
               + ", ".join(sorted(corpus["scenario"])))
         return 1
     for scenario in cibles:
@@ -366,8 +367,8 @@ def cmd_dfiq_arbre(id_scenario: str):
                                    key=lambda d: d.get("id", "")):
                 origine_q = " [kit]" if question["id"] in corpus["kit"] else ""
                 n_app = len(question.get("approaches") or [])
-                print(f"    - {question['id']}{origine_q} : {question.get('name')} "
-                      f"(approches : {n_app})")
+                print(f"    - {question['id']}{origine_q}: {question.get('name')} "
+                      f"(approaches: {n_app})")
     return 0
 
 
@@ -375,20 +376,20 @@ def cmd_dfiq_plan(identifiant: str):
     corpus = charger_dfiq()
     tout = {**corpus["scenario"], **corpus["facet"], **corpus["question"]}
     if identifiant not in tout:
-        print(f"Identifiant '{identifiant}' introuvable (S/F/Q amont + kit).")
+        print(f"Identifier '{identifiant}' not found (upstream + kit S/F/Q).")
         return 1
     doc = tout[identifiant]
     origine = " [kit]" if identifiant in corpus["kit"] else ""
     if doc["type"] == "scenario":
         cmd_dfiq_arbre(identifiant)
-        print("\nUtiliser : dfiq plan <Q-id> pour le plan de reponse d'une question.")
+        print("\nUse: dfiq plan <Q-id> for the answer plan of a question.")
         return 0
     if doc["type"] == "facet":
         print(f"## {doc['id']}{origine} - {doc.get('name')}")
         for question in sorted(enfants(corpus, "facet", doc["id"]), key=lambda d: d.get("id", "")):
-            print(f"  - {question['id']} : {question.get('name')} "
-                  f"(approches : {len(question.get('approaches') or [])})")
-        print("\nUtiliser : dfiq plan <Q-id> pour le plan de reponse d'une question.")
+            print(f"  - {question['id']}: {question.get('name')} "
+                  f"(approaches: {len(question.get('approaches') or [])})")
+        print("\nUse: dfiq plan <Q-id> for the answer plan of a question.")
         return 0
     tags = ", ".join(doc.get("tags") or []) or "-"
     print(f"## {doc['id']}{origine} - {doc.get('name')} [{tags}]")
@@ -396,21 +397,21 @@ def cmd_dfiq_plan(identifiant: str):
         print("   " + " ".join(doc["description"].split()))
     approches = doc.get("approaches") or []
     if not approches:
-        print("\nAucune approche executable dans le corpus amont pour cette question.")
-        print("Traitement kit : passer par les signaux du catalogue (catalogue/) et les "
-              "skills d'analyse ; documenter l'ecart ; candidat a une approche custom "
+        print("\nNo executable approach in the upstream corpus for this question.")
+        print("Kit handling: go through the catalogue signals (catalogue/) and the "
+              "analysis skills; document the gap; candidate for a kit-custom approach "
               "(referentiels-kit/dfiq/).")
         return 0
     definitions = {a.name: (a, o) for a, o in charger_artefacts()}
     for i, approche in enumerate(approches, 1):
-        print(f"\n### Approche {i} : {approche.get('name')}")
+        print(f"\n### Approach {i}: {approche.get('name')}")
         if approche.get("description"):
             print("   " + " ".join(approche["description"].split()))
         notes = approche.get("notes") or {}
         if notes.get("covered"):
-            print("   couvre : " + " ; ".join(" ".join(str(c).split()) for c in notes["covered"]))
+            print("   covers: " + " ; ".join(" ".join(str(c).split()) for c in notes["covered"]))
         if notes.get("not_covered"):
-            print("   ne couvre pas : "
+            print("   does not cover: "
                   + " ; ".join(" ".join(str(c).split()) for c in notes["not_covered"]))
         for etape in approche.get("steps") or []:
             stage = etape.get("stage", "?")
@@ -418,12 +419,12 @@ def cmd_dfiq_plan(identifiant: str):
             if etape.get("type") == "ForensicArtifact" and etape.get("value"):
                 cible = definitions.get(etape["value"])
                 if cible:
-                    print(f"     -> artefact {etape['value']} :")
+                    print(f"     -> artifact {etape['value']}:")
                     print("     " + decrire_artefact(cible[0], cible[1]).replace("\n", "\n     "))
                 else:
-                    print(f"     -> artefact {etape['value']} introuvable dans le referentiel "
-                          "bake (versions amont evoluent) : chercher dans artefacts index "
-                          "ou definir un artefact kit.")
+                    print(f"     -> artifact {etape['value']} not found in the baked "
+                          "referential (upstream versions evolve): look into artifacts index "
+                          "or define a kit artifact.")
     return 0
 
 
@@ -431,9 +432,9 @@ def cmd_dfiq_index(sortie: str):
     corpus = charger_dfiq()
     n_app = sum(len(q.get("approaches") or []) for q in corpus["question"].values())
     lignes = [
-        f"Index genere depuis le corpus bake ({len(corpus['scenario'])} scenarios, "
+        f"Index generated from the baked corpus ({len(corpus['scenario'])} scenarios, "
         f"{len(corpus['facet'])} facets, {len(corpus['question'])} questions, "
-        f"{n_app} approches) - ne pas editer cette section.",
+        f"{n_app} approaches) - do not edit this section.",
         "",
     ]
     for scenario in sorted(corpus["scenario"].values(), key=lambda d: d.get("id", "")):
@@ -441,7 +442,7 @@ def cmd_dfiq_index(sortie: str):
         origine = " [kit]" if scenario["id"] in corpus["kit"] else ""
         lignes.append(f"## {scenario['id']}{origine} - {scenario.get('name')} [{tags}]")
         facets = enfants(corpus, "scenario", scenario["id"])
-        lignes.append(f"Facets : {len(facets)} ; questions : "
+        lignes.append(f"Facets: {len(facets)}; questions: "
                       f"{sum(len(enfants(corpus, 'facet', f['id'])) for f in facets)}")
         for facet in sorted(facets, key=lambda d: d.get("id", "")):
             origine_f = " [kit]" if facet["id"] in corpus["kit"] else ""
@@ -450,18 +451,18 @@ def cmd_dfiq_index(sortie: str):
                                    key=lambda d: d.get("id", "")):
                 origine_q = " [kit]" if question["id"] in corpus["kit"] else ""
                 n = len(question.get("approaches") or [])
-                lignes.append(f"- {question['id']}{origine_q} : {question.get('name')} "
-                              f"(approches : {n})")
+                lignes.append(f"- {question['id']}{origine_q}: {question.get('name')} "
+                              f"(approaches: {n})")
         lignes.append("")
     contenu = "\n".join(lignes)
     if sortie == "-":
         print(contenu)
     else:
         ecrire_genere(Path(sortie), "dfiq", contenu,
-                      "# Referentiel DFIQ (Digital Forensics Investigation Questions)\n\n"
-                      "Mapping kit et usage : sections ci-dessus et ci-dessous. "
-                      "Le corpus amont est bake dans l'image a chaque build.")
-        print(f"Index DFIQ ecrit : {sortie}")
+                      "# DFIQ referential (Digital Forensics Investigation Questions)\n\n"
+                      "Kit mapping and usage: sections above and below. The upstream "
+                      "corpus is baked into the image at each build.")
+        print(f"DFIQ index written: {sortie}")
     return 0
 
 
@@ -469,24 +470,23 @@ def cmd_dfiq_check():
     problems = []
     ok_manifest, detail = verifier_manifest(DFIQ_MANIFEST, DFIQ_MANIFEST.parent)
     if not ok_manifest:
-        problems.append(f"integrite MANIFEST : {detail}")
+        problems.append(f"MANIFEST integrity: {detail}")
     corpus = charger_dfiq()
     if not (corpus["scenario"] and corpus["facet"] and corpus["question"]):
-        problems.append("corpus incomplet (S/F/Q)")
-    tout = {**corpus["scenario"], **corpus["facet"], **corpus["question"]}
+        problems.append("incomplete corpus (S/F/Q)")
     orphelins = [doc["id"] for doc in {**corpus["facet"], **corpus["question"]}.values()
                  for p in (doc.get("parent_ids") or []) if p not in corpus["scenario"]
                  and p not in corpus["facet"] and p not in corpus["question"]]
     if orphelins:
-        problems.append(f"parents introuvables : {', '.join(sorted(set(orphelins))[:5])}")
+        problems.append(f"missing parents: {', '.join(sorted(set(orphelins))[:5])}")
     info = lire_trace("dfiq")
     if info:
-        print(f"  referentiel dfiq : {str(info.get('commit', ''))[:12]} "
-              f"(build {info.get('date_build')})")
-    print(f"  corpus : S={len(corpus['scenario'])} F={len(corpus['facet'])} "
+        print(f"  referential dfiq: {str(info.get('commit', ''))[:12]} "
+              f"(built {info.get('date_build')})")
+    print(f"  corpus: S={len(corpus['scenario'])} F={len(corpus['facet'])} "
           f"Q={len(corpus['question'])}, kit={len(corpus['kit'])}")
     if problems:
-        print("[dfiq check] ECHEC : " + " ; ".join(problems))
+        print("[dfiq check] FAILED: " + " ; ".join(problems))
         return 1
     print("[dfiq check] OK")
     return 0
@@ -501,17 +501,17 @@ def main():
         return 2
     famille, action = arguments[0], arguments[1] if len(arguments) > 1 else ""
     reste = arguments[2:]
-    if famille == "artefacts":
+    if famille in ("artifacts", "artefacts"):
         if action == "match" and reste:
-            return cmd_artefacts_match(reste[0])
+            return cmd_artifacts_match(reste[0])
         if action == "expand" and reste:
-            return cmd_artefacts_expand(reste[0])
+            return cmd_artifacts_expand(reste[0])
         if action == "index":
-            return cmd_artefacts_index(reste[0] if reste else "-")
+            return cmd_artifacts_index(reste[0] if reste else "-")
         if action == "check":
-            return cmd_artefacts_check()
+            return cmd_artifacts_check()
     if famille == "dfiq":
-        if action == "arbre":
+        if action in ("arbre", "tree"):
             return cmd_dfiq_arbre(reste[0] if reste else "-")
         if action == "plan" and reste:
             return cmd_dfiq_plan(reste[0])

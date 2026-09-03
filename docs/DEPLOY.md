@@ -1,39 +1,44 @@
-# DEPLOY.md - Guide de deploiement multi-laptops
+# DEPLOY.md - multi-laptop deployment guide
 
-Protocole de reference pour deployer le kit OREOA-AI sur un ou plusieurs laptops d'investigation, depuis un OS vierge jusqu'a la premiere affaire, en profils en-ligne ou air-gap.
+Reference protocol to deploy the OREOA-AI kit on one or several investigation laptops,
+from a bare OS to the first case, in online or air-gap profiles. French version:
+[DEPLOY.fr.md](DEPLOY.fr.md).
 
-**Mode guidance** : ce document est lu par l'agent. Demande simplement a l'agent de te guider pour deployer le kit - il conduit pas a pas, verifie chaque retour et execute lui-meme ce qui ne requiert pas de privileges. Le comportement de guidage est defini dans `skills/deploiement.md`.
+**Guidance mode**: this document is read by the agent. Simply ask the agent to guide
+you through the kit deployment - it drives step by step, verifies every output and
+executes itself whatever does not require privileges. Guidance behavior is defined in
+`skills/deploiement.md`.
 
-## 1. Vue d'ensemble
+## 1. Overview
 
-Le parcours en trois temps :
+The three-step path:
 
 ```
-1. Preparer l'hote        Docker, git, Python, groupe docker (analyste, commandes sudo)
-2. Deployer et provisionner   dossier du kit -> doctor check / fix / test (agent ou analyste)
-3. Configurer le LLM      /connect (cloud) ou bloc provider (passerelle, local)
+1. Prepare the host        Docker, git, Python, docker group (analyst, sudo commands)
+2. Deploy and provision    kit folder -> doctor check / fix / test (agent or analyst)
+3. Configure the LLM       tool auth flow (cloud) or provider block (gateway, local)
 ```
 
-| Acteur | Role |
-|--------|------|
-| Analyste | actions sudo (installation Docker, groupe), lancement de `/connect`, decisions |
-| Agent | diagnostic, provisioning via doctor, tests, guidage pas a pas |
-| doctor | mesure de sante, provisioning avec barriere d'espace disque, qualification |
+| Actor | Role |
+|-------|------|
+| Analyst | sudo actions (Docker install, group), tool auth flow, decisions |
+| Agent | diagnosis, provisioning via doctor, tests, step-by-step guidance |
+| doctor | health measurement, provisioning with disk-space barrier, qualification |
 
-## 2. Prerequis de l'hote (Debian/Ubuntu)
+## 2. Host prerequisites (Debian/Ubuntu)
 
-| Composant | Version | Verification |
+| Component | Version | Verification |
 |-----------|---------|--------------|
-| Debian ou Ubuntu | 12+ | `cat /etc/os-release` |
+| Debian or Ubuntu | 12+ | `cat /etc/os-release` |
 | Docker Engine + CLI | >= 20.10 | `docker version` |
 | git | >= 2.30 | `git --version` |
 | Python 3 | >= 3.10 | `python3 --version` |
-| pyyaml | derniere | `python3 -c "import yaml"` |
-| bash | >= 4.2 | integre |
+| pyyaml | latest | `python3 -c "import yaml"` |
+| bash | >= 4.2 | built-in |
 
-### Installation de Docker
+### Docker installation
 
-**Voie simple (paquet de la distribution)** :
+**Simple path (distribution package)**:
 
 ```bash
 sudo apt update
@@ -41,36 +46,40 @@ sudo apt install -y docker.io
 sudo systemctl enable --now docker
 ```
 
-**Voie alternative (depot officiel Docker, versions plus recentes)** : suivre la procedure officielle "Install Docker Engine on Debian/Ubuntu" (depot `download.docker.com`) - le kit n'exige pas de version recente, la voie simple suffit.
+**Alternative path (official Docker repository, newer versions)**: follow the official
+"Install Docker Engine on Debian/Ubuntu" procedure (`download.docker.com` repository) -
+the kit does not require a recent version, the simple path is enough.
 
-### Groupe docker (obligatoire)
+### Docker group (mandatory)
 
 ```bash
 sudo usermod -aG docker $USER
 ```
 
-**Important** : l'appartenance au groupe n'est effective qu'a l'ouverture d'une **nouvelle session** de l'utilisateur. Verifier apres reconnexion : `id -Gn | grep docker`.
+**Important**: group membership only takes effect at the opening of a **new session**.
+Verify after re-login: `id -Gn | grep docker`.
 
-### Autres prerequis
+### Other prerequisites
 
 ```bash
 sudo apt install -y git python3 python3-yaml
 ```
 
-Espace disque recommande : 20 Go libres (la barriere de provisioning refuse toute ecriture sous 3 Go pour un build, 2 Go pour un chargement de bundle - `config/tools.yaml`).
+Recommended disk space: 20 GB free (the provisioning barrier refuses any write below
+3 GB for a build, 2 GB for a bundle load - `config/tools.yaml`).
 
-## 3. Acquisition du kit
+## 3. Kit acquisition
 
-### Profil en-ligne
+### Online profile
 
 ```bash
 git clone https://github.com/kidrek/OREOA-AI.git
 cd OREOA-AI
 ```
 
-### Profil air-gap
+### Air-gap profile
 
-1. Sur une machine connectee : cloner le depot et produire une archive :
+1. On a connected machine: clone the repository and produce an archive:
 
 ```bash
 git clone https://github.com/kidrek/OREOA-AI.git
@@ -78,76 +87,87 @@ tar czf oreoa-ai-<version>.tar.gz --exclude=.git --exclude=cases OREOA-AI
 sha256sum oreoa-ai-<version>.tar.gz
 ```
 
-2. Transférer l'archive et son empreinte par media amovible.
-3. Sur le laptop isole : extraire et **verifier l'empreinte avant toute manipulation**.
+2. Transfer the archive and its hash via removable media.
+3. On the isolated laptop: extract and **verify the hash before any manipulation**.
 
 ## 4. Provisioning
 
-Par l'agent (autonome) ou manuellement :
+By the agent (autonomous) or manually:
 
 ```bash
-python3 scripts/doctor.py check   # sante : prerequis, image, bundle, espace disque
-python3 scripts/doctor.py fix     # provisioning : bundle air-gap si present, sinon build
-python3 scripts/doctor.py test    # 8 outils + bibliotheques + copyright + E2E
+python3 scripts/doctor.py check   # health: prerequisites, image, bundle, disk space
+python3 scripts/doctor.py fix     # provisioning: air-gap bundle if present, else build
+python3 scripts/doctor.py test    # 8 tools + libraries + copyright + E2E
 ```
 
-Comportements cles :
+Key behaviors:
 
-- **Barriere d'espace disque** : `fix` refuse toute ecriture si l'espace libre sur la partition de stockage Docker est inferieur aux seuils (3 Go build / 2 Go chargement de bundle)
-- **Bundle air-gap** : si `tools/oreoa-ai-tools-<tag>.tar.gz` est present, `fix` le charge (`docker load`) sans reseau
-- **Referentiels amont au build** : en build en-ligne, `fix` reconstruit systematiquement l'image (cache preserve) pour rafraichir les referentiels embarques (ForensicArtifacts release la plus recente + DFIQ main) - versions affichees apres le build, details dans [REFERENTIELS.md](REFERENTIELS.md)
-- **Qualification** : `test` verifie chaque outil pinné, les bibliotheques, la presence des fichiers copyright, l'integrite des referentiels embarques, et execute le test de bout en bout. Verdict `OK` = laptop operationnel
+- **Disk-space barrier**: `fix` refuses any write if free space on the Docker storage
+  partition is below the thresholds (3 GB build / 2 GB bundle load)
+- **Air-gap bundle**: if `tools/oreoa-ai-tools-<tag>.tar.gz` is present, `fix` loads it
+  (`docker load`) without network
+- **Upstream referentials at build**: in online build, `fix` systematically rebuilds
+  the image (cache preserved) to refresh the embedded referentials (ForensicArtifacts
+  latest release + DFIQ main) - versions displayed after the build, details in
+  [REFERENTIALS.md](REFERENTIALS.md)
+- **Qualification**: `test` verifies every pinned tool, the libraries, the copyright
+  files, the integrity of the embedded referentials, and runs the end-to-end test.
+  `OK` verdict = operational laptop
 
-## 5. Configuration LLM
+## 5. LLM configuration
 
-Arbre de decision :
+Decision tree:
 
 ```
-Quel LLM ?
-├── Cloud standard (Anthropic, OpenAI...) + laptop en ligne
-│     -> /connect (opencode) ou /login (claude code)
-├── Passerelle OpenAI-compatible d'entreprise + en ligne
-│     -> bloc provider dans opencode.json
+Which LLM?
+├── Standard cloud (Anthropic, OpenAI...) + online laptop
+│     -> tool auth flow (opencode /connect or claude /login)
+├── Corporate OpenAI-compatible gateway + online
+│     -> provider block in opencode.json
 └── Local (air-gap)
-      -> Ollama ou vLLM, bloc provider dans opencode.json
+      -> Ollama or vLLM, provider block in opencode.json
 ```
 
-### 5.1 Cloud standard - `/connect`
+### 5.1 Standard cloud - tool auth flow
 
-L'analyste lance la commande interactive lui-meme (identifiants stockes dans son home, jamais dans le depot) :
+The analyst runs the interactive flow (credentials stored in their home, never in the
+repository):
 
 ```text
-opencode > /connect        # suivre le flux du provider (navigateur)
-claude  > /login           # equivalent Claude Code
+opencode > /connect        # follow the provider flow (browser)
+claude  > /login           # Claude Code equivalent
 ```
 
-Verification : la conversation avec l'agent fonctionne - c'est la preuve que le LLM repond. Avantage : aucune cle API dans les fichiers, credentials par utilisateur et par machine (instances autonomes).
+Verification: the conversation with the agent works - that is the proof the LLM
+answers. Advantage: no API key in files, per-user per-machine credentials (autonomous
+instances).
 
-### 5.2 Passerelle OpenAI-compatible d'entreprise
+### 5.2 Corporate OpenAI-compatible gateway
 
-Bloc `provider` dans `opencode.json` (cle fournie par variable d'environnement, jamais en clair) :
+`provider` block in `opencode.json` (key provided through environment variable, never
+in clear):
 
 ```json
 {
   "provider": {
-    "entreprise": {
+    "corporate": {
       "npm": "@ai-sdk/openai-compatible",
-      "options": { "baseURL": "https://llm-gateway.interne/v1" }
+      "options": { "baseURL": "https://llm-gateway.internal/v1" }
     }
   },
-  "model": "entreprise/modele-deployee"
+  "model": "corporate/deployed-model"
 }
 ```
 
 ### 5.3 Local - Ollama (air-gap)
 
 ```bash
-# machine connectee (preparation) :
-ollama pull <modele>
-# transferer les modeles par media : repertoire OLLAMA_MODELS (~/.ollama/models)
+# connected machine (preparation):
+ollama pull <model>
+# transfer the models via media: OLLAMA_MODELS directory (~/.ollama/models)
 
-# laptop isole :
-ollama serve               # ecoute localhost:11434
+# isolated laptop:
+ollama serve               # listens on localhost:11434
 curl -s http://localhost:11434/v1/models | head    # verification
 ```
 
@@ -157,17 +177,17 @@ curl -s http://localhost:11434/v1/models | head    # verification
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
       "options": { "baseURL": "http://localhost:11434/v1" },
-      "models": { "<modele>": { "name": "<modele> (local)" } }
+      "models": { "<model>": { "name": "<model> (local)" } }
     }
   },
-  "model": "ollama/<modele>"
+  "model": "ollama/<model>"
 }
 ```
 
 ### 5.4 Local - vLLM (air-gap, GPU)
 
 ```bash
-vllm serve <modele> --port 8000
+vllm serve <model> --port 8000
 curl -s http://localhost:8000/v1/models | head     # verification
 ```
 
@@ -179,82 +199,94 @@ curl -s http://localhost:8000/v1/models | head     # verification
       "options": { "baseURL": "http://localhost:8000/v1", "apiKey": "EMPTY" }
     }
   },
-  "model": "vllm/<modele>"
+  "model": "vllm/<model>"
 }
 ```
 
-**Regle air-gap** : aucun reseau pendant l'investigation - seul le service LLM local est contacte ; les conteneurs d'outils sont toujours sans reseau (`--network none`).
+**Air-gap rule**: no network during the investigation - only the local LLM service is
+contacted; tool containers are always network-less (`--network none`).
 
-## 6. Echange d'affaires entre laptops
+## 6. Case exchange between laptops
 
-Chaque instance est autonome : elle ne voit pas les autres. Les echanges sont explicites.
+Every instance is autonomous: it sees no other. Exchanges are explicit.
 
-| Flux | Canal | Securite |
-|------|-------|----------|
-| Code du kit, methodologie, catalogues | depot git | version communes (voir section 7) |
-| Evidence, affaires, rapports | media amovible | SHA256 du manifest verifiee a l'import |
+| Flow | Channel | Security |
+|------|---------|----------|
+| Kit code, methodology, catalogues | git repository | common versions (see section 7) |
+| Evidence, cases, reports | removable media | manifest SHA256 verified at import |
 
-Procedure de transfert d'affaire :
+Case transfer procedure:
 
-1. Exporter le dossier d'affaire complet (`cases/CASE-xxx/`) sur le media
-2. A l'import : recalculer les SHA256 des collections et les comparer au `manifest.yaml`
-3. Journaliser le transfert dans `journal.md` de l'affaire (date, source, destination, empreintes)
+1. Export the full case directory (`cases/CASE-xxx/`) to the media
+2. At import: recompute collection SHA256s and compare with `manifest.yaml`
+3. Journalize the transfer in the case `journal.md` (date, source, destination, hashes)
 
-## 7. Maintenance et coherence du parc
+## 7. Maintenance and fleet consistency
 
-Chaque instance est autonome, mais le parc ne reste comparable que si les versions sont alignees.
+Every instance is autonomous, but the fleet only stays comparable if versions are
+aligned.
 
-**Regle d'or : meme commit du depot + meme digest d'image sur toutes les instances.**
+**Golden rule: same repository commit + same image digest on every instance.**
 
-Montee de version d'une instance :
-
-```bash
-git pull                              # nouvelle version du kit
-python3 scripts/doctor.py fix         # rebuild (cache preserve : LABEL en fin de Dockerfile)
-python3 scripts/doctor.py test        # requalification complete
-```
-
-Le digest de la nouvelle image est journalise dans les affaires traitees apres la montee de version (tracabilite forensique). Affaires en cours : les clore ou les archiver avant la montee de version. Jamais de patch manuel de l'image ou du bundle.
-
-## 8. Checklist laptop neuf
-
-```
-[ ] OS Debian/Ubuntu a jour
-[ ] Docker installe et demon actif (docker version)
-[ ] Utilisateur dans le groupe docker (apres nouvelle session : id -Gn)
-[ ] git + python3 + pyyaml installes
-[ ] 20 Go libres minimum (barriere doctor : 3 Go build / 2 Go load)
-[ ] Kit deploye (clone ou media, empreinte verifiee en air-gap)
-[ ] doctor check : verdict OK
-[ ] doctor fix : image provisionnee, digest consigne
-[ ] doctor test : verdict OK (8 outils + bibliotheques + copyright + E2E)
-[ ] LLM configure et verifie (/connect, auth login ou curl local OK)
-[ ] Premiere session : outil agentique lance dans le dossier, autotest + accueil affiches
-[ ] Premiere affaire de test creee (/case) et journal initie
-```
-
-## 9. Premier lancement et mode guidance
-
-Aucun lanceur : l'analyste ouvre son outil agentique directement dans le dossier du kit.
+Instance version upgrade:
 
 ```bash
-opencode                      # ou claude, ou tout agent lisant AGENTS.md
+git pull                              # new kit version
+python3 scripts/doctor.py fix         # rebuild (cache preserved: LABEL at the end of the Dockerfile)
+python3 scripts/doctor.py test        # full requalification
 ```
 
-La connexion au modele LLM est geree par l'outil agentique lui-meme (opencode et
-Claude Code ont leur propre flux d'authentification ; configuration avancee - provider
-personnalise, air-gap - section 5 ci-dessus). La section "Demarrage" d'`AGENTS.md`
-definit le comportement de la premiere reponse :
+The digest of the new image is journalized in the cases processed after the upgrade
+(forensic traceability). Cases in progress: close or archive them before the upgrade.
+Never hand-patch the image or the bundle.
 
-1. **Sante spontanee** : l'agent lit `MEMORY.md`, execute `doctor check` + `doctor test`, rapporte le verdict en 3 lignes
-2. **Routage** : guidage de deploiement si incomplet ; premier lancement (`cases/` sans affaire) -> affichage du guide `docs/DEMARRAGE-RAPIDE.md` puis demande d'intention ; sessions suivantes -> verdict + rappel court
-3. **Deux commandes** : `/case "<nom>"` (ouvrir une affaire : creation ou switch, contexte, depots) puis deposer les collectes dans `00_evidence/originals/`, et `/analyse` (investigation complete avec gates)
+## 8. New laptop checklist
 
-Commandes rapides dans l'agent :
+```
+[ ] Debian/Ubuntu OS up to date
+[ ] Docker installed and daemon active (docker version)
+[ ] User in the docker group (after new session: id -Gn)
+[ ] git + python3 + pyyaml installed
+[ ] 20 GB free minimum (doctor barrier: 3 GB build / 2 GB load)
+[ ] Kit deployed (clone or media, hash verified in air-gap)
+[ ] doctor check: OK verdict
+[ ] doctor fix: image provisioned, digest recorded
+[ ] doctor test: OK verdict (8 tools + libraries + copyright + E2E)
+[ ] LLM configured and verified (/connect, auth login or local curl OK)
+[ ] First session: agent tool launched in the folder, self-test + welcome displayed
+[ ] First test case created (/case) and journal initialized
+```
+
+## 9. First launch and guidance mode
+
+No launcher: the analyst opens their agent tool directly in the kit folder.
+
+```bash
+opencode                      # or claude, or any agent reading AGENTS.md
+```
+
+LLM connection is handled by the agent tool itself (OpenCode and Claude Code have
+their own auth flows; advanced configuration - custom provider, air-gap - section 5
+above). The "Demarrage" section of `AGENTS.md` defines the first-response behavior:
+
+1. **Spontaneous health**: the agent reads `MEMORY.md`, runs `doctor check` +
+   `doctor test`, reports the verdict in 3 lines
+2. **Routing**: deployment guidance if incomplete; first launch (`cases/` with no
+   case) -> display of the `docs/QUICK-START.md` guide then intention request;
+   following sessions -> verdict + short reminder
+3. **Two commands**: `/case "<name>"` (open a case: creation or switch, context,
+   deposits) then drop the collections into `00_evidence/originals/`, and `/analyse`
+   (full investigation with gates)
+
+Quick commands in the agent:
 
 ```text
-/analyse chemin/vers/collection   # lancer une investigation complete
-/deploy                           # relancer le guidage de deploiement
+/case "case name"                 # open or switch a case
+/analyse                          # full investigation of the current case
+/deploy                           # restart deployment guidance
 ```
 
-Configuration LLM alternative en ligne de commande : `opencode auth login` (equivalent de `/connect`, identifiants dans `~/.local/share/opencode/auth.json`). Pour un endpoint local (air-gap) : bloc provider dans la config globale `~/.config/opencode/opencode.json` - exemple pret a adapter dans `config/profiles/opencode-airgap.example.json`.
+Alternative LLM configuration on the command line: `opencode auth login` (equivalent
+of `/connect`, credentials in `~/.local/share/opencode/auth.json`). For a local
+endpoint (air-gap): provider block in the global `~/.config/opencode/opencode.json`
+config - ready-to-adapt example in `config/profiles/opencode-airgap.example.json`.

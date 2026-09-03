@@ -1,78 +1,82 @@
 ---
-description: Ouvrir, switcher ou lister les affaires d'investigation
+description: Open, switch or list investigation cases
 ---
-Gestion de l'affaire : $ARGUMENTS
+Case management: $ARGUMENTS
 
-## Comportement selon l'argument
+## Behavior per argument
 
-### A. Nom ou identifiant fourni (`/case "Incident serveur web"` ou `/case CASE-2026-0042`)
+### A. Name or identifier provided (`/case "Web server incident"` or `/case CASE-2026-0042`)
 
-**Recherche d'affaire existante** (par id exact, sinon par nom) :
-- une seule correspondance -> **switch** : charge l'etat complet de l'affaire
-  (`manifest.yaml` : statut, collections + artefacts, contexte ; `journal.md` :
-  dernieres entrees ; phase courante selon `methodologie/workflow.md` ; produits
-  dans `02_analysis/`) et presente un **resume de reprise** : id, nom, statut,
-  ce qui a ete fait, phase en cours, prochaine etape. L'affaire devient
-  **l'affaire courante de la session** (ancre logique : les commandes suivantes -
-  ingest, dt, analyses - s'appliquent a elle, executees depuis la racine du kit
-  avec son ID explicite ; jamais de `cd` physique dans le dossier d'affaire)
-- plusieurs correspondances -> tableau des candidats (id + nom + statut) et demande laquelle
-- aucune -> **creation** (ci-dessous), avec confirmation si l'argument ressemble
-  a autre chose qu'un nom (chemin, question...)
+**Search for an existing case** (by exact id, then by name):
+- single match -> **switch**: load the full case state (`manifest.yaml`: status,
+  collections + artifacts, context; `journal.md`: latest entries; current phase per
+  `methodologie/workflow.md`; products in `02_analysis/`) and present a **resume
+  brief**: id, name, status, what was done, current phase, next step. The case becomes
+  the **current case of the session** (logical anchor: subsequent commands - ingest,
+  dt, analyses - apply to it, run from the kit root with its explicit ID; never a
+  physical `cd` into the case directory)
+- several matches -> candidate table (id + name + status) and ask which one
+- none -> **creation** (below), with confirmation if the argument looks like something
+  else (path, question...)
 
-**Creation** : scaffold l'affaire sans aucun script, exactement ainsi :
-1. `ID` = CASE-<annee>-<numero libre a 4 chiffres> (scanner `cases/`)
+**Creation**: scaffold the case without any script, exactly like this:
+1. `ID` = CASE-<year>-<free 4-digit number> (scan `cases/`)
 2. `mkdir -p "cases/<ID>"/{00_evidence/{originals,exports,images},01_work/tmp,02_analysis/{logs,ioc,report}}`
-3. Ecrire `cases/<ID>/manifest.yaml` :
+3. Write `cases/<ID>/manifest.yaml` (schema EN, kit contract):
 
 ```yaml
-affaire:
+case:
   id: "<ID>"
-  nom: "<nom>"
-  date_creation: "<date du jour>"
-  statut: ouverte
+  name: "<name>"
+  created: "<today>"
+  status: open
+  language: en            # default from config/tools.yaml `language`; deliverables + journal follow it
 
-contexte:
+context:
   description: ""
-  declarant: ""
-  date_signalement: ""
-  systemes_concernes: []
-  periode_suspecte: { debut: "", fin: "" }
-  mesures_deja_prises: []
-  contraintes: []
+  reported_by: ""
+  reported_at: ""
+  systems: []
+  suspected_period: { start: "", end: "" }
+  actions_taken: []
+  constraints: []
 
 collections: []
 ```
 
-4. Ecrire `cases/<ID>/journal.md` : titre `# Journal - <ID>`, affaire + date, section
-   `## Phase 0 - Import` avec l'entree de creation horodatee
-5. Raporter clairement l'ID attribue. L'affaire creee devient l'affaire courante de la session
+4. Write `cases/<ID>/journal.md` in the case language (default English): title
+   `# Journal - <ID>`, case + date, `## Phase 0 - Import` section with the timestamped
+   creation entry
+5. Report the assigned ID clearly. The created case becomes the current case of the session
 
-### B. Apres creation ou switch (dans les deux cas)
+Do not ask the language: apply the default (config `language`, English) - the analyst
+can request a translation at any time; offer then to persist it in `case.language`.
 
-1. **Intake de contexte** (uniquement si `contexte` non renseigne) : demande a l'analyste
-   s'il a du contexte a partager sur l'incident - question ouverte, relances ciblees si
-   apport (description, declarant, periode, systemes concernes, mesures deja prises,
-   contraintes), non bloquant si rien (journalise "aucun contexte fourni"). Consigne
-   dans la section `contexte` du manifest + entree journal
-2. **Detection des depots** : liste le contenu de `00_evidence/originals/` :
-   - fichiers presents non encore enregistres au manifest -> demande la **provenance**
-     (une ligne : d'ou viennent ces collectes, qui les a copiees) puis propose
-     `python3 scripts/ingest.py cases/<ID> --scan --provenance "<source declaree>"`
-   - deja enregistres -> rappelle qu'ils sont integres (le scan reverifie leur integrite)
-3. Cloture du tour : etat de l'affaire + LA commande pour investiguer quand les collectes
-   sont deposees : `/analyse` (ou `/analyse <chemin>` pour une collection hors affaire)
+### B. After creation or switch (in both cases)
 
-### C. Sans argument (`/case`)
+1. **Context intake** (only if `context` is empty): ask the analyst whether they have
+   context to share about the incident - open question, targeted follow-ups if provided
+   (description, reported_by, period, systems, actions already taken, constraints),
+   non-blocking if nothing (journalize "no context provided"). Record in the `context`
+   section of the manifest + journal entry
+2. **Deposit detection**: list the content of `00_evidence/originals/`:
+   - files present not yet recorded in the manifest -> ask for the **provenance** (one
+     line: where the collections come from, who copied them) then propose
+     `python3 scripts/ingest.py cases/<ID> --scan --provenance "<declared source>"`
+   - already recorded -> remind they are ingested (the scan re-verifies their integrity)
+3. Close the turn: case state + THE command to investigate once the collections are
+   deposited: `/analyse` (or `/analyse <path>` for a collection outside the case)
 
-**Panorama des affaires** : tableau lu depuis `cases/*/manifest.yaml`
-(id, nom, statut, date, nombre de collections, contexte renseigne ou non)
-puis propose : switcher sur l'une (son choix -> comportement A-switch) ou en creer une nouvelle.
-Si `cases/` est vide : presente le guide de demarrage `docs/DEMARRAGE-RAPIDE.md` et propose
-la creation de la premiere affaire.
+### C. No argument (`/case`)
 
-## Regles
+**Case panorama**: table read from `cases/*/manifest.yaml`
+(id, name, status, date, collection count, context filled or not)
+then propose: switch to one (choice -> A-switch behavior) or create a new one.
+If `cases/` is empty: present the quick-start guide `docs/QUICK-START.md` and propose
+creating the first case.
 
-- Une seule affaire courante par session ; le switch se fait a tout moment par un nouveau `/case`
-- Jamais d'ecriture dans `00_evidence/originals/` par l'agent (les depots viennent de l'analyste)
-- Toute creation/switch/scan est journalisee dans `journal.md` (append-only, horodate)
+## Rules
+
+- One current case per session; switching happens anytime with a new `/case`
+- Never write into `00_evidence/originals/` (deposits come from the analyst)
+- Every creation/switch/scan is journalized in `journal.md` (append-only, timestamped)

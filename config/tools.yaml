@@ -1,5 +1,9 @@
-# Configuration des outils du kit OREOA-AI - image conteneurisee oreoa-ai-tools
-# Chaque outil est pine dans le conteneur ; l'hote n'installe rien.
+# OREOA-AI kit tools configuration - oreoa-ai-tools containerized image
+# Every tool is pinned in the container; the host installs nothing.
+
+# Default kit language: deliverables and case journal follow this language
+# (agent conversation mirrors the analyst's language; change per case or with /lang)
+language: en
 
 image:
   name: oreoa-ai-tools

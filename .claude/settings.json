@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 scripts/doctor.py check)",
+      "Bash(python3 scripts/doctor.py test)",
+      "Bash(python3 scripts/doctor.py fix)",
+      "Bash(python3 scripts/ingest.py *)",
+      "Bash(./scripts/dt *)",
+      "Bash(scripts/dt *)",
+      "Bash(./install.sh *)",
+      "Bash(git status)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)"
+    ]
+  }
+}

@@ -4,40 +4,51 @@ Usage quotidien du kit OREOA-AI, une fois le deploiement termine. Le protocole d
 
 ## 1. Le quotidien
 
-Lance le kit :
+Lance ton outil agentique directement dans le dossier du kit :
 
 ```bash
-./agent.sh
+opencode        # ou claude, ou tout agent lisant AGENTS.md
 ```
 
-L'agent verifie automatiquement la connexion LLM, la sante des outils (doctor check + test), et t'accueille. Si quelque chose manque, il te guide pas a pas sans que tu aies rien a demander.
+L'agent verifie automatiquement la sante des outils (doctor check + test) et t'accueille. Au premier lancement, il affiche le guide de demarrage (`docs/DEMARRAGE-RAPIDE.md`). Si quelque chose manque (image, modele), il te guide pas a pas sans que tu aies rien a demander. La connexion au modele LLM est geree par ton outil agentique lui-meme.
 
 Ce que tu peux lui demander ensuite :
 
-- lancer une analyse (section 2)
-- "Ou en est l'affaire CASE-2026-0042 ?"
+- ouvrir une affaire : `/case "nom"` (creation ou reprise) - section 2
+- lancer l'investigation : `/analyse` - section 2
+- "Ou en est l'affaire CASE-2026-0042 ?" (ou `/case CASE-2026-0042` pour switcher)
 - "Guide-moi pour capturer la RAM de la machine Y" (mode guidance, section 5)
 - "Produis le resume executif de l'affaire" (formats de rapport, section 4)
 
-## 2. Lancer une analyse de preuve
+## 2. Ouvrir une affaire et lancer l'investigation
 
-**Voie rapide (recommandee)** - dans l'agent :
-
-```text
-/analyse chemin/vers/ta-collection
-```
-
-L'agent cree l'affaire (ou te demande son nom), importe la collection (SHA256, manifest), puis conduit les phases 1 a 6 avec une validation a chaque gate.
-
-**Voie manuelle** :
-
-```bash
-./create_case.sh "Incident serveur web 2026-45"
-python3 scripts/ingest.py cases/CASE-2026-0001 chemin/vers/collection
-```
+**Voie normale (recommandee)** - dans l'agent :
 
 ```text
-> Conduis l'investigation de CASE-2026-0001 et produis le rapport
+/case "Incident serveur web 2026-45"
+```
+
+L'agent scaffold l'arborescence, te demande le contexte de l'incident (non bloquant)
+et te donne l'identifiant. Tu deposes ensuite tes collectes dans
+`cases/<ID>/00_evidence/originals/` - l'agent demande la provenance (une ligne),
+empreinte (SHA256), rattache au referentiel d'artefacts et journalise.
+
+Puis :
+
+```text
+/analyse
+```
+
+Il lance le workflow complet (phases 1 a 6) avec une validation a chaque gate.
+`/case` seul : panorama des affaires (reprendre, switcher, en creer une autre).
+`/analyse <chemin>` : importer une collection encore hors de l'affaire.
+
+**Voie langage naturel** (tout outil agentique, sans commandes personnalisees) :
+
+```text
+> Ouvre une affaire nommee "Incident serveur web 2026-45"
+> J'ai depose mes collectes dans originals, importe-les (source : USB du poste 12)
+> Conduis l'investigation et produis le rapport
 ```
 
 Les collections importees vont dans `cases/<ID>/00_evidence/originals/` - jamais modifiees, toujours empreintees.
@@ -96,13 +107,15 @@ Deux referentiels amont sont embarques dans l'image a chaque build (details : [d
 
 | Commande | Role |
 |----------|------|
-| `./agent.sh` | lancer le kit (preflight LLM, autotest, accueil) |
-| `./agent.sh --profil airgap` | variante air-gap (endpoint local) |
-| `/analyse <collection>` | lancer une investigation complete |
+| `opencode` / `claude` | lancer ton outil agentique dans le dossier du kit (accueil et autotest automatiques) |
+| `/case "<nom>"` | ouvrir une affaire (creation, contexte, depots) |
+| `/case` | panorama des affaires (reprendre, switcher, creer) |
+| `/analyse` | investigation complete de l'affaire courante (depots + phases 0-6) |
+| `/analyse <collection>` | importer une collection externe puis investiguer |
 | `/deploy` | relancer le guidage de deploiement |
 | `python3 scripts/doctor.py check\|fix\|test` | sante / provisioning / qualification |
-| `./create_case.sh "<nom>"` | nouvelle affaire |
-| `python3 scripts/ingest.py <affaire> <collection>` | importer une collection (rapprochement artefacts automatique) |
+| `python3 scripts/ingest.py <affaire> --scan --provenance "source"` | importer les depots de originals/ (integrite verifiee) |
+| `python3 scripts/ingest.py <affaire> <collection>` | importer une collection externe (rapprochement artefacts automatique) |
 | `./scripts/dt python3 /work/scripts/referentiels.py artefacts expand <Nom>` | voir les chemins et outils d'un artefact |
 | `./scripts/dt python3 /work/scripts/referentiels.py dfiq arbre S1008` | arbre de questions d'un scenario DFIQ |
-| `./install.sh check\|fix\|test` | alternative manuelle (hors agent) |
+| `./install.sh check\|fix\|test` | alternative manuelle (ops/CI, hors agent) |

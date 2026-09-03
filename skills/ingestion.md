@@ -2,33 +2,52 @@
 
 ## Mission
 
-Importer les collections de donnees dans le dossier d'affaire : scan, detection de type, calcul d'empreintes, mise a jour du manifest.
+Integrer les collectes de l'analyste dans le dossier d'affaire : depot, detection de
+type, calcul d'empreintes, provenance, rapprochement artefacts, mise a jour du manifest.
+
+## Deux voies d'entree (elles convergent)
+
+1. **Depot manuel (voie normale)** : l'analyste copie ses collectes dans
+   `00_evidence/originals/`. L'agent detecte les depots (`/case` ou `/analyse`),
+   demande la **provenance** (une ligne : origine des collectes, qui les a copiees),
+   puis `python3 scripts/ingest.py cases/<ID> --scan --provenance "<source>"`
+2. **Import externe** : collection encore hors de l'affaire -
+   `python3 scripts/ingest.py cases/<ID> <chemin>` (copie vers originals/, empreinte,
+   manifest). Utile pour un partage reseau ou un dossier de telechargement
 
 ## Regles
 
-1. **Originals intouches** : les fichiers importes dans `00_evidence/originals/` ne sont jamais modifies. Toute transformation produit un fichier dans `00_evidence/exports/`.
-2. **Empreinte systematique** : chaque collection recoit un SHA256 calcule a l'import, avant tout traitement.
-3. **Typage declare** : chaque collection recoit un type (journal Windows, journal Linux, capture reseau, image memoire, archive, inconnu).
+1. **Originals = depot de l'analyste, immuable apres import** : l'agent n'y ecrit jamais
+   ; chaque scan reverifie les empreintes enregistrees - toute derivation est une
+   **ALERTE INTEGRITE** (code retour 2) : arret, journal, decision analyste
+2. **Empreinte systematique** : chaque collection recoit un SHA256 calcule a l'import,
+   avant tout traitement. Un artefact non hash n'est pas une preuve exploitable.
+3. **Provenance declaree** : le champ `chemin_original` conserve la source (chemin reel
+   en import externe, provenance declaree en depot manuel) - element de chaine de
+   conservation (ISO 27037)
+4. **Typage declare** : chaque collection recoit un type (journal Windows, journal
+   Linux, capture reseau, image memoire, image disque, archive, inconnu)
+5. **Rapprochement artefacts automatique** : apres tout import, le champ `artefacts`
+   par collection et le champ `referentiels` (versions) sont mis a jour via
+   `scripts/referentiels.py` (non bloquant si image absente)
 
-## Procedure
+## Procedure (mode scan)
 
-1. Copier la collection dans `00_evidence/originals/` (original, jamais modifie)
-2. Calculer le SHA256 de la collection importee
-3. Determiner les structures presentes (journaux, formats, periodes couvertes)
-4. Enregistrer dans le manifest : nom, type, chemin, empreinte, description
-5. Rapprochement automatique des artefacts : `scripts/ingest.py` appelle
-   `dt python3 /work/scripts/referentiels.py artefacts match` - chaque collection
-   recoit le champ `artefacts` (definitions ForensicArtifacts du referentiel bake)
-   et le manifest recoit le champ `referentiels` (versions utilisees, tracabilite)
-6. Journaliser l'import dans `journal.md` (section Phase 0)
+1. Lister `00_evidence/originals/` et identifier les depots non enregistres
+2. Demander la provenance a l'analyste si non fournie
+3. Executer le scan : empreinte des nouveaux depots, verification d'integrite des
+   enregistres, mise a jour du manifest, rapprochement artefacts
+4. En cas d'ALERTE INTEGRITE : arret, journalisation, decision de l'analyste
+5. Journaliser dans `journal.md` (section Phase 0 : depots, provenance, empreintes)
 
 ## Verifications de sortie
 
-- [ ] Collection copiee integrale dans `00_evidence/originals/`
-- [ ] SHA256 calcule et consigne
-- [ ] Type detecte ou marque inconnu
-- [ ] Structures presentes identifiees
-- [ ] Rapprochement artefacts effectue (ou ecart journalise si image absente)
+- [ ] Depots importes (ou aucun nouveau depot)
+- [ ] Provenance declaree et consignee
+- [ ] SHA256 calcules et consignes
+- [ ] Types detectes (ou marques inconnus)
+- [ ] Integrite des enregistres verifiee (zero alerte, ou alertes traitees)
+- [ ] Rapprochement artefacts effectue (ou ecart journalise)
 - [ ] Journal mis a jour
 
 ## Types d'artefacts reconnus

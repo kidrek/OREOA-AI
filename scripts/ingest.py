@@ -2,13 +2,18 @@
 """ingest.py - scan, typage et empreinte des collections d'une affaire.
 
 Usage :
-  python3 scripts/ingest.py <dossier_affaire> <chemin_collection>
+  python3 scripts/ingest.py <dossier_affaire> <chemin_collection>     # import d'une collection externe (copie)
+  python3 scripts/ingest.py <dossier_affaire> --scan [-p PROVENANCE]  # scan des depots dans 00_evidence/originals/
 
-Pour chaque collection :
-  - detection du type d'artefact (extension, signature)
-  - calcul SHA256 de la copie importee
-  - mise a jour du manifest.yaml de l'affaire
+Modes :
+  - import externe : copie la collection vers 00_evidence/originals/, calcule le
+    SHA256 de la copie importee, met a jour le manifest, rapproche les artefacts
+  - scan des depots : parcourt 00_evidence/originals/ (depot de l'analyste),
+    importe (type, SHA256, manifest) tout element non encore enregistre, avec
+    provenance declaree ; reverifie l'integrite (SHA256) des elements deja
+    enregistres - toute derivation est une ALERTE d'integrite (code retour 2)
 """
+import argparse
 import hashlib
 import shutil
 import subprocess
@@ -24,7 +29,7 @@ except ImportError:
 
 SCRIPTS = Path(__file__).resolve().parent
 
-# Types d'artefacts reconnus : (extension, description, famille)
+# Types d'artefacts reconnus : (description, famille)
 # Cles en minuscules : detecter_type() normalise la casse de l'extension.
 TYPES = {
     ".evtx": ("journal evenements Windows", "windows"),
@@ -68,11 +73,16 @@ def detecter_type(chemin: Path) -> str:
     return ".inconnu"
 
 
-def copier_collection(source: Path, dest: Path) -> None:
-    if source.is_dir():
-        shutil.copytree(source, dest, dirs_exist_ok=True)
-    else:
-        shutil.copy2(source, dest)
+def charger_manifest(affaire: Path) -> dict:
+    manifest = affaire / "manifest.yaml"
+    if manifest.exists():
+        return yaml.safe_load(manifest.read_text())
+    return {"affaire": {"id": affaire.name}, "collections": []}
+
+
+def ecrire_manifest(affaire: Path, donnees: dict) -> None:
+    (affaire / "manifest.yaml").write_text(
+        yaml.safe_dump(donnees, sort_keys=False, allow_unicode=True))
 
 
 def rapprocher_artefacts(affaire: Path) -> None:
@@ -95,25 +105,20 @@ def rapprocher_artefacts(affaire: Path) -> None:
             if ligne.startswith(("  ", "[artefacts match] manifest")):
                 print("  " + ligne.strip())
     else:
+        sortie = (out.stderr or out.stdout).strip()
         print(f"[warn] rapprochement artefacts en echec : "
-              f"{(out.stderr or out.stdout).strip().splitlines()[-1][:100] if (out.stderr or out.stdout).strip() else 'retour ' + str(out.returncode)}")
+              f"{sortie.splitlines()[-1][:100] if sortie else 'retour ' + str(out.returncode)}")
 
 
-def main():
-    if len(sys.argv) != 3:
-        print(__doc__)
-        return 2
-    affaire = Path(sys.argv[1]).resolve()
-    source = Path(sys.argv[2]).resolve()
-    if not affaire.is_dir() or not source.exists():
-        print("Erreur : dossier d'affaire ou collection introuvable.")
-        return 1
-
+def importer_copie(affaire: Path, source: Path) -> None:
     originals = affaire / "00_evidence" / "originals"
     originals.mkdir(parents=True, exist_ok=True)
 
     dest = originals / source.name
-    copier_collection(source, dest)
+    if source.is_dir():
+        shutil.copytree(source, dest, dirs_exist_ok=True)
+    else:
+        shutil.copy2(source, dest)
 
     entree = {
         "nom": source.name,
@@ -123,14 +128,100 @@ def main():
         "sha256": sha256_fichier(dest),
         "date_import": datetime.now().isoformat(timespec="seconds"),
     }
-
-    manifest = affaire / "manifest.yaml"
-    donnees = yaml.safe_load(manifest.read_text()) if manifest.exists() else {"affaire": {"id": affaire.name}, "collections": []}
+    donnees = charger_manifest(affaire)
     donnees.setdefault("collections", []).append(entree)
-    manifest.write_text(yaml.safe_dump(donnees, sort_keys=False, allow_unicode=True))
+    ecrire_manifest(affaire, donnees)
 
     print(f"Collection {source.name} importee : sha256={entree['sha256'][:16]}...")
     rapprocher_artefacts(affaire)
+
+
+def scan_depots(affaire: Path, provenance: str) -> int:
+    """Scan de 00_evidence/originals/ : imports nouveaux + integrite des enregistres."""
+    originals = affaire / "00_evidence" / "originals"
+    if not originals.is_dir():
+        print(f"Erreur : {originals} inexistant (affaire scaffoldee ?).")
+        return 1
+    donnees = charger_manifest(affaire)
+    collections = donnees.setdefault("collections", [])
+    enregistres = {c["nom"]: c for c in collections}
+
+    # 1. Integrite des elements deja enregistres
+    alertes = 0
+    for nom, entree in enregistres.items():
+        copie = Path(entree["copie"])
+        if not copie.exists():
+            print(f"[ALERTE INTEGRITE] {nom} : element enregistre introuvable "
+                  f"({copie}) - ne pas continuer sans decision analyste")
+            alertes += 1
+            continue
+        empreinte = sha256_fichier(copie)
+        if empreinte != entree["sha256"]:
+            print(f"[ALERTE INTEGRITE] {nom} : empreinte deriver depuis l'import "
+                  f"({entree['sha256'][:16]}... -> {empreinte[:16]}...) - "
+                  "ne pas continuer sans decision analyste")
+            alertes += 1
+
+    # 2. Import des depots non encore enregistres
+    depot_manuel = "depot manuel analyste" + (f" - {provenance}" if provenance else "")
+    nouveaux = 0
+    for element in sorted(originals.iterdir()):
+        if element.name in enregistres:
+            continue
+        entree = {
+            "nom": element.name,
+            "type": detecter_type(element),
+            "chemin_original": depot_manuel,
+            "copie": str(element),
+            "sha256": sha256_fichier(element),
+            "date_import": datetime.now().isoformat(timespec="seconds"),
+        }
+        collections.append(entree)
+        nouveaux += 1
+        print(f"Depot importe : {element.name} ({entree['type']}, "
+              f"sha256={entree['sha256'][:16]}...)")
+
+    if nouveaux:
+        ecrire_manifest(affaire, donnees)
+        rapprocher_artefacts(affaire)
+
+    print(f"[scan] {nouveaux} nouveau(x) depot(s) importe(s), "
+          f"{len(enregistres)} element(s) deja enregistre(s) verifies")
+    if alertes:
+        print(f"[scan] {alertes} ALERTE(S) D'INTEGRITE : journaliser et demander "
+              "la decision de l'analyste avant toute suite")
+        return 2
+    return 0
+
+
+def main():
+    parseur = argparse.ArgumentParser(description=__doc__,
+                                      formatter_class=argparse.RawDescriptionHelpFormatter)
+    parseur.add_argument("dossier_affaire")
+    parseur.add_argument("collection", nargs="?", help="collection externe (mode copie)")
+    parseur.add_argument("--scan", action="store_true",
+                         help="scan des depots de 00_evidence/originals/")
+    parseur.add_argument("-p", "--provenance", default="",
+                         help="provenance declaree des depots (mode scan)")
+    arguments = parseur.parse_args()
+
+    affaire = Path(arguments.dossier_affaire).resolve()
+    if not affaire.is_dir():
+        print("Erreur : dossier d'affaire introuvable.")
+        return 1
+    if not arguments.scan and not arguments.collection:
+        parseur.error("fournir une collection (mode copie) ou --scan (mode depots)")
+    if arguments.scan and arguments.collection:
+        parseur.error("--scan ne prend pas de collection : les depots sont deja dans originals/")
+
+    if arguments.scan:
+        return scan_depots(affaire, arguments.provenance)
+
+    source = Path(arguments.collection).resolve()
+    if not source.exists():
+        print("Erreur : collection introuvable.")
+        return 1
+    importer_copie(affaire, source)
     return 0
 
 

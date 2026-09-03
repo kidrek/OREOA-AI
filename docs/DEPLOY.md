@@ -229,25 +229,26 @@ Le digest de la nouvelle image est journalise dans les affaires traitees apres l
 [ ] doctor fix : image provisionnee, digest consigne
 [ ] doctor test : verdict OK (8 outils + bibliotheques + copyright + E2E)
 [ ] LLM configure et verifie (/connect, auth login ou curl local OK)
-[ ] Premiere session via ./agent.sh : autoteste + accueil affiches
-[ ] Premiere affaire de test creee (/analyse ou create_case.sh) et journal initie
+[ ] Premiere session : outil agentique lance dans le dossier, autotest + accueil affiches
+[ ] Premiere affaire de test creee (/case) et journal initie
 ```
 
 ## 9. Premier lancement et mode guidance
 
-Le lanceur unique du kit :
+Aucun lanceur : l'analyste ouvre son outil agentique directement dans le dossier du kit.
 
 ```bash
-./agent.sh                    # profil en-ligne
-./agent.sh --profil airgap    # variante air-gap (endpoint local)
+opencode                      # ou claude, ou tout agent lisant AGENTS.md
 ```
 
-Sequence automatique :
+La connexion au modele LLM est geree par l'outil agentique lui-meme (opencode et
+Claude Code ont leur propre flux d'authentification ; configuration avancee - provider
+personnalise, air-gap - section 5 ci-dessus). La section "Demarrage" d'`AGENTS.md`
+definit le comportement de la premiere reponse :
 
-1. **Preflight LLM (hors agent)** : verification de la connexion (identifiants cloud ou endpoint local joignable) ; si absente, guide de connexion affiche et proposition d'executer `opencode auth login` immediatement - l'agent ne peut pas demarrer sans modele
-2. **Lancement avec message initial genere** (`scripts/bootstrap_prompt.py`) selon l'etat reel
-3. **L'agent verifie la sante lui-meme** (doctor check + test, verdict en 3 lignes) et route : guidage de deploiement si incomplet, sinon accueil
-4. **Accueil** : guide d'utilisation (`docs/GUIDE-UTILISATION.md`) + commande d'analyse
+1. **Sante spontanee** : l'agent lit `MEMORY.md`, execute `doctor check` + `doctor test`, rapporte le verdict en 3 lignes
+2. **Routage** : guidage de deploiement si incomplet ; premier lancement (`cases/` sans affaire) -> affichage du guide `docs/DEMARRAGE-RAPIDE.md` puis demande d'intention ; sessions suivantes -> verdict + rappel court
+3. **Deux commandes** : `/case "<nom>"` (ouvrir une affaire : creation ou switch, contexte, depots) puis deposer les collectes dans `00_evidence/originals/`, et `/analyse` (investigation complete avec gates)
 
 Commandes rapides dans l'agent :
 

@@ -24,21 +24,28 @@ Un exemple de rendu est fourni : [docs/exemple-rapport.md](docs/exemple-rapport.
 5. **Sante de l'outillage** - commande `doctor` : verification de sante, provisioning autonome, tests fonctionnels par outil sur echantillons embarques
 6. **Memoire de session** - `MEMORY.md` lu en debut de session et mis a jour a chaque etape : le travail reprend exactement ou il s'est arrete
 
-## Demarrage : deux commandes
+## Demarrage : trois gestes, aucun script
 
 ```bash
 git clone https://github.com/kidrek/OREOA-AI.git
 cd OREOA-AI
-./agent.sh                  # preflight LLM, provisioning guide, accueil
+opencode              # ou claude, ou tout agent lisant AGENTS.md
 ```
 
-puis dans l'agent :
+A la premiere reponse, l'agent verifie la sante du kit (doctor) et affiche le guide de
+demarrage. Ensuite, trois gestes suffisent :
 
-```text
-/analyse chemin/vers/ta-collection
-```
+| Geste | Commande | Ce qui se passe |
+|-------|----------|-----------------|
+| 1. Ouvrir une affaire | `/case "Incident serveur web"` | l'agent cree l'arborescence, te demande le contexte de l'incident (non bloquant) et te donne l'ID |
+| 2. Deposer tes collectes | copier tes fichiers dans `cases/<ID>/00_evidence/originals/` | l'agent detecte les depots, demande la provenance, empreinte (SHA256) et rattache au referentiel d'artefacts |
+| 3. Lancer l'investigation | `/analyse` | workflow complet (triage, analyse, correlation, investigation, observables, rapport) avec validation a chaque etape cle |
 
-L'agent verifie lui-meme la sante des outils a chaque lancement (doctor check + test), guide le deploiement si quelque chose manque (`/deploy`), et presente le guide d'utilisation (`docs/GUIDE-UTILISATION.md`). A l'ouverture d'une affaire via `/analyse`, il demande d'abord a l'analyste s'il a du contexte a partager sur l'incident (question ouverte, non bloquante) - ce contexte alimente le triage et le rapport. L'alternative manuelle pour un humain : `./install.sh check|fix|test` - protocole complet dans [docs/DEPLOY.md](docs/DEPLOY.md).
+Le rapport final est source : chaque conclusion cite sa collection, son artefact et son
+empreinte. La sante du kit est verifiee a chaque session (doctor) - si quelque chose
+manque (image, modele LLM), l'agent te guide pour corriger avant toute investigation.
+L'alternative manuelle pour un humain ou la CI : `./install.sh check|fix|test` -
+protocole complet dans [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Prerequis
 
@@ -56,25 +63,28 @@ Acces reseau requis uniquement pour : le premier `docker build`, le telechargeme
 
 ## Creation d'une affaire
 
-```bash
-./create_case.sh "Incident serveur web 2026-45"                  # affaire nommee
-./create_case.sh --id CASE-2026-0042 "Analyse compromission"     # identifiant impose
-```
+Tout se fait en conversation : `/case "Incident serveur web 2026-45"` (identifiant
+auto-numerote) - l'agent scaffold l'arborescence, pose le contexte de l'incident, puis
+detecte les depots de collectes. `/case` seul affiche le panorama des affaires
+(reprendre une affaire, en ouvrir une autre). Sans commandes personnalisees (autre
+outil agentique), demande-le en langage naturel : il suit la procedure documentee dans
+`AGENTS.md` (section "Structure du dossier d'affaire").
 
 Scaffold produit :
 
 ```
 cases/CASE-2026-0042/
 ├── 00_evidence/                 # preuves - non versionnes
-│   ├── originals/               # preuves brutes, jamais modifiees (lecture seule)
-│   └── exports/                 # extractions et transcodages empreintes
+│   ├── originals/               # depot de l'analyste (collectes brutes) - immuables apres import
+│   ├── exports/                 # extractions et transcodages empreintes
+│   └── images/                  # images disque, RAM, dumps
 ├── 01_work/                     # espace de travail (copies de traitement)
 ├── 02_analysis/
 │   ├── logs/                    # journal d'actions par phase
 │   ├── timeline/                # timeline consolidee
 │   ├── ioc/                     # observables
 │   └── report/                  # rapport en cours de redaction
-├── manifest.yaml                # inventaire des collections + SHA256
+├── manifest.yaml                # inventaire des collections + SHA256 + contexte
 └── journal.md                   # journal d'actions append-only
 ```
 
@@ -82,11 +92,16 @@ cases/CASE-2026-0042/
 
 ```bash
 opencode                        # dans le dossier du kit
-> Importe la collection dans cases/CASE-2026-0042/00_evidence/originals/
-> Conduis l'investigation de l'affaire et produis le rapport
+> /case "Incident serveur web"
+> (deposer les collectes dans cases/CASE-2026-0042/00_evidence/originals/)
+> /analyse
 ```
 
-L'agent lit `AGENTS.md`, charge les competences, execute la methodologie, journalise chaque action et redige le rapport a partir des templates.
+L'agent lit `AGENTS.md`, charge les competences, execute la methodologie, journalise
+chaque action et redige le rapport a partir des templates. La connexion au modele LLM
+est geree par ton outil agentique (opencode et Claude Code ont leur propre flux
+d'authentification) - le guide de configuration avancee (provider, air-gap) est dans
+[docs/DEPLOY.md](docs/DEPLOY.md) section 5.
 
 ## Architecture
 

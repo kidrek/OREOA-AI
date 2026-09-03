@@ -25,15 +25,19 @@ Deux modes de travail :
 
 ---
 
-## Demarrage sur laptop neuf
+## Demarrage (tout outil agentique, tout laptop)
 
-Sur un laptop fraichement deploye (dossier clone ou copie), au premier lancement :
+L'analyste ouvre son outil agentique (opencode, Claude Code, ou tout agent lisant ce
+fichier) directement dans le dossier du kit. Aucun script de lancement. A la premiere
+reponse de la session :
 
 1. Lis `MEMORY.md` (regle generale ci-dessus)
-2. `python3 scripts/doctor.py check` - etat : prerequis, image, bundle, espace disque
-3. Si l'image `oreoa-ai-tools` est absente et le daemon docker actif : `python3 scripts/doctor.py fix` - provisioning autonome (bundle air-gap si present, sinon build). Consigne le **digest de l'image** dans le journal de l'affaire en cours (tracabilite forensique)
-4. `python3 scripts/doctor.py test` - chaque outil pinné du conteneur est verifie + test E2E
-5. Kit pret. Sinon : documente le blocage (daemon arrete, groupe docker manquant, espace disque insuffisant) et demande la decision de l'analyste
+2. `python3 scripts/doctor.py check` puis `python3 scripts/doctor.py test` - rapporte le verdict en 3 lignes maximum
+3. Route :
+   - **verdict en echec ou image absente** -> guidage de deploiement (`skills/deploiement.md`, protocole `docs/DEPLOY.md`) - une seule question au depart : profil en-ligne ou air-gap. Si aucun modele n'est configure, l'outil agentique le demandera lui-meme ; guide l'analyste si besoin (`docs/DEPLOY.md` section 5)
+   - **premier lancement (`cases/` sans affaire) et verdict OK** -> affiche integralement `docs/DEMARRAGE-RAPIDE.md`, puis demande l'intention
+   - **sessions suivantes, verdict OK** -> verdict + rappel d'une ligne (`/case`, `/analyse`), puis demande l'intention (nouvelle affaire, reprise, mode guidance, autre)
+   - si le premier message est deja une commande (`/analyse ...`), execute-la et joins le guide a la fin de la reponse - n'interromps jamais une action explicite
 
 Barriere d'espace disque : `doctor` refuse toute ecriture si l'espace libre sur la partition de stockage Docker est inferieur aux seuils de `config/tools.yaml` (3 Go pour un build, 2 Go pour un chargement de bundle). Aucune exception : liberer l'espace d'abord.
 
@@ -43,7 +47,7 @@ Barriere d'espace disque : `doctor` refuse toute ecriture si l'espace libre sur 
 
 ## Principes non negociables
 
-1. **Evidence en lecture seule** : jamais d'ecriture dans `00_evidence/originals/`. Toute manipulation s'effectue sur des copies dans `01_work/` ou des exports dans `00_evidence/exports/`.
+1. **Originals = depot de l'analyste, immuables apres import** : les collections sont deposees par l'analyste dans `00_evidence/originals/` (ou importees depuis un chemin externe). L'agent n'y ecrit jamais. A l'ingestion (`ingest.py --scan`), chaque element recoit son SHA256 au manifest ; chaque scan suivant reverifie ces empreintes - toute derivation est une ALERTE d'integrite : arret, journal, decision analyste. Toute manipulation s'effectue sur des copies dans `01_work/` ou des exports dans `00_evidence/exports/`.
 2. **Empreinte systematique** : chaque collection importee recoit un SHA256 calcule avant traitement et consigne dans le manifest. Un artefact non hash n'est pas une preuve exploitable.
 3. **Journal append-only** : `journal.md` s'ecrit uniquement en ajout. Chaque entree horodatee liste : action, outil, cible, resultat, decouverte le cas echeant.
 4. **Conclusions sourcees** : toute affirmation du rapport cite sa source (artefact, collection, hash). Une conclusion sans source est une hypothese, et doit etre presentee comme telle.
@@ -53,6 +57,14 @@ Barriere d'espace disque : `doctor` refuse toute ecriture si l'espace libre sur 
 ---
 
 ## Progression d'affaire
+
+**Affaire courante de session** : la commande `/case` (opencode) ou l'equivalent
+conversationnel etablit l'affaire sur laquelle la session travaille - creation si
+inexistante, sinon **switch** (resume de reprise : statut, collections, phase en cours,
+prochaine etape). L'ancre est logique : les commandes s'executent depuis la racine du
+kit avec l'ID explicite (`dt -c <ID>`, `ingest.py cases/<ID> ...`) - jamais de `cd`
+physique dans le dossier d'affaire. Sans commande `/case` (outil sans commandes
+personnalisees), demande a l'analyste l'affaire cible et applique la meme logique.
 
 Chaque affaire progresse dans le dossier `cases/<ID>/` selon les 7 phases :
 
@@ -83,7 +95,7 @@ Si une phase ne peut pas etre completée (collection absente, outil absent, peri
 ```
 cases/CASE-2026-0042/
 ├── 00_evidence/                  # preuves (non versionne)
-│   ├── originals/                # preuves brutes telles que collectees - lecture seule
+│   ├── originals/                # depots de l'analyste (collectes brutes) - immuables apres import
 │   ├── exports/                  # extractions, transcodages, decodages
 │   └── images/                   # images disque, RAM, dumps
 ├── 01_work/                      # espace de travail (copies de traitement)
@@ -96,9 +108,23 @@ cases/CASE-2026-0042/
 └── journal.md                    # journal d'actions append-only
 ```
 
+**Creation d'affaire sans commande `/case`** (tout outil agentique) : reproduis ce
+scaffold a l'identique - repertoire ci-dessus, plus `manifest.yaml` (bloc `affaire`
+avec id/nom/date/statut, bloc `contexte` vide avec les champs description, declarant,
+date_signalement, systemes_concernes, periode_suspecte, mesures_deja_prises,
+contraintes, et `collections: []` - modele complet : `templates/manifest.yaml`) et
+`journal.md` (titre, affaire, date, section `## Phase 0 - Import`, entree de creation
+horodatee). L'identifiant suit le format `CASE-<annee>-<numero libre a 4 chiffres>`.
+
 Regles d'evidence :
 
-- Les fichiers de `00_evidence/originals/` ne sont jamais modifies. Tout tool s'y execute en lecture (`:ro`).
+- Les depots de `00_evidence/originals/` viennent de l'analyste (ou d'un import depuis
+  un chemin externe) ; l'agent n'y ecrit jamais. Tout tool s'y execute en lecture (`:ro`).
+- L'ingestion par scan (`python3 scripts/ingest.py cases/<ID> --scan --provenance "<source>"`)
+  empreinte chaque depot, le rattache au referentiel d'artefacts et journalise la
+  provenance declaree (une ligne suffit : origine des collectes, qui les a copiees).
+- Chaque scan reverifie les empreintes enregistrees : toute derivation est une ALERTE
+  d'integrite - arret, journal, decision de l'analyste.
 - Toute extraction produit un fichier dans `00_evidence/exports/` avec sa propre empreinte.
 - Le journal cite pour chaque action : outil + version, cible, empreinte de la source.
 
@@ -179,24 +205,24 @@ Les livrables suivent les templates du kit :
 
 ## Sante de l'outillage et accueil
 
-A chaque debut de session (via `./agent.sh` ou lancement direct) :
+Le demarrage de session est decrit dans la section "Demarrage" (haut de ce document) :
+verdict doctor en 3 lignes, puis routage (deploiement / guide de premier lancement /
+rappel court). N'attends pas que l'analyste demande la verification : elle fait partie
+de l'accueil. Si `doctor` signale des problemes corretables, propose un `fix` avant de
+continuer.
 
-1. Lis `MEMORY.md`
-2. Lance spontanement `python3 scripts/doctor.py check` puis `python3 scripts/doctor.py test` - rapporte le verdict en 3 lignes maximum
-3. Route :
-   - **image absente ou verdict en echec** -> enchaine le guidage de deploiement (`skills/deploiement.md`, protocole `docs/DEPLOY.md`) - une seule question au depart : profil en-ligne ou air-gap
-   - **verdict OK** -> accueille l'analyste : resume du guide d'utilisation (`docs/GUIDE-UTILISATION.md`) et LA commande pour lancer une analyse de preuve :
-     ```text
-     /analyse chemin/vers/collection
-     ```
-     puis demande son intention (nouvelle analyse, reprise d'affaire, mode guidance, autre)
+Rappel des deux commandes de l'analyste (opencode) :
 
-A l'appel de `/analyse` : apres la creation d'affaire, demande a l'analyste s'il a du
-contexte a partager sur l'incident (question ouverte, relances ciblees si apport,
-non bloquant si rien) - consigne dans le manifest (section `contexte`) et journalise.
-Cf. la commande `.opencode/commands/analyse.md`.
+- `/case "<nom>"` : ouvrir une affaire (creation ou switch, avec intake de contexte et
+  detection des depots) ; `/case` seul : panorama des affaires - cf.
+  `.opencode/commands/case.md`
+- `/analyse` : lancer l'investigation complete de l'affaire courante (ingestion des
+  depots par scan, phases 0-6, rapport) ; `/analyse <chemin>` : collection externe -
+  cf. `.opencode/commands/analyse.md`
 
-N'attends pas que l'analyste demande la verification : elle fait partie de l'accueil. Si `doctor` signale des problemes corretables, propose un `fix` avant de continuer.
+Pour un outil sans commandes personnalisees : l'analyste parle normalement ("ouvre une
+affaire nommee X", "lance l'investigation") et tu suis les memes procedures, documentees
+dans ce fichier.
 
 ---
 

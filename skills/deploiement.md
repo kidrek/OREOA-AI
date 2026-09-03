@@ -38,7 +38,7 @@ Determiner l'etat reel du laptop et annoncer l'etape de reprise :
 5. `doctor fix` (execute par l'agent) -> consigner le digest de l'image dans le journal
 6. `doctor test` (execute par l'agent) -> verdict OK = outils qualifies
 7. LLM cloud : fournir la commande `/connect` ou `/login` a l'analyste -> la conversation en cours prouve la connexion ; passerelle : bloc provider + cle en variable d'environnement
-8. Premiere affaire : `./create_case.sh` -> journal initie
+8. Premiere affaire : `/case "<nom>"` (ou scaffold decrit dans AGENTS.md) -> journal initie
 
 ### Etapes types (air-gap, deux temps)
 
@@ -59,4 +59,4 @@ Determiner l'etat reel du laptop et annoncer l'etape de reprise :
 2. Premier cas concret : creer une affaire de test, importer une collection synthetique, conduire une mini-analyse
 3. Consigner la qualification dans le `MEMORY.md` de l'instance (date, commit du depot, digest de l'image, verdict) - **chaque instance trace son propre etat localement**, sans registre central : les instances sont autonomes et ne se voient pas
 4. La coherence du parc se garantit par la version : meme commit du depot + meme digest d'image partout (`docs/DEPLOY.md` section 7)
-5. **Passer a l'accueil** : presente `docs/GUIDE-UTILISATION.md` (resume) et la commande d'analyse `/analyse chemin/vers/collection` - les sessions suivantes se lancent via `./agent.sh`, qui route automatiquement (autotest puis guidage ou accueil)
+5. **Passer a l'accueil** : presente `docs/DEMARRAGE-RAPIDE.md` (guide succinct) et `docs/GUIDE-UTILISATION.md` - l'analyste lance ensuite son outil agentique directement dans le dossier du kit ; chaque session commence par l'autotest (verdict doctor) puis le routage (guidage ou accueil)

@@ -13,11 +13,43 @@ ok()    { echo "   [ok] $1"; }
 warn()  { echo "   [warn] $1"; }
 ko()    { echo "   [fail] $1"; ECHAP=1; }
 
-etape "1. Scaffolding d'affaire de test"
+etape "1. Scaffolding d'affaire de test (inline, sans script)"
 CASE_ID="CASE-TEST-0001"
-rm -rf "cases/$CASE_ID"
-./create_case.sh --id "$CASE_ID" "Affaire de test E2E" >/dev/null
-[[ -d "cases/$CASE_ID/00_evidence/originals" ]] && ok "scaffold affaire" || ko "scaffold affaire"
+CASE_DIR="cases/$CASE_ID"
+rm -rf "$CASE_DIR"
+mkdir -p "$CASE_DIR"/{00_evidence/{originals,exports,images},01_work/tmp,02_analysis/{logs,ioc,report}}
+cat > "$CASE_DIR/manifest.yaml" <<EOF
+affaire:
+  id: "$CASE_ID"
+  nom: "Affaire de test E2E"
+  date_creation: "$(date +%F)"
+  statut: ouverte
+
+contexte:
+  description: ""
+  declarant: ""
+  date_signalement: ""
+  systemes_concernes: []
+  periode_suspecte: { debut: "", fin: "" }
+  mesures_deja_prises: []
+  contraintes: []
+
+collections: []
+EOF
+cat > "$CASE_DIR/journal.md" <<EOF
+# Journal - $CASE_ID
+
+Affaire : Affaire de test E2E
+Ouverture : $(date '+%F %T')
+
+---
+
+## Phase 0 - Import
+
+- $(date '+%F %T') -- Dossier d'affaire cree (scaffold E2E inline)
+EOF
+[[ -d "$CASE_DIR/00_evidence/originals" && -d "$CASE_DIR/00_evidence/images" && -f "$CASE_DIR/manifest.yaml" ]] \
+  && ok "scaffold affaire (inline, avec images/)" || ko "scaffold affaire"
 
 etape "2. Ingestion des collections synthetiques"
 python3 scripts/ingest.py "cases/$CASE_ID" tests/samples/auth.log >/dev/null \
@@ -46,6 +78,22 @@ chmod u+w "$ORIG" 2>/dev/null || true
 # simulation : tentative d'ecriture bloquee par la regle kit (l'agent ne doit jamais ecrire ici)
 H2=$(sha256sum "$ORIG" | cut -d' ' -f1)
 [[ "$H1" == "$H2" ]] && ok "originals intacts" || ko "originals modifies"
+
+etape "4bis. Scan des depots (voie normale : depot analyste)"
+cp tests/samples/c2.pcap "$CASE_DIR/00_evidence/originals/" \
+  && python3 scripts/ingest.py "$CASE_DIR" --scan --provenance "E2E depot synthetique" >/dev/null 2>&1 \
+  && python3 - <<'EOF' && ok "scan : depot importe, empreinte et provenance consignees" || ko "scan des depots"
+import sys, yaml
+from pathlib import Path
+m = yaml.safe_load(Path("cases/CASE-TEST-0001/manifest.yaml").read_text())
+cols = {c["nom"]: c for c in m.get("collections", [])}
+assert "c2.pcap" in cols, "c2.pcap absent du manifest"
+assert cols["c2.pcap"]["chemin_original"].startswith("depot manuel"), "provenance absente"
+assert len(cols["c2.pcap"]["sha256"]) == 64, "hash invalide"
+sys.exit(0)
+EOF
+python3 scripts/ingest.py "$CASE_DIR" --scan >/dev/null 2>&1 \
+  && ok "scan re-passe : integrite verifiee, zero alerte" || ko "scan re-passe (integrite)"
 
 etape "5. Outils conteneurises (si image disponible)"
 if docker image inspect oreoa-ai-tools:1.1.0 >/dev/null 2>&1; then

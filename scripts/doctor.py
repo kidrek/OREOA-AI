@@ -29,20 +29,23 @@ STRUCTURE = [
     ("MEMORY.md", True, "fichier"),
     ("LICENSE", True, "fichier"),
     ("install.sh", True, "fichier"),
-    ("create_case.sh", True, "fichier"),
-    ("agent.sh", True, "fichier"),
     ("Dockerfile", True, "fichier"),
     ("opencode.json", True, "fichier"),
+    (".claude/settings.json", True, "fichier"),
+    (".opencode/commands", True, "dossier"),
+    (".opencode/commands/analyse.md", True, "fichier"),
+    (".opencode/commands/case.md", True, "fichier"),
+    (".opencode/commands/deploy.md", True, "fichier"),
     ("config/tools.yaml", True, "fichier"),
     ("config/suricata/regles-kit.rules", True, "fichier"),
     ("config/suricata/disable.conf", True, "fichier"),
     ("config/suricata/threshold.config", True, "fichier"),
     ("scripts/ingest.py", True, "fichier"),
-    ("scripts/bootstrap_prompt.py", True, "fichier"),
     ("scripts/fetch_referentiels.py", True, "fichier"),
     ("scripts/referentiels.py", True, "fichier"),
     ("docs/NOTICE", True, "fichier"),
     ("docs/GUIDE-UTILISATION.md", True, "fichier"),
+    ("docs/DEMARRAGE-RAPIDE.md", True, "fichier"),
     ("docs/REFERENTIELS.md", True, "fichier"),
     ("referentiels-kit", True, "dossier"),
     ("referentiels-kit/artifacts", True, "dossier"),
@@ -185,8 +188,9 @@ def run_check():
             (r.fail if requis else r.warn).append((rel, "absent"))
             if genre == "dossier":
                 r.actions_fix.append(lambda c=chemin: c.mkdir(parents=True, exist_ok=True))
-    for rel in ("install.sh", "create_case.sh", "agent.sh", "scripts/doctor.py",
-                "scripts/ingest.py", "scripts/dt", "scripts/bootstrap_prompt.py"):
+    for rel in ("install.sh", "scripts/doctor.py",
+                "scripts/ingest.py", "scripts/dt",
+                "scripts/fetch_referentiels.py", "scripts/referentiels.py"):
         chemin = KIT / rel
         if chemin.exists() and not chemin.stat().st_mode & 0o111:
             r.warn.append((rel, "non executable"))

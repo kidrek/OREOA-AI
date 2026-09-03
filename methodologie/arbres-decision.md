@@ -100,6 +100,34 @@ Conclusions sourcees : hash du dump + plugin + sortie ; chaines C-M-01, R-04, R-
 
 Regles : la RAM est une collection de confirmation et de reconstruction, elle ne remplace jamais l'evenementiel ; les ecarts (symboles absents, dump partiel) sont documentes, jamais combles.
 
+## Arbre image disque
+
+Applique quand une image disque (raw, dd, E01) fait partie des collections (type disk au manifest, `size_bytes` consigne) :
+
+```
+Image disque disponible (hash au manifest)
+    |
+    +-- disk.py info : format, partitions, filesystems, barriere 3x
+    +-- disk.py verify : integrite (+ metadonnees E01 si EWF)
+    |
+    +-- AFF4 ? -----------------------------------> ecart documente (hors perimetre v2.0)
+    +-- Composite (LVM/RAID) ou chiffre ? ---------> ecart documente, jamais contourne
+    |
+    +-- Super-timeline : log2timeline sur image (partitions auto) puis psort filtre
+    |       +-- executions (Prefetch, SF-D-002), persistance (registre, SF-D-003)
+    |       +-- timestomping ($MFT, SF-D-001), perte de visibilite (USN, SF-D-010)
+    |
+    +-- Listing : disk.py listing (fichiers supprimes SF-D-004, depots SF-D-005, ADS SF-D-006)
+    |
+    +-- Extraction ciblee : referentiels.py artifacts paths -> disk.py extract
+    |       +-- ruches -> regipy (comptes/services SF-D-007, USB SF-D-008, UserAssist SF-D-009)
+    |       +-- executables/documents -> yara + analyse de contenu
+    v
+Conclusions sourcees : hash de l'image + chemin + inode + sha256 extrait ; chaine C-D-01
+```
+
+Regles : exploitation sans montage (jamais de root, jamais de mount) ; barriere 3x avant super-timeline ; les extraits sont empreintes et journalises ; AFF4 et volumes hors perimetre restent en attente dans le manifest.
+
 ## Regles de priorite multi-collections
 
 1. **Collection principale d'abord** : la collection identifiee au triage comme principale est traitee en premier

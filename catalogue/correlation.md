@@ -77,6 +77,20 @@ Les conclusions fortes reposent sur des chaines de signaux, pas sur des signaux 
 - **Conclusion si chaine complete** : canal de commande et controle actif depuis la machine ; identifier le processus local (SF-M-006 si dump RAM disponible) et le patient zero
 - **Sources requises** : capture (hash au manifest), eve.json, extractions tshark ; verification par suivi de flux pour chaque alerte
 
+## Chaines d'investigation disque
+
+### C-D-01 - Deposition, execution et persistance confirmees par l'image
+
+| Ordre | Signal | Fenetre |
+|-------|--------|---------|
+| 1 | SF-D-008 (USB inconnu) ou SF-D-005 (depot dans chemin utilisateur) | T0 |
+| 2 | SF-D-002 (Prefetch : execution du binaire depose) | T0 a +10 min |
+| 3 | SF-D-003 (Run/service/tache dans le registre) ou SF-D-007 (compte/service local) | T0 a +30 min |
+| 4 | SF-D-001 (timestomping) ou SF-D-004 (suppression) ou SF-D-010 (perte de visibilite) | suite |
+
+- **Conclusion si chaine complete** : chaine d'infection complete reconstruite depuis l'image disque (introduction, execution, persistance, dissimulation), meme sans evenementiel exploitable
+- **Sources requises** : image disque (hash au manifest), super-timeline plaso, extraits registre (regipy), rapport d'extraction (SHA256 par fichier)
+
 ## Correlations croisees multi-plateformes
 
 | Chaine | Signaux | Signification |
@@ -90,6 +104,9 @@ Les conclusions fortes reposent sur des chaines de signaux, pas sur des signaux 
 | R-07 | SF-R-007 (SMB ADMIN$ depuis workstation) + SF-W-020 (service distant sur la destination) | mouvement lateral confirmee par deux sources independantes |
 | R-08 | SF-M-006 (connexion externe en RAM) + SF-R-001/SF-R-002 (beaconing et DNS dans la capture) | processus et canal C2 rattaches au meme flux |
 | R-09 | SF-R-004 ou SF-R-009 (exfiltration) + SF-W-031/SF-M-007 (dump de credentials) | sequence vol de credentials puis exfiltration, rotation imperative
+| R-10 | SF-D-002/SF-D-005 (execution deposee sur disque) + SF-R-005 (telechargement du meme binaire dans la capture) | ingress d'outil confirme par deux sources independantes |
+| R-11 | SF-D-010 (perte de visibilite sur volume) + SF-W-040 (journal efface) | effacement coordonne, incident majeur - sources externes imperatives |
+| R-12 | SF-D-007 (compte/service local dans SAM) + SF-L-021 (nouveau compte Linux sur machine adjacente) | campagne multi-systemes, meme operateur |
 
 ## Rattachement aux referentiels amont
 

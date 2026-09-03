@@ -39,6 +39,12 @@ chaines de correlation. Rattachement principal (amont 731 definitions, extraits)
 | SF-L-030 purge journaux | `LinuxAuthLogs`, `LinuxSysLogFiles`, `LinuxSystemdJournalLogs` | |
 | SF-M-001 a SF-M-021 (memoire) | hors referentiel fichiers | dump volatile : `connaissances/memoire/exploitation-volatility.md` |
 | SF-R-001 a SF-R-010 (reseau) | capture : hors referentiel fichiers | journaux corrélables : `WindowsFirewallLogFile`, `UFWLogFile`, `UnixHostsFile` |
+| SF-D-001 timestomping | image disque : `$MFT` hors referentiel fichiers | super-timeline plaso (parser $MFT) |
+| SF-D-002 executions | `WindowsPrefetchFiles` | extraction via plaso ou disque |
+| SF-D-003/007 persistance, comptes/services | `WindowsRegistryFiles`, `WindowsServices`, `SAM hive` | extraction ciblee : `referentiels.py artifacts paths` + `disk.py extract` |
+| SF-D-008 USB | `WindowsMountedDevices`, `USBSTOR` | ruche SYSTEM extraite, regipy |
+| SF-D-009 UserAssist/ShellBags | `WindowsRegistryFilesAndTransactionLogs` | ruche NTUSER.DAT par utilisateur |
+| SF-D-010 USN/visibilite | image disque : `$UsnJrnl` hors referentiel fichiers | super-timeline plaso (parser usnjrnl) |
 
 ## Regles
 
@@ -787,12 +793,4 @@ Index generated from the baked referential (731 definitions, upstream + kit) - d
 | `ZShellConfigurationFile` | Darwin,Linux,Windows | 3 FILE | Z shell (zsh) configuration files. |
 | `ZShellHistoryFile` | Darwin,Linux,Windows | 2 FILE | Z shell (zsh) history files. |
 <!-- genere:artefacts:fin -->
-
-
-
-
-
-
-
-
 

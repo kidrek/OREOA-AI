@@ -187,7 +187,8 @@ Le catalogue reference les signaux faibles par plateforme. Chaque fiche a un ide
 - `catalogue/linux.md` -- signaux Linux
 - `catalogue/memoire.md` -- signaux memoire volatile (SF-M, pre-requis : dump hash + symboles)
 - `catalogue/reseau.md` -- signaux reseau (SF-R, pre-requis : capture hash, tshark + suricata offline)
-- `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M, C-R)
+- `catalogue/disque.md` -- signaux disque (SF-D, pre-requis : image hash, TSK sans montage + plaso super-timeline)
+- `catalogue/correlation.md` -- regles de correlation multi-signaux (chaines C-W, C-L, C-M, C-R, C-D)
 - `catalogue/artefacts.md` -- index genere du referentiel ForensicArtifacts + mapping signaux <-> artefacts
 - `catalogue/dfiq.md` -- index genere du corpus DFIQ + mapping scenarios <-> types d'affaire
 
@@ -258,10 +259,11 @@ dans ce fichier.
 
 ---
 
-## Perimetre et limites de v1.2
+## Perimetre et limites de v2.0
 
-- Perimetre couvert : investigation sur artefacts Windows (evenementiel Security, Sysmon, persistent, structure du systeme), logs Linux (auth, syslog, wtmp/btmp, cron, ssh), memoire volatile Windows (volatility3, v1.1) et captures reseau (tshark + suricata offline, v1.2 - voir `connaissances/reseau/exploitation-capture.md`)
+- Perimetre couvert : investigation sur artefacts Windows (evenementiel Security, Sysmon, persistent, structure du systeme), logs Linux (auth, syslog, wtmp/btmp, cron, ssh), memoire volatile Windows (volatility3, v1.1), captures reseau (tshark + suricata offline, v1.2 - voir `connaissances/reseau/exploitation-capture.md`) et images disque completes (raw/dd/E01, The Sleuth Kit sans montage + plaso super-timeline, v2.0 - voir `connaissances/disque/`)
 - Memoire volatile Linux : conditionnee aux symboles noyau du dump - symboles absents = ecart documente, aucune speculation
 - Capture reseau : metadonnees uniquement pour le trafic chiffre (TLS) ; periode couverte = periode capturee
-- Hors perimetre : disque complet (v2), cloud, conteneurs, navigateurs, mobile
+- Image disque : exploitation sans montage (jamais de root) ; extraction ciblee par artefacts (`referentiels.py artifacts paths` + `disk.py extract`) ; barriere d'espace disque 3x la plus grande image avant super-timeline
+- Hors perimetre : AFF4 (ecart documente, consigne en attente), volumes composites (LVM/RAID), VSS multiples, chiffrement (BitLocker/LUKS), cloud (v2.3), conteneurs (v2.2), navigateurs (v2.1), mobile
 - Toute collection hors perimetre est documentee en attente dans le manifest, jamais exploitee en speculation

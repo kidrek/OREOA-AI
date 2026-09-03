@@ -49,9 +49,35 @@ TYPES = {
     ".lime": ("LiME/AVML memory dump", "memory"),
     ".mem": ("raw memory dump", "memory"),
     ".dmp": ("Windows memory dump (minidump/crash)", "memory"),
-    ".e01": ("EnCase disk image", "disk"),
+    ".e01": ("EnCase disk image (EWF)", "disk"),
     ".aff4": ("AFF4 disk image", "disk"),
+    ".dd": ("raw disk image", "disk"),
+    ".img": ("raw disk image", "disk"),
+    ".rawdisk": ("raw disk image (magic-detected)", "disk"),
 }
+
+# Magic bytes distinguishing a disk image from a memory dump when the
+# extension is ambiguous (.raw used by both):
+#   - MBR boot signature 55 AA at offset 510
+#   - GPT header "EFI PART" at offset 512
+#   - ext2/3/4 superblock magic 53 EF at offset 0x438
+DISK_MAGICS = (
+    (510, b"\x55\xaa"),
+    (512, b"EFI PART"),
+    (0x438, b"\x53\xef"),
+)
+
+
+def magic_disque(chemin: Path) -> bool:
+    try:
+        with chemin.open("rb") as flux:
+            for decalage, signature in DISK_MAGICS:
+                flux.seek(decalage)
+                if flux.read(len(signature)) == signature:
+                    return True
+    except OSError:
+        return False
+    return False
 
 
 def sha256_fichier(chemin: Path, bloc=1024 * 1024) -> str:
@@ -67,10 +93,24 @@ def detecter_type(chemin: Path) -> str:
     suffixes = "".join(chemin.suffixes[-2:]).lower()
     for cle in (suffixes, chemin.suffix.lower()):
         if cle in TYPES:
+            # .raw is ambiguous (memory dump vs raw disk image): probe the magic
+            if cle == ".raw" and magic_disque(chemin):
+                return ".rawdisk"
             return cle
     if nom.endswith((".auth", ".log.1")):
         return ".log"
     return ".inconnu"
+
+
+def famille_du(type_cle: str) -> str:
+    return TYPES.get(type_cle, ("unknown", "misc"))[1]
+
+
+def taille_fichier(chemin: Path) -> int:
+    try:
+        return chemin.stat().st_size
+    except OSError:
+        return 0
 
 
 def charger_manifest(affaire: Path) -> dict:
@@ -110,6 +150,19 @@ def rapprocher_artefacts(affaire: Path) -> None:
               f"{sortie.splitlines()[-1][:100] if sortie else 'exit ' + str(out.returncode)}")
 
 
+def completer_entree(entree: dict, chemin: Path) -> dict:
+    """Disk-specific fields + out-of-scope warnings (v2.0 perimeter)."""
+    famille = famille_du(entree["type"])
+    if famille == "disk":
+        entree["size_bytes"] = taille_fichier(chemin)
+        if entree["type"] == ".aff4":
+            entree["notes"] = ("AFF4 format out of v2.0 exploitation scope "
+                               "(documented gap) - pending analyst decision")
+            print(f"[warn] {entree['name']}: AFF4 not exploited in v2.0 "
+                  "(documented gap) - recorded pending")
+    return entree
+
+
 def importer_copie(affaire: Path, source: Path) -> None:
     originals = affaire / "00_evidence" / "originals"
     originals.mkdir(parents=True, exist_ok=True)
@@ -128,6 +181,7 @@ def importer_copie(affaire: Path, source: Path) -> None:
         "sha256": sha256_fichier(dest),
         "imported_at": datetime.now().isoformat(timespec="seconds"),
     }
+    completer_entree(entree, dest)
     donnees = charger_manifest(affaire)
     donnees.setdefault("collections", []).append(entree)
     ecrire_manifest(affaire, donnees)
@@ -176,6 +230,7 @@ def scan_depots(affaire: Path, provenance: str) -> int:
             "sha256": sha256_fichier(element),
             "imported_at": datetime.now().isoformat(timespec="seconds"),
         }
+        completer_entree(entree, element)
         collections.append(entree)
         nouveaux += 1
         print(f"Deposit imported: {element.name} ({entree['type']}, "

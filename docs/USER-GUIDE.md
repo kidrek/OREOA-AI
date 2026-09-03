@@ -96,20 +96,34 @@ Some actions happen on live machines - the agent then guides you step by step (o
 step at a time, ready-to-copy commands, verification of your outputs):
 
 - **RAM capture**: tool per OS, external support, immediate hashing (`connaissances/acquisition/capture-ram.md`)
-- **Disk acquisition**: raw/E01 image, write-blocker, hash on both sides
+- **Disk acquisition**: raw/E01 image, write-blocker, hash on both sides (`connaissances/disque/acquisition.md`)
 - **Live response**: volatility order, ready-made Windows and Linux commands
 - **Kit deployment**: ask `/deploy`
 
 Evidence brought back goes into `00_evidence/` and the investigation resumes in
 autonomous mode.
 
+### Disk images (v2.0)
+
+Disk images (raw, dd, E01) are exploited directly, without mounting:
+
+1. drop the image in `00_evidence/originals/` (or `00_evidence/images/` for large
+   volumes) - ingestion types it (disk magic disambiguation for `.raw`) and hashes it
+2. the agent runs the super-timeline first (`log2timeline` on the image, plaso
+   auto-detects partitions), then targeted extraction of artifact paths
+   (`referentiels.py artifacts paths` + `disk.py extract`, SHA256 per file)
+3. keep 3x the largest image size free before the super-timeline (kit barrier)
+
+Limits documented in the report: AFF4 pending (recorded, not exploited), composite
+volumes (LVM/RAID), VSS and encryption out of scope.
+
 ## 6. Weak signals and referentials
 
 The agent systematically tests the catalogue signals (`catalogue/windows.md`,
-`catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`) and the
-correlation chains (`catalogue/correlation.md`). The report includes a "tested signals"
-appendix (detected / not detected / not applicable + evidence) - the basis of analysis
-reproducibility.
+`catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`,
+`catalogue/disque.md`) and the correlation chains (`catalogue/correlation.md`). The
+report includes a "tested signals" appendix (detected / not detected / not applicable +
+evidence) - the basis of analysis reproducibility.
 
 Two upstream referentials are baked into the image at every build (details:
 [docs/REFERENTIALS.md](REFERENTIALS.md)):
@@ -142,5 +156,8 @@ Two upstream referentials are baked into the image at every build (details:
 | `python3 scripts/ingest.py <case> --scan --provenance "source"` | ingest originals/ deposits (integrity verified) |
 | `python3 scripts/ingest.py <case> <collection>` | import an external collection (automatic artifact matching) |
 | `./scripts/dt python3 /work/scripts/referentiels.py artifacts expand <Name>` | see an artifact's paths and tools |
+| `./scripts/dt python3 /work/scripts/referentiels.py artifacts paths <Name>` | machine output: resolved paths (piping to disk.py extract) |
+| `./scripts/dt python3 /work/scripts/disk.py info 00_evidence/originals/<image>` | disk image overview (format, partitions, filesystems, barrier) |
+| `./scripts/dt python3 /work/scripts/disk.py extract <image> --paths <paths.txt> --out 01_work/disque/extraits` | targeted extraction with SHA256 report |
 | `./scripts/dt python3 /work/scripts/referentiels.py dfiq arbre S1008` | question tree of a DFIQ scenario |
 | `./install.sh check\|fix\|test` | manual alternative (ops/CI, agent-less) |

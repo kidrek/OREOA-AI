@@ -13,7 +13,7 @@ Ce fichier recense les logiciels tiers embarques dans l'image conteneur `oreoa-a
 | python-evtx | 0.8.1 | Apache-2.0 | https://github.com/williballenthin/python-evtx |
 | regipy | 6.3.0 | MIT | https://github.com/mkorman90/regipy |
 | evtx | 0.12.1 | MIT / Apache-2.0 (double) | https://github.com/omerbenamram/evtx |
-| The Sleuth Kit (fls, icat) | 4.12.1 | GPL-2.0-or-later (composants mixtes) | https://github.com/sleuthkit/sleuthkit |
+| The Sleuth Kit (fls, icat, mmls, fsstat, img_stat) | 4.12.1 | GPL-2.0-or-later (composants mixtes) | https://github.com/sleuthkit/sleuthkit |
 | Wireshark (tshark) | 4.4.18 | GPL-2.0-or-later | https://www.wireshark.org |
 | Suricata | 7.0.10 | GPL-2.0 | https://suricata.io (OISF) |
 | suricata-update | 1.3.3 | GPL-2.0 | https://github.com/OISF/suricata-update |
@@ -21,8 +21,12 @@ Ce fichier recense les logiciels tiers embarques dans l'image conteneur `oreoa-a
 | hashdeep | (version Debian) | GPL-2.0-or-later | https://github.com/jessek/hashdeep |
 | lzip | (version Debian) | GPL-2.0-or-later | https://www.nongnu.org/lzip/ |
 | PyYAML | 6.0.2 | MIT | https://github.com/yaml/pyyaml |
+| pytsk3 (bindings TSK, lecture raw/E01) | 20260715 | LGPL-3.0-or-later | https://github.com/py4n6/pytsk |
+| libewf-python (bindings EWF, lecture E01) | 20240506 | LGPL-3.0-or-later | https://github.com/libyal/libewf |
 
 Les versions exactes et les textes de licence des paquets Debian sont embarques dans l'image (`/usr/share/doc/*/copyright`). L'inventaire factuel complet est regenere par `doctor.py test` et archive dans `docs/licences-image.txt`.
+
+Remarque : pytsk3 et libewf-python sont embarques comme dependances de plaso/dfVFS et exploites directement par le kit pour les images disque (raw, E01 via le support EWF de libtsk). Leurs versions sont verifiees par `doctor.py test` (imports).
 
 ## Regles de detection embarquees (suricata)
 

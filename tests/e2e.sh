@@ -210,6 +210,66 @@ else
     || ko "catalogue indexes regenerated (mapping preserved)"
 fi
 
+etape "5sexies. Disk tooling (TSK + plaso, v2.0)"
+if ! docker image inspect oreoa-ai-tools:1.1.0 >/dev/null 2>&1; then
+  echo "   [skip] oreoa-ai-tools image missing (provision with: python3 scripts/doctor.py fix)"
+elif ! python3 tests/samples/gen_disk.py /tmp/kit-e2e-disk.raw >/dev/null 2>&1; then
+  echo "   [skip] mke2fs missing on host (e2fsprogs) - disk step skipped"
+else
+  DISK_IMG="/tmp/kit-e2e-disk.raw"
+  # temporary disk case (independent from CASE-TEST-0001)
+  rm -rf cases/CASE-TEST-DISK
+  mkdir -p cases/CASE-TEST-DISK/{00_evidence/{originals,exports,images},01_work/tmp,02_analysis/timeline}
+  cp "$DISK_IMG" cases/CASE-TEST-DISK/00_evidence/originals/kit-disk.raw
+  rm -f "$DISK_IMG"
+
+  # ingestion: .raw with disk magic -> .rawdisk + size_bytes
+  python3 scripts/ingest.py cases/CASE-TEST-DISK --scan --provenance "E2E synthetic disk" >/dev/null 2>&1 \
+    && python3 - <<'EOF' && ok "disk ingestion (magic .rawdisk + size_bytes)" || ko "disk ingestion"
+import sys, yaml
+from pathlib import Path
+m = yaml.safe_load(Path("cases/CASE-TEST-DISK/manifest.yaml").read_text())
+c = m["collections"][0]
+assert c["type"] == ".rawdisk", f"type={c['type']}"
+assert c.get("size_bytes") == 4 * 1024 * 1024, f"size={c.get('size_bytes')}"
+sys.exit(0)
+EOF
+
+  # info: ext4 detection + barrier
+  INFO=$(./scripts/dt -c CASE-TEST-DISK python3 /work/scripts/disk.py info /affaires/00_evidence/originals/kit-disk.raw 2>/dev/null || true)
+  echo "$INFO" | grep -q "TSK_FS_TYPE_EXT4" && echo "$INFO" | grep -q "\[space\]" \
+    && ok "disk.py info (ext4 detected, barrier reported)" || ko "disk.py info"
+
+  # targeted extraction via referential paths
+  ./scripts/dt -c CASE-TEST-DISK python3 /work/scripts/referentiels.py artifacts paths LinuxAuthLogs \
+    > cases/CASE-TEST-DISK/01_work/tmp/paths.txt 2>/dev/null
+  ./scripts/dt -c CASE-TEST-DISK python3 /work/scripts/disk.py extract \
+    /affaires/00_evidence/originals/kit-disk.raw --offset 0 \
+    --paths /affaires/01_work/tmp/paths.txt --out /affaires/01_work/tmp/extraits >/dev/null 2>&1 \
+    && grep -q "KIT-DISK-FAILED" cases/CASE-TEST-DISK/01_work/tmp/extraits/auth.log 2>/dev/null \
+    && grep -q "extracted" cases/CASE-TEST-DISK/01_work/tmp/extraits/extraction-report.txt \
+    && ok "disk.py extract (referential paths, SHA256 report)" || ko "disk.py extract"
+
+  # plaso super-timeline on the raw image
+  ./scripts/dt -c CASE-TEST-DISK log2timeline --quiet \
+    --storage-file /affaires/02_analysis/timeline/disk.plaso \
+    /affaires/00_evidence/originals/kit-disk.raw >/dev/null 2>&1 \
+    && ./scripts/dt -c CASE-TEST-DISK psort --output-format dynamic \
+    -w /affaires/02_analysis/timeline/timeline.csv \
+    /affaires/02_analysis/timeline/disk.plaso >/dev/null 2>&1 \
+    && grep -q "EXT:/var/log/auth.log" cases/CASE-TEST-DISK/02_analysis/timeline/timeline.csv \
+    && ok "plaso super-timeline on disk image (parsed auth.log content)" \
+    || ko "plaso super-timeline on disk image"
+
+  # EWF support (E01 readable in-image) - format check without sample
+  # (capture first: grep -q + pipefail would SIGPIPE img_stat)
+  EWF_LIST=$(./scripts/dt img_stat -i list 2>&1 || true)
+  echo "$EWF_LIST" | grep -qw ewf \
+    && ok "EWF support present (E01 readable in-image, sample REX-qualified)" \
+    || ko "EWF support present"
+  rm -rf cases/CASE-TEST-DISK
+fi
+
 etape "6. Summary"
 if [[ $ECHAP -eq 0 ]]; then
   echo "   E2E: OK"

@@ -36,3 +36,10 @@ collections: []
 #   imported_at: "2026-01-01T00:00:00"
 #   description: "Web server Security event log"
 #   artifacts: ["WindowsEventLogs"]               # automatic matching (baked referential)
+#
+# Disk-image collections (v2.0) carry additional fields:
+#
+# - name: "disk.E01"
+#   type: ".e01"                                  # .raw with disk magic -> ".rawdisk"
+#   size_bytes: 107374182400                      # image size (disk-space barrier: 3x)
+#   notes: ""                                     # out-of-scope notes (e.g. AFF4 gap)

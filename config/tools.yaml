@@ -15,6 +15,7 @@ provisioning:
   bundle: "tools/oreoa-ai-tools-1.1.0.tar.gz"   # docker save (air-gap), hors depot
   seuil_espace_build_go: 3    # barriere dure : espace libre requis avant docker build
   seuil_espace_load_go: 2     # barriere dure : espace libre requis avant docker load
+  seuil_disque_multiplicateur: 3   # espace libre requis : 3x la plus grande image disque d'affaire (super-timeline + extractions)
 
 # Outils pinnes - "test" = verification fonctionnelle (doctor.py test)
 outils:
@@ -44,6 +45,21 @@ outils:
     test: "-V"
     role: extraction de fichier depuis image (The Sleuth Kit)
     version_pinnee: "4.12.1"
+  mmls:
+    binaire: mmls
+    test: "-V"
+    role: enumeration de la table de partitions MBR/GPT (The Sleuth Kit)
+    version_pinnee: "4.12.1"
+  fsstat:
+    binaire: fsstat
+    test: "-V"
+    role: metadonnees du systeme de fichiers (The Sleuth Kit)
+    version_pinnee: "4.12.1"
+  img_stat:
+    binaire: img_stat
+    test: "-V"
+    role: identification du format d'image (raw, EWF/E01, AFF) (The Sleuth Kit)
+    version_pinnee: "4.12.1"
   tshark:
     binaire: tshark
     test: "-v"
@@ -66,6 +82,8 @@ imports:
   evtx: "parsing des journaux evenements Windows, bindings omerbenamram (0.12.1)"
   Evtx: "parsing alternatif des journaux evtx, williballenthin (0.8.1)"
   artifacts: "lecture des definitions d'artefacts ForensicArtifacts (version au build)"
+  pytsk3: "bindings The Sleuth Kit : lecture directe des images raw et E01 (dependance plaso/dfvfs, 20260715)"
+  pyewf: "bindings libewf : lecture des segments E01 (dependance plaso/dfvfs, 20240506)"
 
 # Referentiels amont telecharges et bakes dans l'image a chaque build (doctor fix)
 referentiels:

@@ -83,15 +83,25 @@ Structure en 14 sections (resume executif, description avec contexte analyste et
 Certaines actions se font sur des machines vivantes - l'agent te guide alors pas a pas (une etape a la fois, commandes pretes a copier, verification de tes retours) :
 
 - **Capture RAM** : outil selon OS, support externe, empreinte immediate (`connaissances/acquisition/capture-ram.md`)
-- **Acquisition disque** : image raw/E01, write-blocker, empreinte des deux cotes
+- **Acquisition disque** : image raw/E01, write-blocker, empreinte des deux cotes (`connaissances/disque/acquisition.md`)
 - **Live response** : ordre de volatilite, commandes Windows et Linux pretes
 - **Deploiement du kit** : demande `/deploy`
 
 Les preuves ramenees sont depositees dans `00_evidence/` et l'investigation reprend en mode autonome.
 
+### Images disque (v2.0)
+
+Les images disque (raw, dd, E01) sont exploitees directement, sans montage :
+
+1. deposer l'image dans `00_evidence/originals/` (ou `00_evidence/images/` pour les gros volumes) - l'ingestion la type (desambiguation `.raw` par magic bytes) et l'empreinte
+2. l'agent lance d'abord la super-timeline (`log2timeline` sur l'image, partitions detectees automatiquement), puis l'extraction ciblee des chemins d'artefacts (`referentiels.py artifacts paths` + `disk.py extract`, SHA256 par fichier)
+3. garder 3x la taille de la plus grande image libre avant la super-timeline (barriere kit)
+
+Limites documentees au rapport : AFF4 en attente (consigne, non exploite), volumes composites (LVM/RAID), VSS et chiffrement hors perimetre.
+
 ## 6. Signaux faibles et referentiels
 
-L'agent teste systematiquement les signaux du catalogue (`catalogue/windows.md`, `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`) et les chaines de correlation (`catalogue/correlation.md`). Le rapport inclut une annexe "signaux testes" (detecte / non detecte / non applicable + evidence) - la base de la reproducibilite de l'analyse.
+L'agent teste systematiquement les signaux du catalogue (`catalogue/windows.md`, `catalogue/linux.md`, `catalogue/memoire.md`, `catalogue/reseau.md`, `catalogue/disque.md`) et les chaines de correlation (`catalogue/correlation.md`). Le rapport inclut une annexe "signaux testes" (detecte / non detecte / non applicable + evidence) - la base de la reproducibilite de l'analyse.
 
 Deux referentiels amont sont embarques dans l'image a chaque build (details : [docs/REFERENTIALS.fr.md](REFERENTIALS.fr.md)) :
 
@@ -119,5 +129,8 @@ Deux referentiels amont sont embarques dans l'image a chaque build (details : [d
 | `python3 scripts/ingest.py <affaire> --scan --provenance "source"` | importer les depots de originals/ (integrite verifiee) |
 | `python3 scripts/ingest.py <affaire> <collection>` | importer une collection externe (rapprochement artefacts automatique) |
 | `./scripts/dt python3 /work/scripts/referentiels.py artefacts expand <Nom>` | voir les chemins et outils d'un artefact |
+| `./scripts/dt python3 /work/scripts/referentiels.py artifacts paths <Nom>` | sortie machine : chemins resolus (piping vers disk.py extract) |
+| `./scripts/dt python3 /work/scripts/disk.py info 00_evidence/originals/<image>` | vue d'ensemble image disque (format, partitions, filesystems, barriere) |
+| `./scripts/dt python3 /work/scripts/disk.py extract <image> --paths <paths.txt> --out 01_work/disque/extraits` | extraction ciblee avec rapport SHA256 |
 | `./scripts/dt python3 /work/scripts/referentiels.py dfiq arbre S1008` | arbre de questions d'un scenario DFIQ |
 | `./install.sh check\|fix\|test` | alternative manuelle (ops/CI, hors agent) |

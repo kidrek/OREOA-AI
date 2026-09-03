@@ -7,6 +7,7 @@ Runs INSIDE the container (via dt): reads /referentiels (baked at build) and
 Usage:
   artifacts match <manifest.yaml>     match collections <-> definitions, update manifest
   artifacts expand <ArtifactName>     resolve an artifact -> resolved sources + kit tools
+  artifacts paths <ArtifactName>      machine output: resolved paths, one per line
   artifacts index [file|-]            regenerate the generated catalogue section (markers)
   artifacts check                     integrity (MANIFEST.sha256) + parsing + traces
   dfiq arbre [S-id|-]                 tree scenario -> facets -> questions
@@ -246,21 +247,48 @@ def cmd_artifacts_expand(nom: str):
     return 1
 
 
+def cmd_artifacts_paths(nom: str):
+    """Machine output: resolved paths of an artifact, one per line (piping
+    towards scripts/disk.py extract). FILE/PATH sources only."""
+    definitions = charger_artefacts()
+    cible = next(((a, o) for a, o in definitions if a.name == nom), None)
+    if cible is None:
+        insensible = next(((a, o) for a, o in definitions
+                           if a.name.casefold() == nom.casefold()), None)
+        if insensible is None:
+            print(f"Artifact '{nom}' not found in the referential (upstream + kit).",
+                  file=sys.stderr)
+            return 1
+        cible = insensible
+    artefact, _ = cible
+    vues = set()
+    for source in artefact.sources or []:
+        if source.type_indicator not in ("FILE", "PATH"):
+            continue
+        for pattern in (source.AsDict() or {}).get("paths", []):
+            resolu, _ = resoudre_chemin(pattern)
+            if resolu not in vues:
+                vues.add(resolu)
+                print(resolu)
+    return 0
+
+
 # ------------------------------------------------------------------- index
 
 def ecrire_genere(chemin: Path, marqueur: str, contenu: str, titre_defaut: str):
-    """Writes the generated section between markers, preserving the rest of the file."""
+    """Writes the generated section between markers, preserving the rest of the file
+    (idempotent: no whitespace drift across regenerations)."""
     debut = f"<!-- genere:{marqueur}:debut -->"
     fin = f"<!-- genere:{marqueur}:fin -->"
-    bloc = f"{debut}\n{contenu}\n{fin}\n"
+    bloc = f"{debut}\n{contenu}\n{fin}"
     if chemin.is_file():
         texte = chemin.read_text()
         if debut in texte and fin in texte:
-            avant = texte.split(debut, 1)[0]
-            apres = texte.split(fin, 1)[1]
-            chemin.write_text(avant + bloc + apres)
+            avant = texte.split(debut, 1)[0].rstrip("\n")
+            apres = texte.split(fin, 1)[1].lstrip("\n")
+            chemin.write_text(f"{avant}\n\n{bloc}\n\n{apres}")
             return
-    chemin.write_text(f"{titre_defaut}\n\n{bloc}")
+    chemin.write_text(f"{titre_defaut}\n\n{bloc}\n")
 
 
 def cmd_artifacts_index(sortie: str):
@@ -506,6 +534,8 @@ def main():
             return cmd_artifacts_match(reste[0])
         if action == "expand" and reste:
             return cmd_artifacts_expand(reste[0])
+        if action == "paths" and reste:
+            return cmd_artifacts_paths(reste[0])
         if action == "index":
             return cmd_artifacts_index(reste[0] if reste else "-")
         if action == "check":

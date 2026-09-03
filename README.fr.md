@@ -161,7 +161,8 @@ faux positifs: antivirus et EDR legitimes
 - [catalogue/linux.md](catalogue/linux.md) - 12 signaux (authentification, execution, persistance, anti-forensique)
 - [catalogue/memoire.md](catalogue/memoire.md) - 10 signaux SF-M (processus masque, injection, reseau vivant, credentials, persistance, rootkit Linux)
 - [catalogue/reseau.md](catalogue/reseau.md) - 10 signaux SF-R (beaconing, DNS C2 et exfiltration, transferts, scans, SMB lateral, TLS, alertes suricata)
-- [catalogue/correlation.md](catalogue/correlation.md) - chaines d'investigation multi-signaux (C-W-01/02, C-L-01/02, C-M-01, C-R-01, correlations croisees R-01 a R-09)
+- [catalogue/disque.md](catalogue/disque.md) - 10 signaux SF-D (timestomping, Prefetch, persistance registre, fichiers supprimes, depots, ADS, comptes/services, USB, UserAssist, perte de visibilite)
+- [catalogue/correlation.md](catalogue/correlation.md) - chaines d'investigation multi-signaux (C-W-01/02, C-L-01/02, C-M-01, C-R-01, C-D-01, correlations croisees R-01 a R-12)
 
 Chaque signal teste en investigation est enregistre (detecte / non detecte / non applicable + evidence citee) - le rapport inclut l'annexe des signaux testes.
 
@@ -176,20 +177,21 @@ Chaque signal teste en investigation est enregistre (detecte / non detecte / non
 | Tracabilite | toute conclusion cite collection + artefact + hash ; digest de l'image consigne |
 | Barriere disque | provisioning refuse si espace libre insuffisant (aucune ecriture) |
 
-## Etat v1
+## Etat v2.0
 
 | Module | Etat |
 |--------|------|
-| Ingestion (detection de type, SHA256, rapprochement artefacts, manifest) | operationnel |
+| Ingestion (detection de type, SHA256, provenance, rapprochement artefacts, manifest, desambiguation .raw par magic) | operationnel |
 | Verificateur d'integrite (doctor check / fix / test, referentiels) | operationnel |
-| Chaine d'outils conteneurisee (8 outils + 4 bibliotheques) | operationnel |
-| Catalogue de signaux faibles (46 signaux + 7 chaines) | operationnel |
+| Chaine d'outils conteneurisee (11 outils + 6 bibliotheques) | operationnelle |
+| Catalogue de signaux faibles (56 signaux + 8 chaines) | operationnel |
 | Memoire volatile (volatility3 outille, catalogue SF-M, connaissances dediees) | operationnel |
 | Reseau (tshark + suricata offline, triage ET Open, catalogue SF-R) | operationnel |
+| Disque complet (raw/dd/E01, TSK sans montage + plaso super-timeline, extraction ciblee par artefacts, catalogue SF-D) | operationnel |
 | Referentiels amont (ForensicArtifacts + DFIQ bakes au build, moteur referentiels.py) | operationnel |
 | Intake de contexte a l'ouverture d'affaire (/analyse) | operationnel |
-| Competences d'agent (9 skills) | operationnelles |
-| Templates de livrables (5 templates) | operationnels |
+| Competences d'agent (10 skills) | operationnelles |
+| Templates de livrables (6 templates) | operationnels |
 | Deploiement multi-laptops (profils online / air-gap) | operationnel |
 
 ## Roadmap
@@ -197,7 +199,8 @@ Chaque signal teste en investigation est enregistre (detecte / non detecte / non
 - **v1.1 Memoire volatile** : livree - exploitation volatility3 outillee en affaire (wrapper `dt`), catalogue SF-M, connaissances dediees, acquisition RAM en guidance (deja documentee)
 - **v1.2 Reseau** : livree - tshark + suricata offline (ET Open trie + regles kit), catalogue SF-R, echantillons pcap synthetiques, triage validable en E2E
 - **v1.3 Referentiels amont** : livree - ForensicArtifacts + DFIQ telecharges et bakes a chaque build, moteur `referentiels.py` (rapprochement, expansion, plans DFIQ), intake de contexte a l'ouverture d'affaire
-- **v2.0 Disque complet** : acquisition image (E01/AFF4/raw), The Sleuth Kit et plaso sur images, collection par artefacts (`--artifact_filters`)
+- **v1.4 Internationalisation** : livree - schema EN et scripts EN, docs EN primaires, regles langues + /lang
+- **v2.0 Disque complet** : livree - images raw/dd/E01, The Sleuth Kit sans montage (`disk.py` : info/verify/listing/bodyfile/extract), super-timeline plaso, extraction ciblee par artefacts, barriere disque 3x image, catalogue SF-D ; AFF4 et volumes composites/chiffres documentes en ecarts
 - **v2.1 Navigateurs** : historiques, caches, sessions (adosse a webbrowser.yaml + DFIQ Q1020)
 - **v2.2 Conteneurs** : docker/containerd/kubernetes.yaml, journaux d'orchestrateurs
 - **v2.3 Cloud** : cloud_services.yaml (cadre DFIQ S1005), gaps documentes

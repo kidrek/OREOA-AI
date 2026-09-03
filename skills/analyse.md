@@ -66,6 +66,16 @@ Lorsqu'une capture (pcap/pcapng) est presente dans l'affaire (type reseau au man
 4. Croiser avec `catalogue/reseau.md` (SF-R), la chaine C-R-01 et les croisements R-07/R-08/R-09 de `catalogue/correlation.md`
 5. Chaque alerte est verifiee par suivi de flux avant d'entrer aux observables ; trafic chiffre = metadonnees seules ; la periode couverte est celle de la capture
 
+## Exploitation des images disque (v2.0)
+
+Lorsqu'une image disque (raw, dd, E01) est presente dans l'affaire (type disk au manifest, `size_bytes` consigne) :
+
+1. Verifier l'espace disponible (regle : 3x la taille de la plus grande image) puis suivre `connaissances/disque/exploitation-tsk.md` : `disk.py info` (format, partitions, filesystems), `disk.py verify` (integrite, metadonnees E01)
+2. Super-timeline en premier passe : `dt -c <CASE_ID> log2timeline --storage-file 02_analysis/timeline/disk.plaso 00_evidence/originals/<image>` puis `psort` (cf. `connaissances/disque/exploitation-plaso.md`)
+3. Extraction ciblee par artefacts : `referentiels.py artifacts paths <Nom>` -> `disk.py extract` (rapport TSV, SHA256 par fichier) ; analyses specialises sur extraits (regipy pour les ruches, yara pour les signatures)
+4. Sorties dans `01_work/disque/`, extraits empreintes ; croiser avec `catalogue/disque.md` (SF-D), la chaine C-D-01 et les croisements R-10 a R-12 de `catalogue/correlation.md`
+5. Limites v2.0 documentees : AFF4 en attente, LVM/RAID/VSS et chiffrement hors perimetre - `disk.py info` documente ce qui est detecte, jamais de speculation
+
 ## Exploitation des referentiels amont (v1.3)
 
 Le manifest porte le rapprochement automatique des collections avec le referentiel

@@ -1,4 +1,4 @@
-# Direct dependencies of the oredoa package (base image).
+# Direct dependencies of the oreoa package (base image).
 # Lock generated with pip-compile: requirements.lock.
 pydantic
 pyyaml

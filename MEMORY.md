@@ -25,20 +25,23 @@ perdue - mise a jour de ce fichier + append du journal AVANT l'etape suivante.
 | 2 | Integration reflexion v2 : SPEC revision complete, compagnons, amendements A1-A6 (b1ec23c) | termine | 2026-09-04 |
 | 3 | S1.0 - memoire restructuree : `MEMORY.md` compact, `docs/journal.md` (relocation verbatim), AGENTS.md + en-tete SPEC mis a jour | termine | 2026-09-04 |
 | 4 | S1.1 - socle securise : versions.env + compose + docker/{base,proxy,mcp,agent,worker-fast,worker-deep,fetcher,redis,seccomp} + Makefile + pins resolvus ; T5 #1/#5 verts (26/26), images construites, redis ACL fume ; deviation proxy = debian:bookworm-slim (alpine sans module Filter), notee en docker_build_spec 3.7 | termine | 2026-09-04 |
+| 5 | S1.2 - agent + runtime-config + /case : agents/ (5 roles), commands/ (24), case_model + scaffold + runtime_config + CLI, entrypoint agent ; 43/43 verts, smoke conteneur OK ; perms partagees hote/conteneur (user 10001:HOST_GID, 770/660) | termine | 2026-09-04 |
 
 ## Prochaine action
 
-**S1.2 - Agent + runtime-config + /case** : `agents/{ingest,triage,analyst,reviewer,reporter}.md`,
-`commands/*.md`, CLI `oreoa` (`/case list|new|<id>` : scaffold vide derive de
-`templates/case/`, `answers.yaml` si EXERCICE, `state/`, perms 750, bandeau
-persistant), `make runtime-config` (rendu `opencode.json` + `.claude/` depuis
-`agents/`/`commands/` + modeles par role), image agent deja construite (S1.1).
-Tests : T1 modeles Pydantic case + scaffold, golden test rendu runtime-config.
+**S1.3 - Modeles + DuckDB** : `src/oreoa` Pydantic (manifest evidence + job
+payloads, enums vocabulaires `forensic_artifacts`/`attack`/`dfiq`,
+`record_id = sha256(ev_id|artifact|source_ref)` deterministe, `path_norm`,
+`summary` deterministe <= 160 chars) ; schema DuckDB + migrations +
+vues de tiers (`normalized_data_model.md` exactement : core columns, 14
+familles materialisees SANS `raw`, vues `read_parquet(union_by_name)` pour
+familles massives, `events` materialise sans `raw`, `hosts`/`evidence`,
+`schema_version`, regle `lossless` obligatoire par mapping). Tests T1 :
+enums, record_id, path_norm, summary, migrations, round-trip lossless.
 
-Puis S1.3 (modeles Pydantic + schema DuckDB), S1.4 (redis/RQ + 4 MCP),
-S1.5 (update-knowledge + loader DFIQ interne), S1.6 (corpus T0 Windows),
-S1.7 (spike seuils A3, NOTICE stack v2 A5, `make test` T1+T5 vert, fiches
-vault, PR `v2`->`main`).
+Puis S1.4 (redis/RQ + 4 MCP), S1.5 (update-knowledge + loader DFIQ
+interne), S1.6 (corpus T0 Windows), S1.7 (spike seuils A3, NOTICE stack v2
+A5, `make test` T1+T5 vert, fiches vault, PR `v2`->`main`).
 
 ## Decisions verrouillees
 

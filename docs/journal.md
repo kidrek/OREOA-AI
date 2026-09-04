@@ -75,7 +75,7 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   proxy-fetch + fetcher en profil symbol-fetch) ; `compose.local-llm.yaml`
   (override host.docker.internal, proxy desactive pour cet hote) ;
   `docker/{base,proxy,mcp,agent,worker-fast,worker-deep,fetcher,redis,
-  seccomp}` (base multi-stage sans compilateurs au runtime, user oredoa
+  seccomp}` (base multi-stage sans compilateurs au runtime, user oreoa
   10001, tini ; seccomp = copie pinnee du profil default moby v28.0.4,
   possede par le depot) ; Makefile (secrets, build-base, build sequencé
   base->worker-fast->reste, pins, runtime-config, up/down, shell, case-new,
@@ -107,3 +107,43 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   worker-deep FROM worker-fast -> build sequencé dans le Makefile ;
   entrypoint proxy n'exec pas $@ (normal, tinyproxy en avant-plan).
   Prochaine action : S1.2 (agent + runtime-config + /case)
+- 2026-09-04 -- S1.2 - agent + runtime-config + /case. Cree : `agents/` (5
+  prompts de roles EN : ingest, triage, analyst, reviewer, reporter - contrats
+  SPEC : ingestion sans raisonnement, triage jamais promoteur, boucle DFIQ de
+  l'analyst avec bandeau/citations/revue obligatoire, reviewer adversarial
+  avec la regle legitimite != explication benigne, reporter etat valide +
+  chaine de conservation A4) ; `commands/` (24 fichiers canoniques : frontmatter
+  YAML description/argument-hint/step + corps EN avec $ARGUMENTS ; /case et
+  /help fonctionnels des maintenant, les autres declaratifs - machinerie aux
+  etapes 2-5) ; `src/oreoa/case_model.py` (Pydantic schema v2 : enums fermes
+  confidence/criticity/status/review, ids H#/F#/S# contraints, worked template
+  du vault = autorite de validation) ; `src/oreoa/scaffold.py` (squelettes
+  vides : case.yaml genere par les modeles, journal.md mirroir vide des regles
+  du template, answers.yaml EXERCICE uniquement A2, perms partagees
+  hote/conteneur) ; `src/oreoa/runtime_config.py` (generateur deterministe :
+  opencode.json - provider openai-compatible depuis LLM_BASE_URL, 4 serveurs
+  MCP remote, permissions bash deny sudo - ; agents+commands opencode et
+  claude ; layouts project/global, runtimes selectables ; sources canoniques
+  OREOA_AGENTS_DIR/OREOA_COMMANDS_DIR pour le conteneur) ; `src/oreoa/cli.py`
+  + `__main__.py` (case new/list/switch/current, banner `Case: <id> · <TYPE> ·
+  Model: <model> @ <endpoint>`, runtime-config render) ; entrypoint agent :
+  rendu opencode global dans $HOME/.config/opencode au demarrage du conteneur
+  + claude par cas. Tests T1 : worked template valide, enums rejetes, ids
+  contraints ; scaffold (squelette, EXERCICE->answers, refus existant, perms) ;
+  runtime-config (determinisme byte-identique, 5 roles + 24 commandes,
+  contenu opencode.json, cablage modeles par role, corps verbatim depuis
+  agents/). Vert : 43/43. Smoke conteneur : case list/banner + rendu
+  runtime-config au demarrage OK. Decisions : (1) umask partage hote/
+  conteneur - compose `user: 10001:${OREOA_HOST_GID}` + group_add + case dirs
+  770/fichiers 660 (les 750 de la spec §8 rendaient case.yaml illisible pour
+  uid 10001 ; l'analyste reste proprietaire, les autres n'ont rien) ;
+  (2) runtime-config re-rendu au demarrage du conteneur depuis les mounts ro
+  (spec 3.2 : editer un prompt ne demande pas de rebuild) - mais le paquet
+  oredoa vit dans l'image BASE : toute modif de src/ -> make build (base
+  d'abord) ; (3) /case new genere les squelettes vides depuis les modeles
+  Pydantic (worked template intact comme exemple), coherence testee par
+  revalidation ; (4) provider LLM : LLM_BASE_URL ajoute a .env.example +
+  compose (le generator n'emet provider/model que si defini - defaut opencode
+  sinon). Corrige au passage : typo oredoa->oreoa (Dockerfile user/CMD,
+  entrypoint, Makefile, requirements.in, tests, journal S1.1).
+  Prochaine action : S1.3 (modeles + DuckDB)

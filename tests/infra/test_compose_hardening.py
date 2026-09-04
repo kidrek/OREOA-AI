@@ -62,13 +62,25 @@ def test_no_host_network_mode(config, config_symbol_fetch):
 
 def test_hardening_anchor_applied(config):
     for name, svc in compose_services(config).items():
-        assert svc.get("user") == "10001:10001", f"{name}: user must be 10001:10001"
+        user = svc.get("user", "")
+        assert user.startswith("10001:"), f"{name}: user must start with uid 10001 (got {user!r})"
         assert svc.get("read_only") is True, f"{name}: rootfs must be read-only"
         assert "ALL" in (svc.get("cap_drop") or []), f"{name}: cap_drop ALL missing"
         assert "no-new-privileges:true" in (svc.get("security_opt") or []), f"{name}: no-new-privileges missing"
         assert any(str(o).startswith("seccomp:") for o in (svc.get("security_opt") or [])), f"{name}: seccomp profile missing"
         assert svc.get("pids_limit") == 512, f"{name}: pids_limit"
         assert svc.get("init") is True, f"{name}: init missing"
+
+
+def test_case_services_get_host_group(config):
+    # Case dirs are 770 host-owned; services touching /cases run with the
+    # host analyst group (OREOA_HOST_GID) via user gid + group_add.
+    for name in ("agent", "worker-fast", "worker-deep", "mcp-evidence", "mcp-case"):
+        svc = compose_services(config)[name]
+        uid, _, gid = svc["user"].partition(":")
+        assert uid == "10001", f"{name}: uid must be 10001"
+        assert gid == "1001", f"{name}: gid must be the host analyst group (got {gid!r})"
+        assert svc.get("group_add"), f"{name}: group_add missing"
 
 
 def test_internal_network_has_no_route(config):

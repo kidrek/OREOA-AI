@@ -14,7 +14,7 @@ name: oreoa-ai
 # by the command layer at case attach time and by code + tests (T5 3, 6, 9b).
 
 x-hardened: &hardened
-  user: "10001:10001"
+  user: "10001:${OREOA_HOST_GID:-1001}"
   read_only: true
   cap_drop: [ALL]
   security_opt:
@@ -64,6 +64,8 @@ services:
       - redis_password
 
   agent:
+    group_add:
+      - "${OREOA_HOST_GID:-1001}"
     image: oreoa/agent:${TAG:-dev}
     build:
       context: .
@@ -83,6 +85,9 @@ services:
       LLM_MODEL_TRIAGE: ${LLM_MODEL_TRIAGE:-}
       LLM_MODEL_REVIEWER: ${LLM_MODEL_REVIEWER:-}
       OREOA_CASE_ID: ${OREOA_CASE_ID:-}
+      OREOA_AGENTS_DIR: /agents
+      OREOA_COMMANDS_DIR: /commands
+      OREOA_ROOT: /home/oreoa
       TZ: ${TZ:-Europe/Paris}
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=1g,uid=10001,gid=10001,mode=1777
@@ -96,6 +101,8 @@ services:
       - llm_api_key
 
   worker-fast:
+    group_add:
+      - "${OREOA_HOST_GID:-1001}"
     image: oreoa/worker-fast:${TAG:-dev}
     build:
       context: .
@@ -115,6 +122,8 @@ services:
       nofile: 65536
 
   worker-deep:
+    group_add:
+      - "${OREOA_HOST_GID:-1001}"
     image: oreoa/worker-deep:${TAG:-dev}
     build:
       context: .
@@ -134,6 +143,8 @@ services:
       nofile: 65536
 
   mcp-evidence:
+    group_add:
+      - "${OREOA_HOST_GID:-1001}"
     image: oreoa/mcp:${TAG:-dev}
     build: *mcp-build
     <<: *hardened
@@ -153,6 +164,8 @@ services:
       - ./knowledge:/knowledge:ro
 
   mcp-case:
+    group_add:
+      - "${OREOA_HOST_GID:-1001}"
     image: oreoa/mcp:${TAG:-dev}
     build: *mcp-build
     <<: *hardened

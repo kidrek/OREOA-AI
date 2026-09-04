@@ -4,13 +4,21 @@
 # check the case directory exists, then exec the runtime TUI.
 set -eu
 
-if command -v oredoa >/dev/null 2>&1; then
-    oredoa runtime-config render >/dev/null 2>&1 || true
-fi
+# OpenCode global config from the canonical sources (ro mounts).
+mkdir -p "${HOME}/.config/opencode"
+oreoa runtime-config render \
+    --out "${HOME}/.config/opencode" \
+    --runtimes opencode --layout global >/dev/null 2>&1 || true
 
-if [ -n "${OREOA_CASE_ID:-}" ] && [ ! -d "/cases/${OREOA_CASE_ID}" ]; then
-    echo "case not found: /cases/${OREOA_CASE_ID}" >&2
-    exit 1
+# Claude Code project config lives in the current case directory.
+if [ -n "${OREOA_CASE_ID:-}" ]; then
+    if [ ! -d "/cases/${OREOA_CASE_ID}" ]; then
+        echo "case not found: /cases/${OREOA_CASE_ID}" >&2
+        exit 1
+    fi
+    oreoa runtime-config render --out "/cases/${OREOA_CASE_ID}" \
+        --runtimes claude --layout project >/dev/null 2>&1 || true
+
 fi
 
 exec "$@"

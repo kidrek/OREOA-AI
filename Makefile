@@ -39,7 +39,7 @@ update-knowledge: ## Fetch pinned knowledge sources on the host (step 1.5)
 	python3 scripts/update_knowledge.py $(FLAGS)
 
 runtime-config: ## Render opencode.json + .claude/ from agents/ and commands/ (step 1.2)
-	python3 -m oredoa.runtime_config render
+	python3 -m oreoa.runtime_config render
 
 up: ## Start the stack (make up LLM=1 for the local-llm override)
 	$(MAKE) secrets

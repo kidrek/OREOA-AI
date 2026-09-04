@@ -147,3 +147,69 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   sinon). Corrige au passage : typo oredoa->oreoa (Dockerfile user/CMD,
   entrypoint, Makefile, requirements.in, tests, journal S1.1).
   Prochaine action : S1.3 (modeles + DuckDB)
+- 2026-09-04 -- S1.3 - modeles + DuckDB (work order etape 1, sous-etapes
+  restantes : S1.4-S1.7). Cree : `src/oreoa/vocab.py` (vocabulaires fermes du
+  modele de donnees : 17 familles, os/user_id_type/ts_desc/op/levels/
+  mechanisms/event types/entry types/hives/ioc types/engine/status/entities/
+  relations/raw_policy + vocab manifest kind/container/encryption/protector/
+  unlock/key_type/symbol_status/step_status ; patterns id EV-###, case, hunt,
+  custom:, ATT&CK, DFIQ, SHA256, GUID ; API de validation - validate_closed,
+  validate_artifact (echappatoire custom:), validate_attack_id(s),
+  validate_dfiq_id(s) - mode "API + fixtures" arbitre avec l'analyste : les
+  sets externes sont injectes par l'appelant, la charge reelle depuis
+  knowledge/ arrive avec make update-knowledge en S1.5) ; `normalize.py`
+  (record_id = sha256("ev_id|artifact|source_ref", separateur non ambigu car
+  ev_id et artifact ne peuvent contenir | ; path_norm : slashes avant,
+  minuscules windows/macos, cas preserve linux, lettre de lecteur gardee ;
+  build_summary deterministe <= 160 chars - drop detail puis coupure nette
+  avec "..." ; raw_policy_for(lossless) ; utc_now naive UTC) ;
+  `manifest_model.py` (Evidence/Manifest : files[] avec sha256/size, steps{}
+  avec StepResult horodate, container_format obligatoire pour disk_image,
+  coherence encryption/protector/unlock, symbols present->file /
+  missing->identifier exact, VSS [{index, created_at, size}] ; save atomique
+  tmp+os.replace ; contrat des lignes 86-100 du SPEC) ; `jobs_model.py`
+  (FetchSymbolPayload - pdb_name dans KNOWN_KERNEL_PDBS {ntkrnlmp.pdb,
+  ntkrpamp.pdb}, GUID regex ^[0-9A-F]{32}[0-9]+$, confirmed_by_analyst
+  obligatoire ; UnlockPayload sans aucune matiere de cle - le worker lit
+  state/keys/<EV-id>.yaml 0600 ; ExtractPayload avec
+  safe_case_relative_path - anti zip-slip : absolu/..../lettre de
+  lecteur/NUL refuses ; AddKeyPayload types password/recovery_key/bek/
+  keyfile/clear ; JobEnvelope avec validation typee par job_type ;
+  validate_payload passthrough pour les etapes pipeline - schemas avec leur
+  implementation en S1.4/S2) ; `db.py` (migration v1 transactionnelle :
+  25 types ENUM generes depuis les memes tuples que vocab.py, 11 familles
+  materialisees + events + entities/relations + hosts/evidence avec colonnes
+  core exactes du modele de donnees ; vues de tiers CREATE OR REPLACE sur
+  read_parquet('derived/*/parquet/<f>.parquet', union_by_name=true)
+  EXCLUDE raw - creees seulement si au moins un fichier existe ;
+  load_evidence_family delete+insert par ev_id - idempotent - avec CAST
+  explicites enum/JSON ; find_raw sur le Parquet autoritaire (bloc
+  get_raw etape 2, cap 20 cote appelant) ; parquet_arrow_schema +
+  write_parquet pour le corpus T0 et les tests ; ordre de colonnes
+  contractuel : core(+raw_policy, raw) + famille en Parquet, core sans raw
+  + famille dans DuckDB). Tests T1 nouveaux (51) : vocab (rejets, custom:,
+  patterns ATT&CK/DFIQ, unicite des vocabulaires, partition
+  materialise/vues), normalize (determinisme record_id, path_norm 3 OS +
+  UNC, summary 160c/determinisme/troncature, raw_policy), manifest (coherences image/symboles,
+  round-trip JSON, save atomique), jobs (gate confirmed_by_analyst, GUID
+  malforme, zip-slip, types de cles), db (migrations idempotentes, enums
+  DuckDB == tuples vocab via enum_range, aucun raw dans DuckDB, vues
+  multi-evidence, round-trip Parquet->DuckDB->vues, find_raw, ordre de
+  colonnes, tables de reference). Corrige en cours de dev : (1) les
+  familles accounts/auth_events/detections redéclaraient des colonnes core
+  (user_name/user_id/user_id_type/host) - le core du modele de donnees est
+  present sur TOUTES les tables, colonnes retirees des listes famille +
+  test anti-duplication ajoute ; (2) schema_version creee deux fois
+  (prologue apply_migrations + migration v1) - creation retiree de la
+  migration ; (3) fixture de test T1003 absente du set ATT&CK de test.
+  Decisions/arbitrages : detections.score + score_factors ajoutes (section
+  triage scoring) ; hosts.os = enum os_t et os_version = texte libre de
+  case.yaml ; queue `fetch` ajoutee pour le profil symbol-fetch (le
+  fetcher sur external ne peut pas partager fast/deep) ; raw_policy dans
+  le core (SPEC storage tiers, le tableau du modele de donnees ne la
+  connait pas encore - note d'arbitrage) ; deps host T1 : duckdb 1.5.5 +
+  pyarrow 25.0.1 en pip --user --break-system-packages (precedent pydantic,
+  user-space uniquement) ; oreoa.db lazy-importe duckdb/pyarrow (l'image
+  base reste pydantic+pyyaml - mcp-evidence devra ajouter duckdb a ses
+  requirements en etape 2). Vert : 94/94 T1 (43 precedents + 51
+  nouveaux), 21/21 T5. Prochaine action : S1.4 (pipeline Redis/RQ + 4 MCP)

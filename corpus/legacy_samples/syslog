@@ -1,0 +1,3 @@
+Aug 30 02:06:20 198.51.100.10 CRON[4240]: (root) CMD (/tmp/st.sh)
+Aug 30 02:06:40 198.51.100.10 systemd[1]: Started /etc/cron.d/svcbk -- Simple Backup Service.
+Aug 30 02:08:20 198.51.100.10 bash[4301]: /var/log/auth.log truncated by root

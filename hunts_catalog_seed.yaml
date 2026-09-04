@@ -1,0 +1,107 @@
+# hunts_catalog_seed.yaml - hunt catalogue seed
+#
+# Status: v0.1-draft (stub) - only the hunts explicitly named in SPEC.md v4.
+# The full catalogue (76 headers, v0.3 target) is built at work-order step 2,
+# seeded from knowledge/custom/catalogue/ (66 weak signals + 9 correlation
+# chains migrated from kit v2.1, tag kit-v2.1).
+#
+# Conventions (SPEC.md "Default assumptions"): hunt ids H-<AREA>-###.
+# Every hunt is SQL over DuckDB; window/sequence logic stays in SQL.
+# Hunts reading baseline.abusable_binaries never carry hard-coded name lists.
+version: "0.1-draft"
+spec_ref: "SPEC.md - Hunt catalogue"
+catalog_sources:
+  - knowledge/custom/catalogue/windows.md
+  - knowledge/custom/catalogue/linux.md
+  - knowledge/custom/catalogue/memoire.md
+  - knowledge/custom/catalogue/reseau.md
+  - knowledge/custom/catalogue/disque.md
+  - knowledge/custom/catalogue/navigateurs.md
+  - knowledge/custom/catalogue/correlation.md
+hunts:
+  - id: H-AF-007
+    title: Prompt-injection-like strings in evidence
+    os: all
+    area: AF
+    source: knowledge/custom/prompt_injection_patterns.yaml   # to create at step 3
+    note: tags injection-like strings; agents never act on them (SPEC constraint 7)
+    status: header-only
+  - id: H-EX-003
+    title: LOLBin execution (Windows LOLBAS functions: download, execute, ADS, upload, dump)
+    os: windows
+    area: EX
+    feeds: [lolbas]
+    reads_baseline: abusable_binaries
+    status: header-only
+  - id: H-EX-008
+    title: GTFOBins function usage (sudo/capabilities/file-read-write)
+    os: linux
+    area: EX
+    feeds: [gtfobins]
+    reads_baseline: abusable_binaries
+    status: header-only
+  - id: H-EX-009
+    title: DLL search-order hijacking / side-loading candidates
+    os: windows
+    area: EX
+    feeds: [hijacklibs]
+    note: introduced in seed v0.3
+    status: header-only
+  - id: H-LX-003
+    title: GTFOBins shell/spawn via sudo
+    os: linux
+    area: LX
+    feeds: [gtfobins]
+    reads_baseline: abusable_binaries
+    status: header-only
+  - id: H-PR-006
+    title: GTFOBins file-read/write abuse
+    os: linux
+    area: PR
+    feeds: [gtfobins]
+    reads_baseline: abusable_binaries
+    status: header-only
+  - id: H-PE-009
+    title: Vulnerable or malicious driver loaded (BYOVD)
+    os: windows
+    area: PE
+    feeds: [loldrivers]
+    note: introduced in seed v0.3; hashes also loaded into iocs (source=report:loldrivers)
+    status: header-only
+  - id: H-C2-004
+    title: Known RMM tool domains/paths (replaces hard-coded list)
+    os: all
+    area: C2
+    feeds: [lolrmm]
+    reads_baseline: abusable_binaries
+    status: header-only
+  - id: H-C2-003
+    title: C2-like domains (RMM domain feed)
+    os: all
+    area: C2
+    feeds: [lolrmm]
+    status: header-only
+  - id: H-EF-004
+    title: Exfiltration to RMM/upload domains
+    os: all
+    area: EF
+    feeds: [lolrmm]
+    status: header-only
+  - id: H-MC-005
+    title: macOS LOOBins abuse (osascript, security, tccutil...)
+    os: macos
+    area: MC
+    feeds: [loobins]
+    reads_baseline: abusable_binaries
+    status: header-only
+  - id: H-MC-007
+    title: macOS launchctl/LOOBins persistence
+    os: macos
+    area: MC
+    feeds: [loobins]
+    reads_baseline: abusable_binaries
+    status: header-only
+# Remaining headers (76 total, v0.3): to derive at step 2 from
+# knowledge/custom/catalogue/*.md - one hunt per retained weak signal,
+# correlation chains C-* become corroboration rules in scoring.yaml,
+# DFIQ ids filled per SPEC.md "DFIQ" (official Q1xxx or internal Q0xxx).

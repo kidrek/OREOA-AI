@@ -11,6 +11,7 @@ cases/
 *.dmp
 *.pcap
 *.pcapng
+!corpus/legacy_samples/*.pcap
 *.vmdk
 *.vhdx
 *.vhd
@@ -52,3 +53,4 @@ Thumbs.db
 tmp/
 *.tmp
 *.log
+!corpus/legacy_samples/*.log

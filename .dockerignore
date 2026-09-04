@@ -1,8 +1,19 @@
-# Contexte de build minimal : le Dockerfile ne copie rien du depot
+# Build-context hygiene: images never copy case data, evidence, upstream
+# knowledge or local state. Extend alongside .gitignore at work-order step 1.
 .git
-cases
-tests
-docs
+.env
+.env.*
+cases/
+**/derived/
+knowledge/upstream/
+tools/
+corpus/out/
+tests/
+docs/
+reports/
 .venv
+__pycache__
+*.py[cod]
+.pytest_cache
 *.log
 .DS_Store

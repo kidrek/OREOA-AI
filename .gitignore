@@ -1,36 +1,54 @@
-# ---- Donnees d'affaire : jamais versionnees (sensibilite et volume) ----
-cases/*
-!cases/.gitkeep
+# ---- Case data: never versioned (sensitivity and volume) ----
+cases/
+**/derived/
 
-# ---- Preuves et productions d'analyse hors depot ----
-00_evidence/
-01_work/
+# ---- Evidence and forensic images ----
 *.E01
 *.e01
 *.raw
+*.rawdisk
 *.mem
 *.dmp
 *.pcap
-!tests/samples/*.pcap
+*.pcapng
+*.vmdk
+*.vhdx
+*.vhd
+*.qcow2
+*.aff4
 
-# ---- Bundle outils air-gap (binaires pre-telecharges) ----
+# ---- Air-gap tool bundles ----
 tools/
 *.tar.gz
 *.tgz
 
-# ---- Environnements et artifacts de build ----
+# ---- Upstream knowledge (pinned, fetched by make update-knowledge) ----
+knowledge/upstream/
+
+# ---- Corpus build outputs (scenarios and generators are versioned, outputs are not) ----
+corpus/out/
+
+# ---- Environment and build artifacts ----
 .venv/
 venv/
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
+.coverage
+htmlcov/
 
-# ---- Fichiers systeme ----
+# ---- Local configuration and secrets ----
+.env
+.env.*
+
+# ---- Evaluation local outputs ----
+evaluation/local/
+
+# ---- System and temporary files ----
 .DS_Store
 Thumbs.db
 *.swp
 *~
-
-# ---- Sorties temporaires ----
 tmp/
 *.tmp
+*.log

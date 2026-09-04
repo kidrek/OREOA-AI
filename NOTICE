@@ -1,5 +1,11 @@
 # NOTICE - embedded third-party licenses / mentions de licences tierces embarquees
 
+> **Note de transition (2026-09-04)** : ce fichier decrit l'inventaire de licences
+> de l'image `oreoa-ai-tools:1.1.0` du kit v2.1 (tag `kit-v2.1`), conserve pour
+> reference. Il sera regenere pour la stack de la plateforme v2 (spec v4 - compose,
+> workers fast/deep, nouveaux outils : Dissect, Hayabusa, Chainsaw/Zircolite,
+> capa, FLOSS, ClamAV...) avant la premiere publication de celle-ci.
+
 ## Version francaise
 
 Ce fichier recense les logiciels tiers embarques dans l'image conteneur `oreoa-ai-tools` et leurs licences. Le kit OREOA-AI lui-meme (depot) est diffuse sous licence AGPL-3.0 : la licence du depot ne s'applique pas aux logiciels tiers, qui conservent leurs propres termes (agregation simple - les programmes communiquent par ligne de commande, sans lien de code).

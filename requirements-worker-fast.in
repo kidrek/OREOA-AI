@@ -1,0 +1,5 @@
+# Direct dependencies of the fast-lane worker (skeleton step: harness + data layer).
+rq
+redis
+duckdb
+pyarrow

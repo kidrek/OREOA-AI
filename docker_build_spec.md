@@ -89,6 +89,8 @@ Profiles: `local-llm` (adds `extra_hosts: host.docker.internal:host-gateway` to 
 - `base` + `volatility3` (for `pdbconv`) + `requests`. Runs an RQ worker on queue `fetch` only. Outbound HTTP restricted at two levels: its own egress goes through a second tinyproxy instance (`proxy-fetch`) whose allow-list is hard-coded to `msdl.microsoft.com:443` and `downloads.volatilityfoundation.org:443`, and the code refuses any URL not built from the validated `pdb_name`/`guid`. Writes only under `knowledge/custom/volatility_symbols/`, with a `<file>.provenance.json` (source URL, sha256, job id, confirmed_by, timestamp). Same hardening anchor as every service.
 ### 3.7 `proxy`
 - `tinyproxy` at pinned version on Alpine. `FilterDefaultDeny Yes`, `Filter /etc/tinyproxy/allow.list` generated from `LLM_ENDPOINTS` in `.env` at start; `ConnectPort` limited to 443; `DisableViaHeader Yes`; logs to stdout. A request to a non-listed host is denied and logged (this is what the egress test asserts).
+
+> **Deviation (2026-09-04, arbitrated with the architect, journalized in `docs/journal.md`)**: the Alpine `tinyproxy` package is built **without** the filter module (the `Filter` directive is unavailable, verified in-container). The proxy and proxy-fetch images therefore use **`debian:bookworm-slim`** (digest-pinned in `versions.env`) with Debian's `tinyproxy` (built with filter support). Everything else in this section is unchanged.
 ## 4. Hardening (applied to every service)
  
 ```yaml

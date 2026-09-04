@@ -1,0 +1,10 @@
+Port 8888
+Listen 0.0.0.0
+Timeout 600
+LogLevel Info
+PidFile "/tmp/tinyproxy.pid"
+DisableViaHeader Yes
+Filter "@ALLOW_LIST@"
+FilterDefaultDeny Yes
+FilterURL No
+ConnectPort 443

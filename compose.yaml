@@ -1,0 +1,219 @@
+name: oreoa-ai
+
+# OREOA-AI platform v2 - compose topology (docker_build_spec.md 2).
+# Hardening anchor applied to every service. Nothing in this file may declare
+# privileged, cap_add, devices, the docker socket or host networking:
+# enforced by make lint-compose and tests/infra (T5 item 1).
+#
+# Networks:
+#   internal - no default route (internal: true): workers, redis, MCP servers
+#   egress   - agent <-> proxy only
+#   external - proxy (and proxy-fetch) to the internet only
+#
+# Mount granularity per case (evidence :ro, state/keys isolation) is enforced
+# by the command layer at case attach time and by code + tests (T5 3, 6, 9b).
+
+x-hardened: &hardened
+  user: "10001:10001"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+    - seccomp:./docker/seccomp/oreoa-default.json
+  pids_limit: 512
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=1g,uid=10001,gid=10001,mode=1777
+  init: true
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "50m"
+      max-file: "5"
+
+x-mcp-build: &mcp-build
+  context: .
+  dockerfile: docker/mcp/Dockerfile
+  args:
+    BASE_IMAGE: oreoa/base:${TAG:-dev}
+
+services:
+  proxy:
+    image: oreoa/proxy:${TAG:-dev}
+    build:
+      context: ./docker/proxy
+      args:
+        DEBIAN_IMAGE: ${DEBIAN_IMAGE:-debian:bookworm-slim}
+        TINYPROXY_VERSION: ${TINYPROXY_VERSION:-1.11.1-2.1+deb12u1}
+    <<: *hardened
+    networks: [egress, external]
+    environment:
+      LLM_ENDPOINTS: ${LLM_ENDPOINTS:-}
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:8.8.2-alpine3.23}
+    <<: *hardened
+    command: ["/bin/sh", "/usr/local/bin/oreoa-redis-entrypoint"]
+    networks: [internal]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001,mode=1777
+      - /data:rw,noexec,nosuid,size=256m,uid=10001,gid=10001
+    volumes:
+      - ./docker/redis/entrypoint.sh:/usr/local/bin/oreoa-redis-entrypoint:ro
+    secrets:
+      - redis_password
+
+  agent:
+    image: oreoa/agent:${TAG:-dev}
+    build:
+      context: .
+      dockerfile: docker/agent/Dockerfile
+      args:
+        BASE_IMAGE: oreoa/base:${TAG:-dev}
+        NODE_IMAGE: ${NODE_IMAGE:-node:22-bookworm-slim}
+        OPENCODE_VERSION: ${OPENCODE_VERSION:-1.18.27}
+    <<: *hardened
+    networks: [egress, internal]
+    depends_on: [proxy]
+    environment:
+      HTTP_PROXY: http://proxy:8888
+      HTTPS_PROXY: http://proxy:8888
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,mcp-evidence,mcp-knowledge,mcp-case,mcp-jobs}
+      LLM_MODEL_ANALYST: ${LLM_MODEL_ANALYST:-}
+      LLM_MODEL_TRIAGE: ${LLM_MODEL_TRIAGE:-}
+      LLM_MODEL_REVIEWER: ${LLM_MODEL_REVIEWER:-}
+      OREOA_CASE_ID: ${OREOA_CASE_ID:-}
+      TZ: ${TZ:-Europe/Paris}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=1g,uid=10001,gid=10001,mode=1777
+      - /home/oreoa:rw,noexec,nosuid,size=512m,uid=10001,gid=10001
+    volumes:
+      - ${OREOA_CASES:-./cases}:/cases
+      - ./knowledge:/knowledge:ro
+      - ./agents:/agents:ro
+      - ./commands:/commands:ro
+    secrets:
+      - llm_api_key
+
+  worker-fast:
+    image: oreoa/worker-fast:${TAG:-dev}
+    build:
+      context: .
+      dockerfile: docker/worker-fast/Dockerfile
+      args:
+        BASE_IMAGE: oreoa/base:${TAG:-dev}
+    <<: *hardened
+    command: ["python", "-m", "oreoa.worker", "fast"]
+    networks: [internal]
+    volumes:
+      - ${OREOA_CASES:-./cases}:/cases
+      - ./knowledge:/knowledge:ro
+      - ${OREOA_SCRATCH:-./.scratch}:/scratch:rw,noexec,nosuid,nodev
+    mem_limit: ${WORKER_FAST_MEM:-4g}
+    cpus: ${WORKER_FAST_CPUS:-2.0}
+    ulimits:
+      nofile: 65536
+
+  worker-deep:
+    image: oreoa/worker-deep:${TAG:-dev}
+    build:
+      context: .
+      dockerfile: docker/worker-deep/Dockerfile
+      args:
+        WORKER_FAST_IMAGE: oreoa/worker-fast:${TAG:-dev}
+    <<: *hardened
+    command: ["python", "-m", "oreoa.worker", "deep"]
+    networks: [internal]
+    volumes:
+      - ${OREOA_CASES:-./cases}:/cases
+      - ./knowledge:/knowledge:ro
+      - ${OREOA_SCRATCH:-./.scratch}:/scratch:rw,noexec,nosuid,nodev
+    mem_limit: ${WORKER_DEEP_MEM:-8g}
+    cpus: ${WORKER_DEEP_CPUS:-2.0}
+    ulimits:
+      nofile: 65536
+
+  mcp-evidence:
+    image: oreoa/mcp:${TAG:-dev}
+    build: *mcp-build
+    <<: *hardened
+    command: ["python", "-m", "oreoa.mcp_server", "evidence"]
+    networks: [internal]
+    volumes:
+      - ${OREOA_CASES:-./cases}:/cases:ro
+      - ./knowledge:/knowledge:ro
+
+  mcp-knowledge:
+    image: oreoa/mcp:${TAG:-dev}
+    build: *mcp-build
+    <<: *hardened
+    command: ["python", "-m", "oreoa.mcp_server", "knowledge"]
+    networks: [internal]
+    volumes:
+      - ./knowledge:/knowledge:ro
+
+  mcp-case:
+    image: oreoa/mcp:${TAG:-dev}
+    build: *mcp-build
+    <<: *hardened
+    command: ["python", "-m", "oreoa.mcp_server", "case"]
+    networks: [internal]
+    volumes:
+      - ${OREOA_CASES:-./cases}:/cases
+
+  mcp-jobs:
+    image: oreoa/mcp:${TAG:-dev}
+    build: *mcp-build
+    <<: *hardened
+    command: ["python", "-m", "oreoa.mcp_server", "jobs"]
+    networks: [internal]
+    depends_on: [redis]
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+    secrets:
+      - redis_password
+
+  proxy-fetch:
+    profiles: [symbol-fetch]
+    image: oreoa/proxy:${TAG:-dev}
+    build:
+      context: ./docker/proxy
+      args:
+        DEBIAN_IMAGE: ${DEBIAN_IMAGE:-debian:bookworm-slim}
+        TINYPROXY_VERSION: ${TINYPROXY_VERSION:-1.11.1-2.1+deb12u1}
+    <<: *hardened
+    networks: [internal, external]
+    environment:
+      # Hard-coded allow-list: the only two hosts the fetcher may reach.
+      LLM_ENDPOINTS: "msdl.microsoft.com:443 downloads.volatilityfoundation.org:443"
+
+  fetcher:
+    profiles: [symbol-fetch]
+    image: oreoa/fetcher:${TAG:-dev}
+    build:
+      context: .
+      dockerfile: docker/fetcher/Dockerfile
+      args:
+        BASE_IMAGE: oreoa/base:${TAG:-dev}
+    <<: *hardened
+    networks: [internal]
+    depends_on: [proxy-fetch]
+    environment:
+      HTTPS_PROXY: http://proxy-fetch:8888
+      NO_PROXY: redis
+    volumes:
+      - ./knowledge/custom/volatility_symbols:/knowledge/custom/volatility_symbols
+
+networks:
+  internal:
+    internal: true
+  egress: {}
+  external: {}
+
+secrets:
+  redis_password:
+    file: ./secrets/redis_password
+  llm_api_key:
+    file: ./secrets/llm_api_key

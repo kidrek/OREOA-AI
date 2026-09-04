@@ -58,3 +58,52 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   MEMORY : echantillon memoire et snapshots VSS reportes a la sous-etape deep
   lane ; images disque = mkntfs + ntfscp + patcheur MFT sans montage.
   Prochaine action : S1.1 (socle securise)
+- 2026-09-04 -- S1.1 - socle securise (build order 11.1 : posture avant tout
+  outil forensique). Cree : `versions.env` (pins initiaux resolvus en ligne :
+  python:3.12-slim-bookworm digest-pinne, node:22-bookworm-slim, opencode-ai
+  1.18.27, claude-code 2.1.260, redis 8.8.2-alpine3.23, tinyproxy Debian
+  1.11.1-2.1+deb12u1, tools pip dissect 3.25.1 / plaso 20260720 / volatility3
+  2.28.0 / yara-python 4.5.4 / pyarrow 25.0.1 / duckdb 1.5.5 / rq 2.12.0 /
+  mcp 2.1.1, commits knowledge 13 depots en sha complet + ATT&CK v19.2 ;
+  binaires forensiques laisses vides, pinnes a l'etape 2) ;
+  `.env.example` ; `compose.yaml` (topologie 2 : reseau internal sans route,
+  egress agent-proxy, external proxy seul ; ancre x-hardened : user 10001,
+  read_only, cap_drop ALL, no-new-privileges + seccomp, pids_limit 512,
+  tmpfs /tmp noexec, init, logs bornes ; services proxy, redis, agent,
+  worker-fast, worker-deep (harnais RQ sans outils, outils a l'etape 2),
+  mcp-evidence/knowledge/case/jobs (image mcp unique, 4 commandes),
+  proxy-fetch + fetcher en profil symbol-fetch) ; `compose.local-llm.yaml`
+  (override host.docker.internal, proxy desactive pour cet hote) ;
+  `docker/{base,proxy,mcp,agent,worker-fast,worker-deep,fetcher,redis,
+  seccomp}` (base multi-stage sans compilateurs au runtime, user oredoa
+  10001, tini ; seccomp = copie pinnee du profil default moby v28.0.4,
+  possede par le depot) ; Makefile (secrets, build-base, build sequencé
+  base->worker-fast->reste, pins, runtime-config, up/down, shell, case-new,
+  lint-compose, test, test-infra, clean-derived, image-sizes) ;
+  `scripts/make_pins.py` (resolveur pins : digest images, npm, PyPI, tags
+  docker hub, paquet Debian, tetes GitHub ; reecriture ligne a ligne avec
+  diff + confirmation) ; `scripts/case_new.sh` (squelette basique de cas,
+  la CLI /case arrive en 1.2) ; paquet `src/oreoa` v2.0.0a0 + stubs
+  worker/mcp_server/fetcher (implementation 1.2-1.5) + requirements locks
+  (pip-compile) ; tests : T1-lite versions.env (format, digest, shas
+  knowledge), T5 #1 statique (aucun privileged/cap_add/devices/docker.sock/
+  host network + ancre durcissement + reseaux, y compris profil
+  symbol-fetch), T5 #5 runtime (uid 10001 sur les 9 services). Vert :
+  26/26 (make lint-compose, make test, make test-infra) ; images construites
+  ; smoke test redis : demarrage ACL + PING rq accepte, CONFIG/FLUSHALL
+  refuses. Decisions/arbitrages : (1) base proxy = debian:bookworm-slim au
+  lieu d'alpine - le paquet alpine tinyproxy 1.11.3 est compile sans le
+  module Filter (directive indisponible, verifie en conteneur) ; arbitre
+  avec l'analyste, note de deviation ajoutee a docker_build_spec.md 3.7,
+  chemins Filter/PidFile quotes (syntaxe tinyproxy 1.11) ; (2) zircolite
+  absent de PyPI - traite comme binaire release pinne a l'etape 2 (note
+  versions.env) ; (3) secrets fichier = bind mounts, compose ignore `mode`
+  hors swarm -> fichiers 0644 sur l'hote (repertoire secrets/ 0700 +
+  gitignore), lisible par uid 10001 ; ACL redis : rq = +@all -@dangerous
+  -@scripting, jeu de commandes RQ reel valide par test en 1.4 ; (4) ecart
+  spec table 2 vs 3.6 : fetcher reste sur internal seul, proxy-fetch porte
+  l'egress (internal+external) - 3.6 plus strict, retenu. Notes build :
+  ARG multi-stage doit etre declare au-dessus du premier FROM (agent) ;
+  worker-deep FROM worker-fast -> build sequencé dans le Makefile ;
+  entrypoint proxy n'exec pas $@ (normal, tinyproxy en avant-plan).
+  Prochaine action : S1.2 (agent + runtime-config + /case)

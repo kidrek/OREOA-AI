@@ -1,0 +1,2 @@
+# Direct dependencies of the fetcher service (profile symbol-fetch).
+requests

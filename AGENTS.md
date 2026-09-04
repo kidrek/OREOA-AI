@@ -9,10 +9,12 @@ This file is the session contract for any agent working in this repository.
    fully at the start of any session before acting. It is authoritative:
    implement it exactly, and ask before deviating from anything it states. The
    normative amendments A1-A6 at the end of the file carry the same authority.
-2. **`MEMORY.md` is the build state and journal.** Read it fully at session start
-   and resume from "Prochaine action". Update it (state table, next action,
-   append-only journal) at the end of every step before moving on. An unjournaled
-   step is a lost step.
+2. **`MEMORY.md` is the compact build state; `docs/journal.md` is the build
+   journal.** Read `MEMORY.md` fully at session start and resume from
+   "Prochaine action". At the end of every step: update `MEMORY.md` (state
+   table, next action) and append a dated entry to `docs/journal.md`
+   (append-only; read on demand - last entry only, never the whole file). An
+   unjournaled step is a lost step.
 3. Companion files referenced by the spec are integrated at the repo root and
    under `templates/case/`: `templates/case/case.yaml` + `templates/case/journal.md`
    (case skeletons, worked example included - `/case new` derives empty skeletons
@@ -48,7 +50,8 @@ This file is the session contract for any agent working in this repository.
 - Commits: concise English subject line + body listing what and why; push after
   each qualified step.
 - When context is near its limit, stop at a journaled step boundary: update
-  `MEMORY.md` (table + journal + next action) and hand over cleanly.
+  `MEMORY.md` (table + next action) and append the step entry to
+  `docs/journal.md`, then hand over cleanly.
 
 ## Heritage
 

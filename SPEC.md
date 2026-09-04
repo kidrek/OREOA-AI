@@ -10,7 +10,9 @@
 > `templates/case/journal.md` (squelettes, exemple worked inclus), `normalized_data_model.md`,
 > `hunts_catalog_seed.yaml` (v0.3, 76 hunts), `dfiq_mapping.md`, `docker_build_spec.md`.
 > Restent a creer : objets DFIQ internes (`knowledge/custom/dfiq/`, plage Q0xxx, cf.
-> `dfiq_mapping.md`) et le code du work order - suivi dans `MEMORY.md`. Les amendements
+> `dfiq_mapping.md`) et le code du work order - suivi dans `MEMORY.md` (etat
+> compact, lu integralement en session) et `docs/journal.md` (journal de
+> construction append-only, lecture partielle). Les amendements
 > normatifs A1-A6 (arbitrage pre-etape 1, 2026-09-04) closent ce document.
 >
 > Ce fichier est la reference autoritative du projet. En cas de divergence entre ce

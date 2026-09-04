@@ -568,20 +568,70 @@ def hunts_catalog_path() -> Path:
 
 
 # --------------------------------------------------------------------------
-# mcp-knowledge - read-only knowledge scaffold (full loader at step 1.5)
+# mcp-knowledge - DFIQ (official snapshot + internal Q0xxx) + knowledge tree
 # --------------------------------------------------------------------------
 
 KNOWLEDGE_INSTRUCTIONS = (
     "Read-only access to the knowledge tree (official upstream snapshot under "
-    "knowledge/upstream/, internal objects under knowledge/custom/). Snapshot "
-    "versions come from make update-knowledge. The DFIQ loader (official + "
-    "internal Q0xxx) lands at work-order step 1.5; until then only the file "
-    "scaffold is exposed."
+    "knowledge/upstream/, internal objects under knowledge/custom/) and to the "
+    "DFIQ catalogue: official google/dfiq questions/facets/scenarios (pinned "
+    "snapshot) plus the internal Q0xxx range, exposed with the same API and an "
+    "is_internal flag - internal objects are never presented as official DFIQ. "
+    "OS metadata is derived from the hunt catalogue; filter by the case OS. "
+    "Snapshot versions come from make update-knowledge (run on the workstation)."
 )
 
 
 def build_knowledge() -> MCPServer:
     server = MCPServer("mcp-knowledge", instructions=KNOWLEDGE_INSTRUCTIONS)
+    from oreoa.dfiq_loader import get_index
+
+    @server.tool()
+    @guarded
+    def dfiq_list(
+        component_type: str = "question",
+        os: str = "",
+        internal: bool | None = None,
+        limit: int = ROW_CAP_DEFAULT,
+    ) -> str:
+        """List DFIQ components (questions by default; also scenario, facet).
+
+        os filters on the hunt-derived OS coverage; internal=True returns only
+        the internal Q0xxx/F0xxx/S0xxx objects. Capped at 50 rows (500 max).
+        """
+        index = get_index()
+        entries = index.list(
+            component_type=component_type,
+            os_filter=os or None,
+            internal=internal,
+        )
+        cap = cap_rows(limit)
+        status = index.status()
+        result = {
+            "component_type": component_type,
+            "count": len(entries),
+            "truncated": len(entries) > cap,
+            "components": entries[:cap],
+            "sources": status,
+        }
+        return wrap("dfiq_list", result)
+
+    @server.tool()
+    @guarded
+    def dfiq_get(dfiq_id: str) -> str:
+        """Detail one DFIQ component: parents, children, answering hunts, OS.
+
+        The answering hunts come from the catalogue seed (dfiq: lists); they
+        are the approaches of an internal question (hunt_run by hunt id).
+        """
+        index = get_index()
+        try:
+            detail = index.get(dfiq_id)
+        except KeyError as exc:
+            raise ToolError(
+                f"refused: {exc} (official snapshot missing? run make update-knowledge)"
+            ) from exc
+        return wrap("dfiq_get", detail)
 
     @server.tool()
     @guarded

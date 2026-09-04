@@ -1,2 +1,7 @@
 # Direct dependencies of the fetcher service (profile symbol-fetch).
+# rq/redis: RQ worker on queue `fetch` (SPEC 5b); volatility3: pdbconv for
+# the PDB -> ISF conversion (docker_build_spec 3.6); requests: PDB download
+# through the proxy-fetch allow-list.
 requests
+rq
+volatility3

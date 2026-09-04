@@ -295,3 +295,64 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   Vert : 140/140 T1+T3 (107 + 33), 23/23 T5 (21 + 2 smokes), images
   reconstruites (base->worker-fast->mcp). Prochaine action : S1.5
   (update-knowledge + loader DFIQ interne + fetcher)
+- 2026-09-04 -- S1.5 - update-knowledge + loader DFIQ interne + fetcher
+  (arbitre avec l'analyste sur 4 points). Cree : `scripts/gen_internal_dfiq.py`
+  (generateur deterministe, 54 objets commites : scenario S0001 Host
+  Compromise Assessment + facettes F0001-F0006 + 47 questions Q0001-Q0047,
+  format v1.1.0 des donnees google/dfiq = name/uuid/internal, uuid5
+  deterministe sur l'id, --check anti-derive ; regles de derivation
+  journalisees : name = titre du hunt primaire en ordre de table,
+  description = hunt id + description seed, parents = facettes internes des
+  rows du dfiq_mapping.md sinon facettes officielles des memes rows, noms de
+  facettes ATT&CK-alignes F0001 Initial Access / F0002 Execution / F0003
+  Privilege and Accounts / F0004 Credential Access / F0005 Discovery / F0006
+  Command and Control) ; `src/oreoa/dfiq_loader.py` (index officiel
+  knowledge/upstream/dfiq/dfiq/data + interne knowledge/custom/dfiq/, meme
+  API, is_internal = flag explicite sinon convention d'id, OS derive du seed
+  dfiq lists, parents/enfants resolves cross-tree, validation structurelle
+  stricte = erreur dure jamais de skip silencieux, cache par racine) ;
+  `scripts/update_knowledge.py` (14 sources pinnees versions.env ->
+  knowledge/upstream/ en shallow fetch par sha blob:none avec fallback,
+  attack = fichier versionne enterprise-attack-19.2.json, snapshot.json
+  {name,url,commit,fetched_at,licence} avec detection LICENSE* pour les
+  sources sans licence SPEC, ClamAV PAR DEFAUT via conteneur one-shot
+  clamav/clamav:1.5.4-debian13-slim --user hote --log dans le datadir
+  (echec non bloquant, trace au snapshot), --no-clamav, --full-symbols refus
+  si sha256 non pinne, --symbol windows = pdbconv hote sinon guidance
+  dwarf2json linux/macOS, --nsrl refuse jusqu'au pin NIST, idempotent
+  cached) ; `src/oreoa/fetcher.py` complet (worker RQ queue fetch,
+  revalidation JobEnvelope+FetchSymbolPayload, refus AVANT tout appel reseau
+  - confirmation, GUID, pdb_name, coherence queue -, URL msdl construite
+  uniquement depuis les composants valides, layout ISF windows/<pdb>/<GUID>-
+  <age>.json conforme pdbutil 2.28 (verifie dans la source), conversion
+  pdbconv subprocess + timeout, validation metadata ISF vs GUID, renommage
+  atomique meme filesystem (fix EXDEV : ISF temporaire dans le repertoire
+  cible), <file>.provenance.json {URL, sha256 pdb+isf, job id, confirmed_by,
+  timestamp}, journal = stdout - pas de mount cases) ; mcp-knowledge :
+  dfiq_list (type/os/internal, cap 50/500, status sources) + dfiq_get
+  (parents, children, hunts repondeurs via seed, approches embarquees
+  officielles, KeyError -> ToolError) ; compose : fetcher REDIS_* + secret +
+  depends_on redis, seed hunts monte ro dans mcp-evidence ET mcp-knowledge
+  avec OREOA_HUNTS_CATALOG (latent S1.4 corrige : hunt_list sans seed en
+  conteneur) ; requirements-fetcher +rq/redis/volatility3 (docker_build_spec
+  3.6). DECISION MAJEURE (faits changes apres arbitrage, journalisee) : au
+  pin DFIQ_COMMIT f07e5f2 les donnees google/dfiq sont au format v1.1.0
+  (name/uuid/internal + approches embarquees) alors que le loader du repo et
+  le package PyPI 1.0.1 parse encore le format v1.0 display_name - ni l'un
+  ni l'autre ne charge les donnees pinniees (le repo est a moitie migre :
+  son propre spec exige internal absent des scenarios, les approches
+  question ne sont pas dans le spec) ; le loader maison v1.1.0 remplace donc
+  le package dfiq pinne (choix initial de l'analyste, rendu inapplicable par
+  les faits), dfiq N'EST PAS une dependance (requirements-mcp inchange),
+  versions.env ne porte que DFIQ_COMMIT ; CLAMAV_IMAGE ajoutee
+  (clamav/clamav:1.5.4-debian13-slim). Run reel : 14/14 sources aux pins
+  exacts, clamav daily-28113/main-63/bytecode-339 (segfault freshclam uid
+  1000 sans droit d'ecriture resolu par mapping user hote + log dans le
+  datadir), 2e run = cached (idempotence). Notes techniques : area code C2
+  du catalogue casse le regex H-[A-Z]{2} ; rq 2.12 n'a plus Job.exc_string
+  (latest_result) ; rmtree du point de mount = EROFS (cleanup smoke sur le
+  contenu). Vert : 200/200 (138 T1 + 37 T3 + 25 T5, smokes fetcher image
+  reelle : refus pre-reseau + cycle RQ + provenance + wiring compose),
+  images reconstruites (base->worker-fast->mcp->fetcher), loader valide en
+  conteneur reel avec l'arbre monte (47 internes + 90 officiels). Prochaine
+  action : S1.6 (corpus T0 Windows)

@@ -1,7 +1,11 @@
-# Direct dependencies of the MCP servers image (work-order step 1.4).
+# Direct dependencies of the MCP servers image (work-order steps 1.4/1.5).
 # Lock generated with pip-compile: requirements-mcp.lock.
 # Pins kept in sync with versions.env (MCP_VERSION, DUCKDB_VERSION) and with
 # requirements-worker-fast.lock (redis client used by mcp-jobs).
+# Note (S1.5): the DFIQ catalogue is parsed by oreoa.dfiq_loader against the
+# pinned data format (DFIQ_COMMIT) - the google/dfiq package (PyPI 1.0.1 and
+# the repo code at the pin) cannot load its own v1.1.0 data, so it is
+# deliberately NOT a dependency.
 mcp==2.1.1
 redis==8.1.0
 duckdb==1.5.5

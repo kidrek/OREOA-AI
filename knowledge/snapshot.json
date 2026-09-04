@@ -1,0 +1,116 @@
+{
+  "clamav_db": {
+    "databases": [
+      "bytecode.cvd",
+      "daily.cvd",
+      "main.cvd"
+    ],
+    "image": "clamav/clamav:1.5.4-debian13-slim",
+    "status": "ok",
+    "updated_at": "2026-09-04T20:56:04+00:00"
+  },
+  "errors": [],
+  "generated_at": "2026-09-04T20:56:04+00:00",
+  "sources": [
+    {
+      "commit": "f07e5f2a5255afda7be9d9de13300d3df12d15f8",
+      "fetched_at": "cached",
+      "licence": "Apache-2.0",
+      "name": "dfiq",
+      "url": "https://github.com/google/dfiq"
+    },
+    {
+      "commit": "b4108448a11c91c17f61da6ec0e8efd60c26657b",
+      "fetched_at": "cached",
+      "licence": "Apache-2.0",
+      "name": "forensic_artifacts",
+      "url": "https://github.com/ForensicArtifacts/artifacts"
+    },
+    {
+      "commit": "v19.2",
+      "fetched_at": "cached",
+      "licence": "MITRE Terms of Use",
+      "name": "attack",
+      "url": "https://github.com/mitre-attack/attack-stix-data"
+    },
+    {
+      "commit": "272daf82bf77fb0bb97f1f0c4d82bc61154772e1",
+      "fetched_at": "cached",
+      "licence": "Detection Rule License 1.1",
+      "name": "sigma",
+      "url": "https://github.com/SigmaHQ/sigma"
+    },
+    {
+      "commit": "fffbdd179c8c8c7554368c443f9ba2917877f108",
+      "fetched_at": "cached",
+      "licence": "custom (see LICENSE)",
+      "name": "hayabusa_rules",
+      "url": "https://github.com/Yamato-Security/hayabusa-rules"
+    },
+    {
+      "commit": "82fabe2436876f951d37485ed2bfb42e7568bdb3",
+      "fetched_at": "cached",
+      "licence": "GPL-3.0",
+      "name": "chainsaw_rules",
+      "url": "https://github.com/WithSecureLabs/chainsaw"
+    },
+    {
+      "commit": "da027f6cc36c20ce0a4e77b01b5f43415cc9791f",
+      "fetched_at": "cached",
+      "licence": "Elastic License 2.0",
+      "name": "yara_elastic",
+      "url": "https://github.com/elastic/protections-artifacts"
+    },
+    {
+      "commit": "278165d7845decece517f756cf92ff4a41938d1e",
+      "fetched_at": "cached",
+      "licence": "custom (see LICENSE)",
+      "name": "signature_base",
+      "url": "https://github.com/Neo23x0/signature-base"
+    },
+    {
+      "commit": "7aca936061e0dfd008b210d2dfbe0c6cff097fe6",
+      "fetched_at": "cached",
+      "licence": "GPL-3.0 (data use only)",
+      "name": "lolbas",
+      "url": "https://github.com/LOLBAS-Project/LOLBAS"
+    },
+    {
+      "commit": "acd524623f9c406acedd2754ebd9c2431f3675ad",
+      "fetched_at": "cached",
+      "licence": "GPL-3.0 (data use only)",
+      "name": "gtfobins",
+      "url": "https://github.com/GTFOBins/GTFOBins.github.io"
+    },
+    {
+      "commit": "2843d33291c86a17b594a4a366bd165cfdfa745a",
+      "fetched_at": "cached",
+      "licence": "GPL (see LICENSE)",
+      "name": "loobins",
+      "url": "https://github.com/infosecB/LOOBins"
+    },
+    {
+      "commit": "5372648eed09a05ab655022efb71e75a45e47c63",
+      "fetched_at": "cached",
+      "licence": "GPL (see LICENSE)",
+      "name": "hijacklibs",
+      "url": "https://github.com/wietze/HijackLibs"
+    },
+    {
+      "commit": "2ad986b10a5f0b859b22d52b1ad4afe4c4551532",
+      "fetched_at": "cached",
+      "licence": "GPL-3.0 (data use only)",
+      "name": "loldrivers",
+      "url": "https://github.com/magicsword-io/LOLDrivers"
+    },
+    {
+      "commit": "6fde8fed5f31ce4f1a851cae7633ed48e494d5af",
+      "fetched_at": "cached",
+      "licence": "Apache-2.0 (see LICENSE)",
+      "name": "lolrmm",
+      "url": "https://github.com/magicsword-io/LOLRMM"
+    }
+  ],
+  "symbols": [],
+  "version": 1
+}

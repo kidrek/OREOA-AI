@@ -168,9 +168,11 @@ services:
     networks: [internal]
     environment:
       OREOA_CASES: /cases
+      OREOA_HUNTS_CATALOG: /hunts/hunts_catalog_seed.yaml
     volumes:
       - ${OREOA_CASES:-./cases}:/cases:ro
       - ./knowledge:/knowledge:ro
+      - ./hunts_catalog_seed.yaml:/hunts/hunts_catalog_seed.yaml:ro
 
   mcp-knowledge:
     image: oreoa/mcp:${TAG:-dev}
@@ -180,8 +182,10 @@ services:
     networks: [internal]
     environment:
       OREOA_KNOWLEDGE: /knowledge
+      OREOA_HUNTS_CATALOG: /hunts/hunts_catalog_seed.yaml
     volumes:
       - ./knowledge:/knowledge:ro
+      - ./hunts_catalog_seed.yaml:/hunts/hunts_catalog_seed.yaml:ro
 
   mcp-case:
     group_add:
@@ -233,13 +237,20 @@ services:
       args:
         BASE_IMAGE: oreoa/base:${TAG:-dev}
     <<: *hardened
+    command: ["python", "-m", "oreoa.fetcher"]
     networks: [internal]
-    depends_on: [proxy-fetch]
+    depends_on: [redis, proxy-fetch]
     environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+      OREOA_SYMBOLS_DIR: /knowledge/custom/volatility_symbols
       HTTPS_PROXY: http://proxy-fetch:8888
       NO_PROXY: redis
     volumes:
       - ./knowledge/custom/volatility_symbols:/knowledge/custom/volatility_symbols
+    secrets:
+      - redis_password
 
 networks:
   internal:

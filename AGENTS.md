@@ -5,18 +5,22 @@ This file is the session contract for any agent working in this repository.
 
 ## Authority
 
-1. **`SPEC.md` is the founding specification (v4).** Read it fully at the start of
-   any session before acting. It is authoritative: implement it exactly, and ask
-   before deviating from anything it states.
+1. **`SPEC.md` is the founding specification (v4, complete revision).** Read it
+   fully at the start of any session before acting. It is authoritative:
+   implement it exactly, and ask before deviating from anything it states. The
+   normative amendments A1-A6 at the end of the file carry the same authority.
 2. **`MEMORY.md` is the build state and journal.** Read it fully at session start
    and resume from "Prochaine action". Update it (state table, next action,
    append-only journal) at the end of every step before moving on. An unjournaled
    step is a lost step.
-3. Companion files referenced by the spec (`case.yaml`/`journal.md` skeletons,
-   `normalized_data_model.md`, `hunts_catalog_seed.yaml`, `dfiq_mapping.md`,
-   `knowledge/custom/dfiq/`, `docker_build_spec.md`) are to be created as their
-   work-order step requires - never invent their content ad hoc, derive it from
-   `SPEC.md` and journal the decision.
+3. Companion files referenced by the spec are integrated at the repo root and
+   under `templates/case/`: `templates/case/case.yaml` + `templates/case/journal.md`
+   (case skeletons, worked example included - `/case new` derives empty skeletons
+   from them), `normalized_data_model.md`, `hunts_catalog_seed.yaml` (v0.3, 76
+   hunt headers), `dfiq_mapping.md`, `docker_build_spec.md`. The internal DFIQ
+   objects (`knowledge/custom/dfiq/`, `Q0xxx` range) are authored as their
+   work-order step requires - `dfiq_mapping.md` is authoritative for their
+   content; never invent content ad hoc, journal the decision.
 
 ## Non-negotiables (summary - full text in SPEC.md)
 

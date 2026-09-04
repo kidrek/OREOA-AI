@@ -31,6 +31,7 @@ de session ou un changement de modele d'agent.
 | 2 | Phase A - branche `v2` : `SPEC.md` (spec v4 verbatim), `AGENTS.md` (contrat de session), `MIGRATION.md` (mapping complet) | termine | 2026-09-04 |
 | 3 | Phase A - migration des actifs : `knowledge/custom/{connaissances,catalogue,methodologie,artifacts}`, `corpus/legacy_{generators,samples}`, `hunts_catalog_seed.yaml` (stub v0.1), `docs/lessons.md` | termine | 2026-09-04 |
 | 4 | Phase A - fiches vault mises a jour (Projet, Fiche ressource, _System/MEMORY.md) | termine | 2026-09-04 |
+| 5 | Integration reflexion v2 : SPEC.md revision complete v4 ((g)+(h)), compagnons (hunts v0.3, normalized_data_model, docker_build_spec, dfiq_mapping, templates/case), amendements A1-A6, AGENTS.md | termine | 2026-09-04 |
 
 ## Prochaine action
 
@@ -38,29 +39,18 @@ de session ou un changement de modele d'agent.
 proxy, redis, workers, mcp-*), modeles Pydantic, schema DuckDB + migrations + vues
 de tiers de stockage, `agents/`, `commands/`, `make runtime-config`,
 `make update-knowledge` (sources pinnees, `knowledge/snapshot.json`, DFIQ officiel
-+ interne), `/case`, generateurs corpus T0 Windows + T1 + T5.
++ objets internes), `/case` (scaffold depuis `templates/case/`), generateurs corpus
+T0 Windows + T1 + T5, spike de mesure des seuils de perf (A3), NOTICE stack v2 (A5).
 
-**Avant l'etape 1, trancher les points de spec ouverts (revue 2026-09-04)** :
-
-1. `journal.md` : la spec dit "append-only + rewritten Current state block" -
-   contradiction a arbitrer (proposition : etat courant dans `state/` seul,
-   journal strictement append-only)
-2. Matrice d'ecriture explicite : 5 surfaces d'etat (`case.yaml`, `journal.md`,
-   `state/`, `manifest.json`, DuckDB), 8 acteurs (5 roles + workers fast/deep +
-   commandes) - un tableau "qui ecrit quoi" a ajouter a la spec
-3. Perimetre formats non arbitre : VSS, LVM/RAID, chiffrement (BitLocker/LUKS),
-   AFF4 - couverts ou ecarts documentes (Dissect couvre une partie, AFF4 a
-   confirmer au smoke test)
-4. Symboles Volatility 3 (pack ISF offline) absents des sources pinnees -
-   a ajouter a `make update-knowledge` (symboles absents = ecart documente)
-5. `answers.yaml` (mode EXERCICE) : interdire explicitement sa lecture par
-   `mcp-evidence`/`mcp-case` (sinon triche possible au `/score`) - verifier en T4
-6. Seuil d'acceptation "100 Go E01 < 20 min" : spike de mesure des le squelette,
-   recalibrage sinon (un critere rate en T2 bloque chaque PR)
-7. Chaine de conservation : section dediee du rapport `/report` (hashes + journal
-   existent, le livrable manque)
-8. `NOTICE` regeneree pour la stack v2 (Dissect, Hayabusa, Chainsaw/Zircolite,
-   capa, FLOSS, ClamAV, regles Elastic/Sigma) avant premiere publication
+Les points de spec ouverts sont fermes (arbitrage 2026-09-04, amendements A1-A6
+en fin de SPEC.md) : matrice d'ecriture (A1), `answers.yaml` couche score
+uniquement (A2), seuils de perf dans `evaluation/thresholds.yaml` (A3), chaine de
+conservation dans `/report` (A4), NOTICE (A5), sourcing DFIQ - officiel monte ro
+via `make update-knowledge`, jamais bake, interne Q0xxx ecrit dans le depot (A6).
+Journal : regle tranchee par le squelette `templates/case/journal.md` (bloc
+"Etat courant" reecrit par `analyst`, reste append-only). Symboles Volatility :
+couverts par la decision (h) de la revision complete. Formats restants a
+confirmer au smoke test : LVM/RAID via dissect.volume (T2), AFF4 = ecart documente.
 
 Puis : premiere PR `v2` -> `main` au squelette qualifie (`make test` T1/T5 verts) -
 cadence retenue : PR a chaque jalon qualifie.
@@ -79,8 +69,16 @@ cadence retenue : PR a chaque jalon qualifie.
    code, schemas, prompts EN ; analyste FR ; build journal FR (ce fichier)
 6. Version plateforme : v2.x (v2.0 au premier jalon) ; le document de spec est
    en revision v4 (numerotation independante)
-7. Catalogue de hunts : 76 en-tetes (v0.3) = objectif etape 2 ; le coeur verifie
-   d'abord, la graine s'elargit apres le jalon etape 2 ; source : signaux SF migres
+7. Catalogue de hunts : v0.3 (76 en-tetes) integre au depot le 2026-09-04
+   (remplace le stub v0.1 de la Phase A, material reflexion de l'architecte) ;
+   SQL + un test par OS a ecrire a l'etape 2 ; croisement avec les 66 SF + 9
+   chaines migres a verifier (mapping SF <-> H-*) a l'etape 2
+8. Compagnons de la spec integres au depot (2026-09-04) depuis la reflexion
+   archivee ; seuls les objets DFIQ internes (`knowledge/custom/dfiq/`) restent
+   a creer, contenu autoritaire = `dfiq_mapping.md` ; mode DFIQ officiel =
+   monte ro depuis l'hote (`make update-knowledge`), jamais bake dans les
+   images (changement deliberé vs kit v2.1) ; amendements normatifs A1-A6 en
+   fin de SPEC.md, meme autorite que la spec
 
 ## Journal de construction
 
@@ -102,15 +100,33 @@ cadence retenue : PR a chaque jalon qualifie.
   `hunts_catalog_seed.yaml` stub v0.1 (12 hunts nommes dans la spec) ;
   `docs/lessons.md` (18 lecons du kit) ; exception .gitignore pour les pcaps
   legacy ; (6) fiches vault mises a jour
+- 2026-09-04 -- Integration de la reflexion v2 (dossier `OREOA-AI.v2--reflexion`,
+  archive au vault) : `SPEC.md` remplace par la revision complete de la spec v4
+  (decisions (g) chiffrement/VSS userspace + (h) profil minimal connaissances /
+  symboles a la demande ; en-tete de provenance mis a jour, incoherence
+  "74 headers v0.2" corrigee en v0.3/76) ; compagnons integres :
+  `hunts_catalog_seed.yaml` v0.3 (76 en-tetes, remplace le stub v0.1),
+  `normalized_data_model.md`, `docker_build_spec.md`, `dfiq_mapping.md`,
+  `templates/case/{case.yaml,journal.md}` (squelettes verbatim, exemple worked
+  2026-09-INC-042) + `templates/case/README.md` ; points de spec fermes :
+  journal tranche par le squelette, symboles couverts par (h), 5 amendements
+  normatifs A1-A5 (matrice d'ecriture, answers.yaml couche score, seuils perf
+  dans evaluation/thresholds.yaml, chaine de conservation dans /report, NOTICE
+  stack v2 a l'etape 1), A6 = sourcing DFIQ (officiel monte ro via make
+  update-knowledge, interne Q0xxx ecrit dans le depot) ; formats restants a
+  confirmer au smoke test : LVM/RAID (T2), AFF4 (ecart documente) ; AGENTS.md
+  mis a jour (compagnons existants) ; dossier reflexion deplace dans
+  `4 ARCHIVES/` du vault ; prochaine action : work order etape 1 (squelette)
 
 ## Limites connues
 
-- Companion files de la spec non encore crees : skeletons `case.yaml`/`journal.md`,
-  `normalized_data_model.md`, `dfiq_mapping.md`, `docker_build_spec.md`,
-  `knowledge/custom/dfiq/`, `knowledge/custom/allowlist.yaml`,
+- Objets de connaissance restant a creer : `knowledge/custom/dfiq/` (47 questions
+  internes Q0xxx + 6 facettes + scenario S0001, contenu autoritaire =
+  `dfiq_mapping.md`), `knowledge/custom/allowlist.yaml`,
   `prompt_injection_patterns.yaml`, `crosswalk/` - au fil du work order
-- `hunts_catalog_seed.yaml` = stub (12 en-tetes sur 76 vise) - completion a
-  l'etape 2 depuis les signaux SF migres
+- `hunts_catalog_seed.yaml` v0.3 = en-tetes uniquement (76/76) ; SQL + un test
+  par OS a ecrire a l'etape 2 ; les lignes `test:` reposent sur le corpus T0
+  declaratif pas encore construit
 - Les fiches knowledge migrees referencent des mecanismes du kit v2.1 (`dt`,
   `doctor`, manifest FR/EN) - relecture obligatoire a la restructuration en
   packs OS (etapes 2-4)

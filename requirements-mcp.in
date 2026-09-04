@@ -1,0 +1,7 @@
+# Direct dependencies of the MCP servers image (work-order step 1.4).
+# Lock generated with pip-compile: requirements-mcp.lock.
+# Pins kept in sync with versions.env (MCP_VERSION, DUCKDB_VERSION) and with
+# requirements-worker-fast.lock (redis client used by mcp-jobs).
+mcp==2.1.1
+redis==8.1.0
+duckdb==1.5.5

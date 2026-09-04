@@ -213,3 +213,85 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   base reste pydantic+pyyaml - mcp-evidence devra ajouter duckdb a ses
   requirements en etape 2). Vert : 94/94 T1 (43 precedents + 51
   nouveaux), 21/21 T5. Prochaine action : S1.4 (pipeline Redis/RQ + 4 MCP)
+- 2026-09-04 -- S1.4 - pipeline Redis/RQ + 4 MCP (squelette, arbitre avec
+  l'analyste sur 4 points). Cree : `requirements-mcp.in/.lock` (mcp 2.1.1 +
+  redis 8.1.0 + duckdb 1.5.5, pip-compile) + `docker/mcp/Dockerfile`
+  (installe le lock, CMD inchanges) ; `src/oreoa/worker.py` (harnais RQ :
+  `python -m oreoa.worker fast|deep`, refus lane fetch - reservee au fetcher
+  S1.5 ; connexion Redis via REDIS_HOST/PORT + secret ; handler run_step qui
+  revalide l'enveloppe puis dispatch un registre d'etapes vide au squelette
+  (note "step 2+" dans le manifest) ; ecritures manifest.json (StepResult
+  horodate, save atomique) + state/phase.json derive du manifest (A1 :
+  workers seuls redacteurs) sous lock flock par cas (state/.locks/case.lock,
+  concurrence multi-replicas) ; notification fin de lane fast par hote =
+  passage fast_done + une ligne append-only [pipeline] au journal (mecanisme
+  etat, pas de pub/sub - arbitre) ; refus de run si evidence/ writable (T5
+  6) ; table de timeouts par etape (spec 5b : hash 10m ... plaso 6h,
+  volatility 2h) avec override packs/pipeline.yaml, result_ttl=600,
+  failure_ttl=86400) ; `src/oreoa/mcp_server.py` (4 serveurs MCPServer 2.x,
+  streamable HTTP :8000 stateless, TransportSecuritySettings allowed_hosts
+  mcp-*.8000+localhost ; commun : resolve_case containment sous OREOA_CASES,
+  wrap() delimitateurs OREOA-DATA + note untrusted, json_safe troncature
+  512, cap 50/500, @guarded -> ToolError/isError jamais de traceback ;
+  evidence : list_evidence, inventory, query (SELECT only, single statement,
+  raw refuse, LIMIT clamp), search (ILIKE + regex), schema, detections,
+  timeline, hunt_list (seed v0.3, filtre OS), get_raw (cap 20, SANS
+  troncature, gate type de cas via case.yaml, resolution Parquet via
+  find_raw sur connexion en memoire - le Parquet est autoritaire, pas besoin
+  de case.duckdb) ; case : read_case/read_journal/read_state + mutations
+  gatees upsert_hypothesis/upsert_finding/record_gap (gate confirmed_by_
+  analyst, validation modeles, verification de citations - record_id non
+  resoluble = refus + ligne hallucination au journal) + mark_detections_
+  reviewed heberge par mcp-case (arbitre : A1 "narrow mutation", connexion
+  DuckDB writable courte sans migration, transaction, uniquement
+  new->reviewed) ; jobs : enqueue/extract/unlock/fetch_symbol/status/cancel/
+  wait, prepare_envelope valide avant enqueue, registre Redis
+  oreoa:jobs:<case_id> (case scoping, job inconnu refuse), send_stop_job_
+  command pour cancel, wait borne 5-600s ; knowledge : knowledge_list/
+  knowledge_read (sandbox OREOA_KNOWLEDGE) + snapshot()) ; compose (workers
+  : REDIS_HOST/PORT/PASSWORD_FILE + secret + depends_on redis +
+  OREOA_CASES=/cases ; mcp-evidence/case : OREOA_CASES=/cases - bug latent
+  corrige ; mcp-knowledge : OREOA_KNOWLEDGE=/knowledge) ; Makefile (up
+  passe --scale worker-fast=$WORKER_FAST_REPLICAS ; test = tests/unit +
+  tests/mcp) ; .env.example (WORKER_FAST_REPLICAS=1) ; entrypoint worker
+  simplifie (exec "$@"). jobs_model etendu : case_id obligatoire sur
+  l'enveloppe (pattern + anti-traversal), queue_for_step (fast/deep/fetch,
+  coherence queue/type verifiee), extract (fast, pack) separe de
+  extract_unitary (deep, /extract - SPEC 107/190), ev_id enveloppe fusionne
+  dans les payloads typees, ValidationError interne remontee lisiblement.
+  T1 nouveaux (test_worker 11) : manifest/phase, placeholder, revalidation,
+  evidence inconnue, writable refuse, notification + idempotence (pas de
+  doublon), etape failed, table timeouts + override, containment case_id,
+  refus fetch lane. T3 nouveaux (tests/mcp, 33) : harnais ASGI in-process
+  (httpx2 ASGITransport + session_manager.run(), meme pile HTTP que
+  compose), schemas/outils par serveur, SELECT-only + raw + multi-
+  statements, caps 50/500 + clamp LIMIT utilisateur, troncature 512,
+  delimitateurs + note, get_raw cap 20 + gate + incident/exercice autorises,
+  citations non resolubles + hallucination journalisee, transitions
+  detections fermees + rollback sans effet, jobs validation + case scoping,
+  knowledge sandbox + snapshot. T5 nouveaux (2 smokes reels) : cycle RQ
+  complet sous l'ACL rq (enqueue/burst worker/refresh/result, cancel,
+  CONFIG refuse - le jeu de commandes RQ passe avec +@all -@dangerous
+  -@scripting, promesse S1.1 tenue) dans l'image worker-fast avec cas
+  temporaire 0777/evidence 0555 ; MCP dans l'image mcp reelle (OREOA_CASES
+  verifie, outil inconnu refuse, cas lisible via mount ro). Decisions/
+  arbitrages (4, valides avec l'analyste) : (1) detections.status -> mcp-case
+  ; (2) concurrence fast configurable au lancement (WORKER_FAST_REPLICAS,
+  --scale, 1 par defaut ; la spec 5b "2 processus dans le conteneur" ecartee
+  - chaque replica porte son cap et le flock serialise les ecritures
+  partagees) ; (3) get_raw autorise pour les deux types de cas, refus
+  mecanique si le type n'est pas etabli ; (4) notification par etat
+  (phase.json + journal). Notes techniques : connexions Redis plateforme en
+  bytes (decode_responses=False - RQ stocke des payloads compresses, HGETALL
+  en utf-8 cassait refresh) ; MCP 2.x : FastMCP renomme MCPServer, ToolError
+  pour isError, liste_tools client = ListToolsResult (.tools) ; hosts MCP
+  acceptes via allowed_hosts (le Host header mcp-evidence:8000 serait refuse
+  par defaut). Corrige en cours de dev : ValidationError pydantic interne
+  (ExtractPayload ev_id) remontee sur le mauvais champ de l'enveloppe ;
+  finished_at non reinitialise au re-run d'une etape ; imports date/yaml
+  manquants ; extract_unitary absent de TYPED_PAYLOADS (chemins non
+  valides) ; double connexion DuckDB read-write/read-only dans la
+  verification de citations (rollback sans transaction) - con partage.
+  Vert : 140/140 T1+T3 (107 + 33), 23/23 T5 (21 + 2 smokes), images
+  reconstruites (base->worker-fast->mcp). Prochaine action : S1.5
+  (update-knowledge + loader DFIQ interne + fetcher)

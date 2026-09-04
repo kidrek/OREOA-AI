@@ -112,10 +112,18 @@ services:
     <<: *hardened
     command: ["python", "-m", "oreoa.worker", "fast"]
     networks: [internal]
+    depends_on: [redis]
+    environment:
+      OREOA_CASES: /cases
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
     volumes:
       - ${OREOA_CASES:-./cases}:/cases
       - ./knowledge:/knowledge:ro
       - ${OREOA_SCRATCH:-./.scratch}:/scratch:rw,noexec,nosuid,nodev
+    secrets:
+      - redis_password
     mem_limit: ${WORKER_FAST_MEM:-4g}
     cpus: ${WORKER_FAST_CPUS:-2.0}
     ulimits:
@@ -133,10 +141,18 @@ services:
     <<: *hardened
     command: ["python", "-m", "oreoa.worker", "deep"]
     networks: [internal]
+    depends_on: [redis]
+    environment:
+      OREOA_CASES: /cases
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
     volumes:
       - ${OREOA_CASES:-./cases}:/cases
       - ./knowledge:/knowledge:ro
       - ${OREOA_SCRATCH:-./.scratch}:/scratch:rw,noexec,nosuid,nodev
+    secrets:
+      - redis_password
     mem_limit: ${WORKER_DEEP_MEM:-8g}
     cpus: ${WORKER_DEEP_CPUS:-2.0}
     ulimits:
@@ -150,6 +166,8 @@ services:
     <<: *hardened
     command: ["python", "-m", "oreoa.mcp_server", "evidence"]
     networks: [internal]
+    environment:
+      OREOA_CASES: /cases
     volumes:
       - ${OREOA_CASES:-./cases}:/cases:ro
       - ./knowledge:/knowledge:ro
@@ -160,6 +178,8 @@ services:
     <<: *hardened
     command: ["python", "-m", "oreoa.mcp_server", "knowledge"]
     networks: [internal]
+    environment:
+      OREOA_KNOWLEDGE: /knowledge
     volumes:
       - ./knowledge:/knowledge:ro
 
@@ -171,6 +191,8 @@ services:
     <<: *hardened
     command: ["python", "-m", "oreoa.mcp_server", "case"]
     networks: [internal]
+    environment:
+      OREOA_CASES: /cases
     volumes:
       - ${OREOA_CASES:-./cases}:/cases
 

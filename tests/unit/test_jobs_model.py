@@ -111,13 +111,37 @@ def test_add_key_payload_key_types():
 
 def test_job_envelope_validates_typed_payloads():
     envelope = JobEnvelope.model_validate(
-        {"job_type": "fetch_symbol", "queue": "fetch", "payload": fetch_payload()}
+        {
+            "job_type": "fetch_symbol",
+            "queue": "fetch",
+            "case_id": "2026-09-INC-042",
+            "payload": fetch_payload(),
+        }
     )
     assert envelope.job_type == "fetch_symbol"
     envelope = JobEnvelope.model_validate(
-        {"job_type": "unlock", "queue": "deep", "ev_id": "EV-001", "payload": {"ev_id": "EV-001"}}
+        {
+            "job_type": "unlock",
+            "queue": "fast",
+            "case_id": "2026-09-INC-042",
+            "ev_id": "EV-001",
+            "payload": {"ev_id": "EV-001"},
+        }
     )
-    assert envelope.queue == "deep"
+    assert envelope.queue == "fast"
+
+
+def test_job_envelope_requires_case_id_and_refuses_traversal():
+    with pytest.raises(Exception):
+        JobEnvelope.model_validate({"job_type": "parse", "queue": "fast", "payload": {}})
+    with pytest.raises(Exception):
+        JobEnvelope.model_validate(
+            {"job_type": "parse", "queue": "fast", "case_id": "..", "payload": {}}
+        )
+    with pytest.raises(Exception):
+        JobEnvelope.model_validate(
+            {"job_type": "parse", "queue": "fast", "case_id": "a/b", "payload": {}}
+        )
 
 
 def test_job_envelope_refuses_unconfirmed_mutation():
@@ -126,6 +150,7 @@ def test_job_envelope_refuses_unconfirmed_mutation():
             {
                 "job_type": "fetch_symbol",
                 "queue": "fetch",
+                "case_id": "2026-09-INC-042",
                 "payload": fetch_payload(confirmed_by_analyst=False),
             }
         )
@@ -133,9 +158,25 @@ def test_job_envelope_refuses_unconfirmed_mutation():
 
 def test_job_envelope_refuses_bad_queue_and_ev_id():
     with pytest.raises(Exception):
-        JobEnvelope.model_validate({"job_type": "parse", "queue": "ultra", "payload": {}})
+        JobEnvelope.model_validate(
+            {"job_type": "parse", "queue": "ultra", "case_id": "c1", "payload": {}}
+        )
     with pytest.raises(Exception):
-        JobEnvelope.model_validate({"job_type": "parse", "queue": "fast", "ev_id": "EV1"})
+        JobEnvelope.model_validate(
+            {"job_type": "parse", "queue": "fast", "case_id": "c1", "ev_id": "EV1"}
+        )
+
+
+def test_queue_for_step_routing():
+    from oreoa.jobs_model import DEEP_STEPS, FAST_STEPS, queue_for_step
+
+    for step in FAST_STEPS:
+        assert queue_for_step(step) == "fast"
+    for step in DEEP_STEPS:
+        assert queue_for_step(step) == "deep"
+    assert queue_for_step("unlock") == "fast"
+    assert queue_for_step("fetch_symbol") == "fetch"
+    assert queue_for_step("parse") != queue_for_step("plaso")
 
 
 def test_validate_payload_passthrough_and_typed():

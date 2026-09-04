@@ -4,6 +4,7 @@ include versions.env
 TAG ?= dev
 COMPOSE ?= docker compose
 PYTEST ?= python3 -m pytest
+WORKER_FAST_REPLICAS ?= 1
 export
 
 .DEFAULT_GOAL := help
@@ -41,9 +42,9 @@ update-knowledge: ## Fetch pinned knowledge sources on the host (step 1.5)
 runtime-config: ## Render opencode.json + .claude/ from agents/ and commands/ (step 1.2)
 	python3 -m oreoa.runtime_config render
 
-up: ## Start the stack (make up LLM=1 for the local-llm override)
+up: ## Start the stack (make up LLM=1 for the local-llm override, FAST_N=3 for worker-fast replicas)
 	$(MAKE) secrets
-	$(if $(LLM),$(COMPOSE) -f compose.yaml -f compose.local-llm.yaml up -d,$(COMPOSE) up -d)
+	$(if $(LLM),$(COMPOSE) -f compose.yaml -f compose.local-llm.yaml up -d --scale worker-fast=$(WORKER_FAST_REPLICAS),$(COMPOSE) up -d --scale worker-fast=$(WORKER_FAST_REPLICAS))
 
 down: ## Stop the stack
 	$(COMPOSE) down
@@ -58,8 +59,8 @@ case-new: ## Create a case skeleton: make case-new ID=<id> [TYPE=incident|exerci
 lint-compose: ## Fail if privileged/cap_add/devices/docker.sock/host network appear
 	$(PYTEST) tests/infra/test_compose_hardening.py
 
-test: ## Unit tests (T1)
-	$(PYTEST) tests/unit
+test: ## Unit (T1) + MCP contract tests (T3) - no containers
+	$(PYTEST) tests/unit tests/mcp
 
 test-infra: secrets ## Infra tests (T5) - builds nothing; run make build first
 	$(PYTEST) tests/infra

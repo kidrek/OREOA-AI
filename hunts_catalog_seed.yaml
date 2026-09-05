@@ -1,0 +1,818 @@
+# hunts/catalog.yaml — seed catalogue (headers only, SQL to be written per hunt)
+#
+# Conventions
+# - id            : H-<AREA>-<nnn>. Areas: IA initial access, EX execution, PE persistence,
+#                   PR privilege & accounts, LM lateral movement, DC discovery & collection,
+#                   EF exfiltration, C2 command & control, AF anti-forensics, TL timeline helpers,
+#                   LX linux-specific, MC macos-specific.
+# - tables        : normalized families read (see normalized_data_model.md).
+# - os            : subset of [windows, linux, macos, android]. "all" = every OS.
+# - params        : every hunt accepts {host} (nullable = all hosts), {start}, {end} (UTC, nullable);
+#                   only additional params are listed.
+# - dfiq          : DFIQ question ids. Q1xxx = official (google/dfiq, dfiq/data/questions), Q0xxx = internal
+#                   questions defined in knowledge/custom/dfiq/ (DFIQ convention: '0' in 2nd position = internal).
+#                   Timeline helpers (H-TL-*) carry none by design.
+# - attack        : ATT&CK technique ids.
+# - level         : default severity written into `detections`.
+# - test          : expected result on the synthetic archive; a hunt without a passing test is not shipped.
+#                   Hunts marked os: all MUST have one test per OS (windows, linux, macos); a single test
+#                   is not accepted. Path/name lists used by 'all' hunts are parameters per OS, never hard-coded.
+# - Every hunt writes to `detections` with engine='hunt', rule_id=<id>, matched_record_ids populated.
+ 
+version: 0.3
+ 
+hunts:
+ 
+# ---------------------------------------------------------------- Initial access
+- id: H-IA-001
+  title: Office document opened followed by suspicious child process
+  description: "Office MRU / recent docs entry followed within {window_min} by an execution whose parent is an Office binary."
+  tables: [user_activity, executions, log_events]
+  os: [windows, macos]
+  params: {window_min: 10}
+  attack: [T1566.001, T1204.002]
+  dfiq: [Q0001, Q1014]
+  level: high
+  test: "docm opened at T, powershell child at T+23s → 1 detection"
+ 
+- id: H-IA-002
+  title: Browser download followed by first execution
+  description: "Download record (browser) with target path matching a later first execution (prefetch/amcache/quarantine/audit) within {window_min}."
+  tables: [browser, executions]
+  os: all
+  params: {window_min: 30}
+  attack: [T1204.002, T1189]
+  dfiq: [Q0002, Q1001]
+  level: high
+  test: "setup_x.exe downloaded then prefetch first run → 1 detection"
+ 
+- id: H-IA-003
+  title: Mail attachment opened from mail client temp folder
+  description: "Execution or document activity whose path is under Outlook/Thunderbird/Mail temporary attachment locations."
+  tables: [executions, user_activity, fs_entries]
+  os: [windows, macos]
+  attack: [T1566.001]
+  dfiq: [Q0003]
+  level: medium
+  test: "file under Content.Outlook executed → 1 detection"
+ 
+- id: H-IA-004
+  title: Remote interactive logon from previously unseen source
+  description: "Successful RDP/SSH/VPN logon whose src_ip was never seen for that host before {start}."
+  tables: [auth_events]
+  os: all
+  attack: [T1078, T1133, T1021.001, T1021.004]
+  dfiq: [Q0004]
+  level: medium
+  test: "new external IP logon type 10 → 1 detection"
+ 
+- id: H-IA-005
+  title: Removable media inserted followed by execution from it
+  description: "USB/volume mount event followed by execution or LNK targeting that volume."
+  tables: [log_events, registry, executions, user_activity]
+  os: all
+  attack: [T1091, T1200]
+  dfiq: [Q0005, Q1002, Q1012]
+  level: medium
+  test: "USB serial mounted, exe run from E:\\ → 1 detection"
+ 
+- id: H-IA-006
+  title: Exploitation of public-facing service — web shell drop
+  description: "File created under a web root with script extension by a web server process, or web server child process spawning a shell."
+  tables: [fs_entries, fs_journal, executions, log_events]
+  os: [windows, linux]
+  params: {web_roots: ["inetpub", "wwwroot", "/var/www", "htdocs"]}
+  attack: [T1190, T1505.003]
+  dfiq: [Q0006]
+  level: critical
+  test: "w3wp.exe → cmd.exe and .aspx written → 2 detections"
+ 
+# ---------------------------------------------------------------- Execution
+- id: H-EX-001
+  title: Execution from user-writable or temporary locations
+  description: "Executions whose exe_path_norm is under Temp, AppData, Downloads, Public, /tmp, /dev/shm, /var/tmp, ~/Library/Caches."
+  tables: [executions]
+  os: all
+  attack: [T1204, T1059]
+  dfiq: [Q0007]
+  level: medium
+  test: "3 known temp executions → 3 detections"
+ 
+- id: H-EX-002
+  title: Encoded or obfuscated command lines
+  description: "Command lines with -enc/-e base64 payloads, ^ or ` obfuscation, IEX/Invoke-Expression, `bash -c \"$(echo ... | base64 -d)\"`."
+  tables: [executions, log_events]
+  os: all
+  attack: [T1027, T1059.001, T1059.004]
+  dfiq: [Q0008]
+  level: high
+  test: "powershell -enc sample → 1 detection"
+ 
+- id: H-EX-003
+  title: Legitimate binary used for download, execution or credential access (LOLBin)
+  description: "Executions whose exe_name is in baseline.abusable_binaries for the host OS and whose args match one of the catalogue's example_patterns for functions in {functions}. Never suppressed by known_identity."
+  tables: [executions, log_events, baseline]
+  os: all
+  params: {functions: [download, execute, upload, dump, ads, decode, reconnaissance]}
+  attack: [T1218, T1105, T1059, T1003]
+  dfiq: [Q0009]
+  level: high
+  test: "certutil -urlcache (win) / sudo find -exec sh (linux) / osascript display dialog (macos) → 1 detection each, binaries present in NSRL subset"
+ 
+- id: H-EX-004
+  title: Execution of a file created less than N minutes earlier
+  description: "Join fs_entries.ts_created / fs_journal create op with executions.ts_first within {window_min}."
+  tables: [fs_entries, fs_journal, executions]
+  os: all
+  params: {window_min: 5}
+  attack: [T1204.002]
+  dfiq: [Q0010]
+  level: medium
+  test: "upd.exe created then run 40s later → 1 detection"
+ 
+- id: H-EX-005
+  title: Unsigned or unusually named binary in system directories
+  description: "Executions of unsigned binaries under system paths, or system binary names running from non-system paths (svchost.exe outside System32)."
+  tables: [executions, files_of_interest]
+  os: [windows]
+  attack: [T1036.005, T1036.003]
+  dfiq: [Q0011]
+  level: high
+  test: "svchost.exe in AppData → 1 detection"
+ 
+- id: H-EX-006
+  title: Scripting interpreter spawned by non-interactive parent
+  description: "powershell/cmd/wscript/bash/python spawned by Office, browsers, services, web servers, or scheduled tasks."
+  tables: [executions, log_events]
+  os: all
+  attack: [T1059, T1204]
+  dfiq: [Q0012]
+  level: high
+  test: "excel → cmd → 1 detection"
+ 
+- id: H-EX-007
+  title: Execution evidence inconsistency across artifacts
+  description: "Program present in Prefetch/Shimcache/Amcache but absent from the other sources where it should appear, or with conflicting timestamps (possible tampering or deletion)."
+  tables: [executions]
+  os: [windows]
+  attack: [T1070]
+  dfiq: [Q0013]
+  level: low
+  test: "prefetch without amcache for one exe → 1 detection"
+ 
+- id: H-EX-008
+  title: Shell history commands of interest
+  description: "Shell history entries matching reconnaissance, credential access, download or privilege patterns (curl|wget, nc, chmod +x, sudo -l, cat /etc/shadow, history -c) or GTFOBins example_patterns."
+  tables: [executions, baseline]
+  os: [linux, macos]
+  attack: [T1059.004, T1552, T1070.003]
+  dfiq: [Q0014]
+  level: medium
+  test: "wget + chmod +x + history -c → 3 detections"
+ 
+- id: H-EX-009
+  title: DLL search-order hijacking or side-loading
+  description: "Loaded module (Prefetch loaded_files, Sysmon 7, Amcache) whose name is in HijackLibs for the executing binary but whose path is not one of the expected_paths; or an executable listed as vulnerable in HijackLibs running from a user-writable directory next to a same-named DLL (fs_entries)."
+  tables: [executions, log_events, fs_entries, files_of_interest, baseline]
+  os: [windows]
+  attack: [T1574.001, T1574.002]
+  dfiq: [Q0046]
+  level: high
+  test: "OneDrive.exe in %TEMP% with version.dll alongside → 1 detection"
+ 
+# ---------------------------------------------------------------- Persistence
+- id: H-PE-001
+  title: New autostart entry created inside the incident window
+  description: "Any persistence row with ts_created or ts_modified within [{start},{end}]."
+  tables: [persistence]
+  os: all
+  attack: [T1547, T1543, T1053]
+  dfiq: [Q1053, Q1054, Q1061, Q1062, Q1064, Q1065, Q1066, Q1067, Q1068]
+  level: medium
+  test: "Run key Updater at T+2min → 1 detection"
+ 
+- id: H-PE-002
+  title: Autostart pointing to user-writable path or unsigned binary
+  description: "Persistence target under Temp/AppData/tmp/home, or files_of_interest shows unsigned/invalid signature."
+  tables: [persistence, files_of_interest]
+  os: all
+  attack: [T1547.001, T1543.003, T1543.002]
+  dfiq: [Q0015, Q1065, Q1067]
+  level: high
+  test: "service pointing to C:\\Users\\Public\\x.exe → 1 detection"
+ 
+- id: H-PE-003
+  title: Scheduled task, cron or timer created by non-admin or with script payload
+  description: "Tasks/cron/systemd timers whose action is an interpreter with inline script or a file in a user path."
+  tables: [persistence, log_events]
+  os: all
+  attack: [T1053.005, T1053.003]
+  dfiq: [Q1060, Q1061, Q1062, Q1064]
+  level: high
+  test: "cron @reboot /tmp/.x.sh → 1 detection"
+ 
+- id: H-PE-004
+  title: WMI event subscription or Winlogon/IFEO hijack
+  description: "Presence of WMI __EventConsumer bindings, Winlogon shell/userinit changes, Image File Execution Options debuggers."
+  tables: [persistence, registry]
+  os: [windows]
+  attack: [T1546.003, T1547.004, T1546.012]
+  dfiq: [Q0016]
+  level: high
+  test: "IFEO sethc.exe debugger → 1 detection"
+ 
+- id: H-PE-005
+  title: LaunchAgent/LaunchDaemon or login item added
+  description: "New plist under LaunchAgents/LaunchDaemons or login items/background task management entries in window."
+  tables: [persistence, fs_entries]
+  os: [macos]
+  attack: [T1543.001, T1543.004, T1547.015]
+  dfiq: [Q1053, Q1054, Q1056]
+  level: high
+  test: "com.apple.update.plist in ~/Library/LaunchAgents → 1 detection"
+ 
+- id: H-PE-006
+  title: Shell profile or PAM/SSH configuration modified
+  description: "Changes to .bashrc/.zshrc/profile, /etc/pam.d, sshd_config (PermitRootLogin, AuthorizedKeysFile), authorized_keys added."
+  tables: [config_entries, fs_entries, fs_journal]
+  os: [linux, macos]
+  attack: [T1546.004, T1556.003, T1098.004]
+  dfiq: [Q0017]
+  level: high
+  test: "authorized_keys appended → 1 detection"
+ 
+- id: H-PE-007
+  title: Browser extension installed outside store or with broad permissions
+  description: "Extensions sideloaded from disk, with permissions including all_urls/tabs/cookies, installed in window."
+  tables: [browser, persistence]
+  os: all
+  attack: [T1176]
+  dfiq: [Q1021, Q1052]
+  level: medium
+  test: "unpacked extension with <all_urls> → 1 detection"
+ 
+- id: H-PE-008
+  title: Service or driver installed then binary deleted
+  description: "Persistence entry whose target no longer exists in fs_entries (or fs_journal shows delete after install)."
+  tables: [persistence, fs_entries, fs_journal]
+  os: [windows, linux]
+  attack: [T1543.003, T1070.004]
+  dfiq: [Q0018, Q1068]
+  level: high
+  test: "service target deleted 5 min after creation → 1 detection"
+ 
+- id: H-PE-009
+  title: Vulnerable or malicious signed driver loaded (BYOVD)
+  description: "Driver service or kernel module whose hash or name matches LOLDrivers (baseline.abusable_binaries, type driver) or whose signer is revoked; System EID 7045 / Sysmon 6 / DriverLoad projections in window."
+  tables: [persistence, log_events, files_of_interest, baseline, iocs]
+  os: [windows]
+  attack: [T1068, T1014, T1562.001]
+  dfiq: [Q0047]
+  level: critical
+  test: "service 'iqvw64e' with LOLDrivers hash → 1 detection"
+ 
+# ---------------------------------------------------------------- Privilege & accounts
+- id: H-PR-001
+  title: Account created outside change window
+  description: "accounts.ts_created (or projected 4720 / useradd / dscl) not in the allowed maintenance windows given by {maintenance_windows}."
+  tables: [accounts, auth_events, log_events]
+  os: all
+  params: {maintenance_windows: []}
+  attack: [T1136.001]
+  dfiq: [Q1059, Q1058]
+  level: high
+  test: "user 'svc_backup2' created 02:31 UTC → 1 detection"
+ 
+- id: H-PR-002
+  title: Account added to privileged group
+  description: "Group membership change to Administrators/Domain Admins/sudo/wheel/admin in window."
+  tables: [accounts, log_events]
+  os: all
+  attack: [T1098, T1078.003]
+  dfiq: [Q0019]
+  level: high
+  test: "4732 into Administrators → 1 detection"
+ 
+- id: H-PR-003
+  title: Successful logon after burst of failures
+  description: "≥ {threshold} failures for same user or src within {window_min}, followed by success."
+  tables: [auth_events]
+  os: all
+  params: {threshold: 10, window_min: 15}
+  attack: [T1110]
+  dfiq: [Q0020]
+  level: high
+  test: "30 failures then success from same IP → 1 detection"
+ 
+- id: H-PR-004
+  title: Service or machine account used interactively
+  description: "Accounts flagged is_service (or name pattern svc_/$/_sa) with logon_type interactive/RDP or sudo."
+  tables: [auth_events, accounts]
+  os: all
+  attack: [T1078.002, T1078.003]
+  dfiq: [Q0021]
+  level: medium
+  test: "svc_sql RDP logon → 1 detection"
+ 
+- id: H-PR-005
+  title: Credential dumping tool or LSASS/shadow access
+  description: "Executions or processes matching mimikatz/procdump/comsvcs MiniDump/nanodump/sekurlsa, access to /etc/shadow, ntds.dit copy, SAM/SYSTEM hive export."
+  tables: [executions, log_events, fs_journal, processes]
+  os: all
+  attack: [T1003.001, T1003.002, T1003.003, T1003.008]
+  dfiq: [Q0022]
+  level: critical
+  test: "rundll32 comsvcs MiniDump → 1 detection"
+ 
+- id: H-PR-006
+  title: Privilege escalation via sudo/su anomalies or UAC bypass
+  description: "sudo from unexpected users, sudo of a GTFOBins binary with function sudo/shell, su to root at odd hours, fodhelper/eventvwr/sdclt registry keys, SeDebugPrivilege assignment (4672) to non-admins."
+  tables: [auth_events, registry, log_events, executions, baseline]
+  os: all
+  attack: [T1548.002, T1548.003]
+  dfiq: [Q0023]
+  level: high
+  test: "fodhelper ms-settings key → 1 detection"
+ 
+- id: H-PR-007
+  title: Password change or reset of sensitive account
+  description: "ts_password_changed / 4723 / 4724 / passwd on admin or service accounts in window."
+  tables: [accounts, auth_events, log_events]
+  os: all
+  attack: [T1098, T1531]
+  dfiq: [Q0024]
+  level: medium
+  test: "4724 on Administrator → 1 detection"
+ 
+# ---------------------------------------------------------------- Lateral movement
+- id: H-LM-001
+  title: One source authenticating to many hosts
+  description: "Same src_ip/src_host with network/RDP/SSH logons to ≥ {threshold} distinct hosts within {window_min}."
+  tables: [auth_events]
+  os: all
+  params: {threshold: 5, window_min: 60}
+  attack: [T1021]
+  dfiq: [Q0025]
+  level: high
+  test: "10.20.4.42 → 7 hosts in 20 min → 1 detection"
+ 
+- id: H-LM-002
+  title: Remote execution tooling (PsExec, WMI, WinRM, SSH from server)
+  description: "PSEXESVC service, wmiprvse spawning shells, wsmprovhost children, admin$ share access, ssh from server accounts."
+  tables: [persistence, executions, log_events, auth_events]
+  os: all
+  attack: [T1021.002, T1047, T1021.006, T1021.004]
+  dfiq: [Q1036, Q1037]
+  level: high
+  test: "PSEXESVC installed → 1 detection"
+ 
+- id: H-LM-003
+  title: Pass-the-hash / overpass-the-hash indicators
+  description: "4624 logon type 9 with seclogo, NTLM logons for accounts that normally use Kerberos, 4768/4769 with RC4 for AES-capable accounts."
+  tables: [auth_events, log_events]
+  os: [windows]
+  attack: [T1550.002, T1550.003]
+  dfiq: [Q0026]
+  level: high
+  test: "logon type 9 seclogo → 1 detection"
+ 
+- id: H-LM-004
+  title: RDP session artifacts (bitmap cache, connection history)
+  description: "RDP cache / Terminal Server Client MRU / 1149,21,24,25 events correlating outbound RDP with inbound on target."
+  tables: [user_activity, registry, log_events, auth_events]
+  os: [windows]
+  attack: [T1021.001]
+  dfiq: [Q0027]
+  level: medium
+  test: "TSClient MRU to SRV-DC01 + 1149 on target → 1 detection"
+ 
+- id: H-LM-005
+  title: Unusual server-to-server SSH or SMB session
+  description: "Sessions between hosts with no prior baseline before {start}, or from workstation to workstation."
+  tables: [auth_events, network]
+  os: all
+  attack: [T1021.004, T1021.002]
+  dfiq: [Q0028]
+  level: medium
+  test: "wks→wks SMB session → 1 detection"
+ 
+# ---------------------------------------------------------------- Discovery & collection
+- id: H-DC-001
+  title: Discovery command burst
+  description: "≥ {threshold} discovery commands (whoami, net user/group, nltest, ipconfig, systeminfo, tasklist, id, uname, ps, netstat, arp) within {window_min} from one session."
+  tables: [executions, log_events]
+  os: all
+  params: {threshold: 5, window_min: 5}
+  attack: [T1087, T1082, T1016, T1057, T1069]
+  dfiq: [Q0029]
+  level: medium
+  test: "8 recon commands in 2 min → 1 detection"
+ 
+- id: H-DC-002
+  title: Archive created then deleted
+  description: ".zip/.7z/.rar/.tar.gz created (fs_journal/fs_entries) then deleted within {window_hours}; or archiver executed with password flag."
+  tables: [fs_journal, fs_entries, executions]
+  os: all
+  params: {window_hours: 24}
+  attack: [T1560.001, T1070.004]
+  dfiq: [Q1017]
+  level: high
+  test: "docs.7z created and deleted → 1 detection"
+ 
+- id: H-DC-003
+  title: Mass access to file shares or sensitive directories
+  description: "≥ {threshold} distinct files opened (5145 / ShellBags / LNK / auditd open) under shares or sensitive paths within {window_min}."
+  tables: [log_events, user_activity]
+  os: all
+  params: {threshold: 200, window_min: 30}
+  attack: [T1039, T1005]
+  dfiq: [Q1014, Q1035]
+  level: medium
+  test: "350 share accesses in 10 min → 1 detection"
+ 
+- id: H-DC-004
+  title: Screenshot, keylogging or clipboard tooling
+  description: "Known capture tools, or processes with screen capture / clipboard hooks (memory) outside expected software."
+  tables: [executions, processes]
+  os: all
+  attack: [T1113, T1056.001, T1115]
+  dfiq: [Q1004]
+  level: medium
+  test: "unknown process with SetWindowsHookEx → 1 detection"
+ 
+- id: H-DC-005
+  title: Browser credential or cookie store accessed by foreign process
+  description: "Non-browser process reading Login Data / cookies / key4.db / logins.json (auditd, Sysmon 11, file access logs)."
+  tables: [log_events, fs_journal]
+  os: all
+  attack: [T1555.003, T1539]
+  dfiq: [Q0030]
+  level: high
+  test: "python reads Login Data → 1 detection"
+ 
+# ---------------------------------------------------------------- Exfiltration
+- id: H-EF-001
+  title: Exfiltration tooling executed
+  description: "rclone, megasync, megacmd, WinSCP/FileZilla CLI, curl -T / --upload-file, scp/sftp to external, Dropbox/Google Drive CLI."
+  tables: [executions, network]
+  os: all
+  attack: [T1567.002, T1048.002, T1048.003]
+  dfiq: [Q1038, Q1007]
+  level: high
+  test: "rclone copy to remote → 1 detection"
+ 
+- id: H-EF-002
+  title: Abnormal outbound volume per process or host
+  description: "SRUM / nettop / flow rows with bytes_out > {threshold_mb} MB in window, per process."
+  tables: [network]
+  os: all
+  params: {threshold_mb: 500}
+  attack: [T1041, T1048]
+  dfiq: [Q1031]
+  level: medium
+  test: "svchost 2.1 GB out → 1 detection"
+ 
+- id: H-EF-003
+  title: Removable media mounted followed by bulk file copies
+  description: "USB mount then ≥ {threshold} files created on that volume (fs_journal/LNK/ShellBags) within {window_min}."
+  tables: [log_events, fs_journal, user_activity]
+  os: all
+  params: {threshold: 50, window_min: 30}
+  attack: [T1052.001]
+  dfiq: [Q1003, Q1002]
+  level: high
+  test: "USB + 120 file creations → 1 detection"
+ 
+- id: H-EF-004
+  title: Cloud storage or paste site accessed from browser during window
+  description: "Browser visits/downloads to mega.nz, anonfiles, transfer.sh, pastebin, file.io, wetransfer, personal drive domains."
+  tables: [browser]
+  os: all
+  attack: [T1567.002]
+  dfiq: [Q1009, Q1084]
+  level: medium
+  test: "mega.nz upload page visited → 1 detection"
+ 
+# ---------------------------------------------------------------- Command & control
+- id: H-C2-001
+  title: Beaconing pattern from a single process
+  description: "Connections from one process to one dst with near-constant interval (jitter < {jitter_pct}%) over ≥ {min_count} occurrences."
+  tables: [network, log_events]
+  os: all
+  params: {jitter_pct: 20, min_count: 20}
+  attack: [T1071, T1573]
+  dfiq: [Q0031]
+  level: high
+  test: "60s beacon × 40 → 1 detection"
+ 
+- id: H-C2-002
+  title: Process with network connection but no legitimate reason
+  description: "Office, script hosts, or system utilities (notepad, mspaint, calc) opening outbound connections; processes from temp paths with connections."
+  tables: [network, executions, processes]
+  os: all
+  attack: [T1071, T1105]
+  dfiq: [Q0032, Q1018]
+  level: high
+  test: "winword.exe → 185.x.x.x:443 → 1 detection"
+ 
+- id: H-C2-003
+  title: DNS anomalies (long labels, high entropy, TXT bursts, rare TLDs)
+  description: "DNS cache / logs with label length > {max_label}, entropy > {min_entropy}, or many unique subdomains for one domain."
+  tables: [network, log_events]
+  os: all
+  params: {max_label: 40, min_entropy: 3.8}
+  attack: [T1071.004, T1568]
+  dfiq: [Q1085]
+  level: medium
+  test: "base32-like subdomains → 1 detection"
+ 
+- id: H-C2-004
+  title: Remote access tools installed or executed
+  description: "Binaries, install paths, service names or domains from LOLRMM (baseline.abusable_binaries, type rmm) plus tunnelling tools (ngrok, chisel, plink, cloudflared) present in installed_software/executions/persistence/network without being in {allowed_rats} (knowledge/custom/allowlist.yaml)."
+  tables: [installed_software, executions, persistence, network, baseline]
+  os: all
+  params: {allowed_rats: []}
+  attack: [T1219, T1572]
+  dfiq: [Q0033, Q1008]
+  level: high
+  test: "AnyDesk installed in window → 1 detection"
+ 
+# ---------------------------------------------------------------- Anti-forensics
+- id: H-AF-001
+  title: Event logs cleared or logging disabled
+  description: "1102/104, wevtutil cl, auditpol /clear, journalctl --vacuum, rm of /var/log/*, unified log erase, Sysmon service stopped."
+  tables: [log_events, executions]
+  os: all
+  attack: [T1070.001, T1070.002, T1562.002]
+  dfiq: [Q1074, Q1030]
+  level: critical
+  test: "1102 by j.dupont → 1 detection"
+ 
+- id: H-AF-002
+  title: Mass deletions in change journal before a key event
+  description: "≥ {threshold} delete ops in fs_journal within {window_min} preceding a logon/logoff or shutdown."
+  tables: [fs_journal, auth_events, log_events]
+  os: all
+  params: {threshold: 100, window_min: 15}
+  attack: [T1070.004, T1485]
+  dfiq: [Q1027]
+  level: high
+  test: "450 deletes then logoff → 1 detection"
+ 
+- id: H-AF-003
+  title: Timestomping — $STANDARD_INFORMATION older than $FILE_NAME
+  description: "fs_entries where ts_created < fn_ts_created by more than {tolerance_s}, or sub-second precision zeroed; on Linux, mtime < ctime-changes inconsistency."
+  tables: [fs_entries]
+  os: [windows, linux]
+  params: {tolerance_s: 2}
+  attack: [T1070.006]
+  dfiq: [Q0034]
+  level: high
+  test: "upd.exe SI 2019 vs FN 2026 → 1 detection"
+ 
+- id: H-AF-004
+  title: Shell history cleared, unset or symlinked
+  description: "HISTFILE unset, history -c, .bash_history truncated to 0 or symlinked to /dev/null, .zsh_history modified after last login."
+  tables: [executions, fs_entries, config_entries]
+  os: [linux, macos]
+  attack: [T1070.003, T1562.003]
+  dfiq: [Q1033]
+  level: high
+  test: ".bash_history → /dev/null → 1 detection"
+ 
+- id: H-AF-005
+  title: Security tooling disabled or excluded
+  description: "Defender/EDR exclusions added, real-time protection off, AMSI patches, auditd stopped, SIP/Gatekeeper disabled, iptables flushed."
+  tables: [registry, config_entries, log_events, executions]
+  os: all
+  attack: [T1562.001, T1562.004, T1553.001]
+  dfiq: [Q1030]
+  level: high
+  test: "Defender exclusion C:\\Users\\Public → 1 detection"
+ 
+- id: H-AF-006
+  title: Prefetch, Amcache or Shimcache anomalies suggesting wiping
+  description: "Prefetch directory emptied or disabled, gaps in Amcache ids, USN journal wrapped/truncated (fsutil usn deletejournal)."
+  tables: [executions, fs_journal, registry, fs_entries]
+  os: [windows]
+  attack: [T1070]
+  dfiq: [Q0013, Q1028]
+  level: medium
+  test: "fsutil usn deletejournal → 1 detection"
+ 
+# ---------------------------------------------------------------- Linux-specific
+- id: H-AF-007
+  title: Prompt-injection-like strings in evidence text fields
+  description: "Text fields (file names, command lines, log messages, registry values, browser titles) containing instruction-like patterns aimed at an LLM ('ignore previous instructions', 'you are now', 'system:', role markers, delimiter spoofing). Output tags the records; agents never act on them."
+  tables: [fs_entries, executions, log_events, registry, browser, persistence]
+  os: all
+  params: {patterns_file: "knowledge/custom/prompt_injection_patterns.yaml"}
+  attack: [T1070]
+  dfiq: [Q0045]
+  level: low
+  test: "file named 'ignore previous instructions.txt' → 1 detection"
+ 
+- id: H-LX-001
+  title: Kernel module loaded or added outside package management
+  description: "insmod/modprobe executions, .ko files under /lib/modules not owned by a package, /etc/modules-load.d changes, kernel taint messages in journald."
+  tables: [executions, fs_entries, config_entries, log_events, installed_software]
+  os: [linux]
+  attack: [T1547.006, T1014]
+  dfiq: [Q0035]
+  level: high
+  test: "insmod /tmp/rk.ko + taint message → 1 detection"
+ 
+- id: H-LX-002
+  title: LD_PRELOAD or ld.so.preload hijack
+  description: "/etc/ld.so.preload present or modified, LD_PRELOAD set in /etc/environment, profile files or service unit Environment=, shared object under /tmp or home referenced."
+  tables: [config_entries, fs_entries, persistence]
+  os: [linux]
+  attack: [T1574.006]
+  dfiq: [Q1071]
+  level: critical
+  test: "/etc/ld.so.preload → /tmp/.x.so → 1 detection"
+ 
+- id: H-LX-003
+  title: SUID/SGID binaries or capabilities added
+  description: "Files with setuid/setgid bit outside the package baseline, or file capabilities (cap_setuid, cap_net_raw…) on unexpected binaries; chmod u+s / setcap in shell history or audit. Setuid binaries listed in GTFOBins (function suid) are escalated to critical."
+  tables: [fs_entries, executions, log_events, baseline]
+  os: [linux]
+  attack: [T1548.001]
+  dfiq: [Q0036]
+  level: high
+  test: "/usr/local/bin/find with setuid → 1 detection"
+ 
+- id: H-LX-004
+  title: Container or namespace escape indicators
+  description: "Processes with hostPID/privileged flags, mounts of docker.sock or host root inside a container, nsenter/unshare executions, cgroup release_agent writes."
+  tables: [processes, executions, log_events, config_entries]
+  os: [linux]
+  attack: [T1611, T1610]
+  dfiq: [Q0037]
+  level: critical
+  test: "nsenter -t 1 -m from container → 1 detection"
+ 
+- id: H-LX-005
+  title: Web server or database account spawning a shell
+  description: "auditd/EXECVE or process tree where uid is www-data, apache, nginx, mysql, postgres and the child is sh/bash/python/perl/nc."
+  tables: [executions, log_events, processes]
+  os: [linux]
+  attack: [T1190, T1505.003, T1059.004]
+  dfiq: [Q0006]
+  level: critical
+  test: "www-data → /bin/sh -c → 1 detection"
+ 
+- id: H-LX-006
+  title: Systemd unit or generator created in user-writable location
+  description: "Unit files under ~/.config/systemd/user, /run/systemd, or /etc/systemd/system with ExecStart in /tmp, /dev/shm or home; unit enabled in window."
+  tables: [persistence, fs_entries, log_events]
+  os: [linux]
+  attack: [T1543.002]
+  dfiq: [Q1067, Q1068, Q1064]
+  level: high
+  test: "~/.config/systemd/user/update.service → /tmp/x → 1 detection"
+ 
+- id: H-LX-007
+  title: Package manager activity or binary replaced outside package
+  description: "dpkg/rpm logs in window, or files under /usr/bin, /usr/sbin, /bin whose hash differs from package manifest (debsums/rpm -V equivalent from Dissect)."
+  tables: [installed_software, fs_entries, files_of_interest, log_events]
+  os: [linux]
+  attack: [T1554, T1036]
+  dfiq: [Q0038, Q1008]
+  level: high
+  test: "/usr/bin/ssh hash mismatch → 1 detection"
+ 
+# ---------------------------------------------------------------- macOS-specific
+- id: H-MC-001
+  title: Quarantine attribute bypassed or Gatekeeper disabled
+  description: "Executed files with LSQuarantine entry but no quarantine xattr (xattr -d com.apple.quarantine), spctl --master-disable, sudo spctl --add, Gatekeeper user override events in unified log."
+  tables: [executions, fs_entries, log_events, config_entries]
+  os: [macos]
+  attack: [T1553.001, T1562.001]
+  dfiq: [Q0039]
+  level: high
+  test: "xattr -d com.apple.quarantine on downloaded app → 1 detection"
+ 
+- id: H-MC-002
+  title: TCC privacy grants added or TCC.db modified
+  description: "New rows in TCC.db (user or system) for Accessibility, ScreenCapture, FullDiskAccess, Camera, Microphone in window; tccutil reset; TCC.db mtime change without System Preferences activity."
+  tables: [config_entries, fs_entries, log_events, executions]
+  os: [macos]
+  attack: [T1548.006, T1113, T1123]
+  dfiq: [Q0040]
+  level: high
+  test: "kTCCServiceAccessibility granted to /tmp/agent → 1 detection"
+ 
+- id: H-MC-003
+  title: Configuration profile or MDM enrollment change
+  description: "profiles install, new .mobileconfig under /Library/Managed Preferences or user profiles, unified log ManagedClient events, ConfigProfiles.db changes."
+  tables: [config_entries, fs_entries, log_events, executions]
+  os: [macos]
+  attack: [T1176, T1562.001, T1547]
+  dfiq: [Q0041]
+  level: medium
+  test: "profiles install -path /tmp/evil.mobileconfig → 1 detection"
+ 
+- id: H-MC-004
+  title: XProtect, Gatekeeper or EndpointSecurity denial events
+  description: "Unified log entries from XProtect/XProtectRemediator, Gatekeeper rejections, com.apple.securityd code-signing failures, ES client denials for a process that later ran."
+  tables: [log_events, executions]
+  os: [macos]
+  attack: [T1204.002, T1553]
+  dfiq: [Q0042]
+  level: medium
+  test: "XProtect detection then same binary executed → 1 detection"
+ 
+- id: H-MC-005
+  title: osascript, JXA or Automator used for execution or phishing
+  description: "osascript with -e or .scpt/.js payloads, 'display dialog' password prompts, Automator workflows in window, AppleScript applets in Downloads executed."
+  tables: [executions, log_events, user_activity]
+  os: [macos]
+  attack: [T1059.002, T1056.002]
+  dfiq: [Q0043]
+  level: high
+  test: "osascript -e 'display dialog ... with hidden answer' → 1 detection"
+ 
+- id: H-MC-006
+  title: Application bundle with invalid or ad-hoc signature executed
+  description: "Executed .app or Mach-O with signature invalid, ad-hoc, or team id absent, especially from Downloads, /tmp, mounted DMG (/Volumes/*)."
+  tables: [executions, files_of_interest, fs_entries]
+  os: [macos]
+  attack: [T1204.002, T1553.002]
+  dfiq: [Q0044]
+  level: high
+  test: "ad-hoc signed Installer.app from /Volumes/Update → 1 detection"
+ 
+- id: H-MC-007
+  title: Keychain or browser credential access from unexpected process
+  description: "security dump-keychain / find-generic-password executions, unified log SecKeychain access denials, non-browser reads of Chrome Login Data or Safari Keychain items."
+  tables: [executions, log_events, fs_journal]
+  os: [macos]
+  attack: [T1555.001, T1555.003]
+  dfiq: [Q0030]
+  level: high
+  test: "security find-generic-password by unknown binary → 1 detection"
+ 
+- id: H-MC-008
+  title: Emond, periodic, or cron-style persistence on macOS
+  description: "Rules under /etc/emond.d/rules, scripts in /etc/periodic, user crontab entries, at jobs; any created/modified in window."
+  tables: [persistence, fs_entries, config_entries]
+  os: [macos]
+  attack: [T1546.014, T1053.003]
+  dfiq: [Q1063, Q1062, Q1060]
+  level: medium
+  test: "/etc/emond.d/rules/update.plist → 1 detection"
+ 
+# ---------------------------------------------------------------- Timeline helpers (not detections: level = informational)
+- id: H-TL-001
+  title: Activity around a pivot timestamp
+  description: "All events for {host} within ±{window_min} of {pivot_ts}, ordered, one line each."
+  tables: [events]
+  os: all
+  params: {pivot_ts: null, window_min: 10}
+  attack: []
+  dfiq: []
+  level: informational
+  test: "returns ordered rows around pivot"
+ 
+- id: H-TL-002
+  title: First and last activity of a user on a host
+  description: "Earliest and latest event per (host, user_name) across all families, with the families involved."
+  tables: [events]
+  os: all
+  attack: []
+  dfiq: []
+  level: informational
+  test: "j.dupont first/last on WKS-042"
+ 
+- id: H-TL-003
+  title: Everything touching a file, hash, IP, domain or account
+  description: "Cross-family pivot on {value}: fs, journal, executions, network, browser, auth, persistence, detections."
+  tables: [events, iocs]
+  os: all
+  params: {value: null}
+  attack: []
+  dfiq: []
+  level: informational
+  test: "pivot on upd.exe returns 6 families"
+ 
+- id: H-TL-004
+  title: Coverage report — which families exist per host and their time span
+  description: "Per host and family: row count, min/max ts, source artifacts. Feeds gap analysis."
+  tables: [events, evidence]
+  os: all
+  attack: []
+  dfiq: []
+  level: informational
+  test: "matrix host × family with counts"
+ 
+- id: H-TL-005
+  title: Clock skew estimation between hosts
+  description: "Compare paired auth events (4624 on target vs 4648/outbound on source) to estimate per-host offset; output proposal for hosts.clock_skew_seconds."
+  tables: [auth_events, hosts]
+  os: all
+  attack: []
+  dfiq: []
+  level: informational
+  test: "WKS-042 ≈ +240s vs SRV-DC01"
+

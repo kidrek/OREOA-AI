@@ -1,0 +1,30 @@
+# Velociraptor -> browser (extensions) + persistence projection - S1.6 (lossless)
+version: 1
+source_tool: velociraptor
+artifact: Windows.Applications.Chrome.Extensions
+forensic_artifact: ChromeExtensions
+family: browser
+lossless: true
+summary_tag: extension
+summary_template: "extension {extension_name} ({extension_id}) at {target_path}"
+fields:
+  browser: {const: chrome}
+  profile: {path: Profile, type: str}
+  entry_type: {const: extension}
+  ts: {path: InstallTime, type: timestamp}
+  target_path: {path: Path, type: str}
+  target_path_norm: {path: Path, type: str, transform: path_norm}
+  extension_id: {path: ID, type: str}
+  extension_name: {path: Name, type: str}
+projections:
+  - when: {EntryType: extension}
+    family: persistence
+    consts: {mechanism: browser_extension, enabled: true}
+    summary_tag: persist
+    summary_template: "browser extension {name} installed"
+    fields:
+      name: {path: Name, type: str}
+      location: {path: Path, type: str}
+      target_path: {path: Path, type: str}
+      target_path_norm: {path: Path, type: str, transform: path_norm}
+      ts_created: {path: InstallTime, type: timestamp}

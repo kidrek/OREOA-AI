@@ -1,0 +1,7 @@
+{"EventTime": "2026-08-30T02:00:00", "Channel": "Security", "EventID": 4688, "Computer": "SRV-WEB01", "SubjectUserName": "jdupont", "NewProcessName": "C:\\Users\\jdupont\\AppData\\Local\\Temp\\invoice.exe", "CommandLine": "invoice.exe /quiet"}
+{"EventTime": "2026-08-30T02:00:05", "Channel": "Microsoft-Windows-Sysmon/Operational", "EventID": 1, "Computer": "SRV-WEB01", "Image": "C:\\Users\\jdupont\\AppData\\Local\\Temp\\invoice.exe", "CommandLine": "invoice.exe /quiet", "User": "CORP\\jdupont"}
+{"EventTime": "2026-08-30T02:02:00", "Channel": "System", "EventID": 7045, "Computer": "SRV-WEB01", "ServiceName": "WinDefendUpd", "ServiceFileName": "C:\\Windows\\Temp\\svchosts.exe", "StartType": "auto start"}
+{"EventTime": "2026-08-30T02:10:00", "Channel": "Microsoft-Windows-Sysmon/Operational", "EventID": 10, "Computer": "SRV-WEB01", "SourceImage": "C:\\Windows\\Temp\\svchosts.exe", "TargetImage": "C:\\Windows\\system32\\lsass.exe", "GrantedAccess": "0x1010", "User": "NT AUTHORITY\\SYSTEM"}
+{"EventTime": "2026-08-30T02:15:00", "Channel": "System", "EventID": 7045, "Computer": "SRV-WEB01", "ServiceName": "PSEXESVC", "ServiceFileName": "PSEXESVC.exe", "StartType": "demand start"}
+{"EventTime": "2026-08-30T02:15:10", "Channel": "Security", "EventID": 4624, "Computer": "SRV-WEB01", "LogonType": 3, "TargetUserName": "svc_sql", "IpAddress": "198.51.100.200"}
+{"EventTime": "2026-08-30T02:20:00", "Channel": "Security", "EventID": 1102, "Computer": "SRV-WEB01", "SubjectUserName": "jdupont"}

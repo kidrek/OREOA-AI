@@ -11,6 +11,7 @@ cases/
 *.dmp
 *.pcap
 *.pcapng
+!corpus/legacy_samples/*.pcap
 *.vmdk
 *.vhdx
 *.vhd
@@ -25,6 +26,10 @@ tools/
 # ---- Upstream knowledge (pinned, fetched by make update-knowledge) ----
 knowledge/upstream/
 
+# ---- Volatility symbols (downloaded/generated data; corpus ISF force-added when it lands) ----
+knowledge/custom/volatility_symbols/*
+!knowledge/custom/volatility_symbols/.gitkeep
+
 # ---- Corpus build outputs (scenarios and generators are versioned, outputs are not) ----
 corpus/out/
 
@@ -36,10 +41,15 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+dist/
+*.egg-info/
 
 # ---- Local configuration and secrets ----
 .env
 .env.*
+!.env.example
+secrets/
+.scratch/
 
 # ---- Evaluation local outputs ----
 evaluation/local/
@@ -52,3 +62,4 @@ Thumbs.db
 tmp/
 *.tmp
 *.log
+!corpus/legacy_samples/*.log

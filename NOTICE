@@ -1,74 +1,175 @@
-# NOTICE - embedded third-party licenses / mentions de licences tierces embarquees
+# NOTICE - third-party software and data shipped with OREOA-AI platform v2
 
-> **Note de transition (2026-09-04)** : ce fichier decrit l'inventaire de licences
-> de l'image `oreoa-ai-tools:1.1.0` du kit v2.1 (tag `kit-v2.1`), conserve pour
-> reference. Il sera regenere pour la stack de la plateforme v2 (spec v4 - compose,
-> workers fast/deep, nouveaux outils : Dissect, Hayabusa, Chainsaw/Zircolite,
-> capa, FLOSS, ClamAV...) avant la premiere publication de celle-ci.
+OREOA-AI platform v2 (the repository content: source code, prompts, tests,
+corpus generators, mappings) is licensed under **AGPL-3.0** (see `LICENSE`).
+Third-party components listed below are used by **simple aggregation**: they
+run as separate programs or are consumed as data, with no code linking, and
+keep their own licences. Distribution of the container images (binary
+distribution) triggers the licence notices below.
 
-## Version francaise
+Three distribution models are used, and they matter for compliance:
 
-Ce fichier recense les logiciels tiers embarques dans l'image conteneur `oreoa-ai-tools` et leurs licences. Le kit OREOA-AI lui-meme (depot) est diffuse sous licence AGPL-3.0 : la licence du depot ne s'applique pas aux logiciels tiers, qui conservent leurs propres termes (agregation simple - les programmes communiquent par ligne de commande, sans lien de code).
+1. **Baked into images** (sections 2-4): shipped inside the container images
+   built from this repository.
+2. **One-shot build/refresh images** (section 5): pulled or built on the
+   analyst's workstation, never shipped inside the platform images.
+3. **Knowledge and rule sets - never baked** (section 6): fetched on the
+   analyst's workstation by `make update-knowledge` at pinned commits,
+   recorded in `knowledge/snapshot.json`, and mounted read-only into the
+   containers. No image contains them; a recipient re-fetches the pinned
+   sources themselves.
 
-## Outils analysant les collections (image oreoa-ai-tools)
+Exact in-image inventory: per-package licence texts live inside each image
+(`/usr/local/lib/python3.12/site-packages/*.dist-info` and
+`/usr/share/doc/*/copyright`). A generated SBOM per image (syft) lands at
+work-order step 2 (CI matrix). Versions below are the `versions.env` pins at
+the time of this regeneration; every pin bump is a PR that reviews this file.
 
-| Outil | Version | Licence | Source |
-|-------|---------|---------|--------|
+## 1. Platform images (compose services)
+
+| Image | Built from | Third-party content |
+|---|---|---|
+| `oreoa/base` | `python:3.12-slim-bookworm` | Python 3.12 (PSF-2.0), Debian 12 system packages, tini, libmagic1, libewf2, zstd, ca-certificates, tzdata (section 4), pip packages (section 2) |
+| `oreoa/worker-fast` | base | + rq, redis-py, duckdb, pyarrow (section 2), baked Velociraptor mappings (repository content, AGPL-3.0) |
+| `oreoa/worker-deep` | worker-fast | skeleton at step 1; forensic toolchain lands at its work-order steps (section 5) |
+| `oreoa/mcp` | base | + mcp, redis-py, duckdb and the ASGI stack (section 2) |
+| `oreoa/fetcher` | base (profile `symbol-fetch` only) | + requests, rq, volatility3 (section 2/5) |
+| `oreoa/agent` | base + `node:22-bookworm-slim` | + OpenCode runtime (section 4) |
+| `oreoa/proxy` | `debian:bookworm-slim` | tinyproxy (section 4) |
+| `redis` (service) | `redis:8.8.2-alpine3.23` | Redis server (section 4) |
+
+No third-party content is shipped beyond the above; the hardening posture
+(non-root uid 10001, read-only rootfs, no capabilities, no Docker socket) is
+repository work and carries no third-party licence.
+
+## 2. Python dependencies (pinned per image, pip)
+
+| Package | Version pin | Licence | Used by |
+|---|---|---|---|
+| pydantic / pydantic-core | 2.13.5 | MIT | all images |
+| PyYAML | 6.0.3 | MIT | all images |
+| rq | 2.12.0 | MIT | worker-fast, fetcher |
+| redis (redis-py) | 8.1.0 | MIT | worker-fast, mcp, fetcher |
+| duckdb | 1.5.5 | MIT | worker-fast, mcp |
+| pyarrow | 25.0.1 | Apache-2.0 | worker-fast |
+| mcp (+ mcp-types) | 2.1.1 | MIT | mcp |
+| starlette / uvicorn / sse-starlette | (transitive of mcp) | BSD-3-Clause | mcp |
+| anyio / httpx2 / httpcore2 / h11 | (transitive) | MIT / BSD-3-Clause | mcp |
+| cryptography | (transitive) | Apache-2.0 or BSD-3-Clause | mcp |
+| PyJWT | (transitive) | MIT | mcp |
+| jsonschema (+ referencing, rpds-py, specifications) | (transitive) | MIT | mcp |
+| python-multipart | (transitive) | Apache-2.0 | mcp |
+| truststore | (transitive) | MIT | mcp |
+| opentelemetry-api | (transitive) | Apache-2.0 | mcp |
+| requests | (transitive) | Apache-2.0 | fetcher |
+| urllib3 | (transitive) | MIT | fetcher |
+| certifi | (transitive) | MPL-2.0 | fetcher |
+| charset-normalizer | (transitive) | MIT | fetcher |
+| idna | (transitive) | BSD-3-Clause | fetcher |
+| click | (transitive) | BSD-3-Clause | worker-fast, fetcher |
+| croniter | (transitive) | MIT | worker-fast, fetcher |
+| pefile | (transitive) | MIT | fetcher |
+| python-dateutil / six | (transitive) | Apache-2.0 / MIT | worker-fast, fetcher |
+| annotated-types / typing-extensions / typing-inspection | (transitive) | MIT / PSF-2.0 | all images |
+| attrs | (transitive) | MIT | mcp |
+| cffi / pycparser | (transitive) | MIT / BSD-3-Clause | mcp |
+| volatility3 | 2.28.0 | Volatility Software License v1.0 | fetcher (see section 6) |
+
+## 3. Forensic toolchain
+
+**Shipped today (step 1):**
+
+| Tool | Version | Licence | Where |
+|---|---|---|---|
+| volatility3 (incl. `pdbconv`) | 2.28.0 | Volatility Software License v1.0 | fetcher image (symbol conversion); deep-lane analysis at its step |
+
+**Pinned for upcoming work-order steps (not yet shipped in any image; the
+pin bump PR that ships each tool updates this file):**
+
+| Tool | Pin | Licence | Source |
+|---|---|---|---|
+| Dissect (`dissect.*`) | 3.25.1 | Apache-2.0 | https://github.com/fox-it/dissect.target |
 | plaso (log2timeline, psort) | 20260720 | Apache-2.0 | https://github.com/log2timeline/plaso |
-| volatility3 (vol) | 2.28.0 | Volatility Software License v1.0 | https://www.volatilityfoundation.org/license/vsl-v1.0 |
-| python-evtx | 0.8.1 | Apache-2.0 | https://github.com/williballenthin/python-evtx |
-| regipy | 6.3.0 | MIT | https://github.com/mkorman90/regipy |
-| evtx | 0.12.1 | MIT / Apache-2.0 (double) | https://github.com/omerbenamram/evtx |
-| The Sleuth Kit (fls, icat, mmls, fsstat, img_stat) | 4.12.1 | GPL-2.0-or-later (composants mixtes) | https://github.com/sleuthkit/sleuthkit |
-| Wireshark (tshark) | 4.4.18 | GPL-2.0-or-later | https://www.wireshark.org |
-| Suricata | 7.0.10 | GPL-2.0 | https://suricata.io (OISF) |
-| suricata-update | 1.3.3 | GPL-2.0 | https://github.com/OISF/suricata-update |
-| YARA | 4.5.2 | BSD-3-Clause | https://github.com/VirusTotal/yara |
-| hashdeep | (version Debian) | GPL-2.0-or-later | https://github.com/jessek/hashdeep |
-| lzip | (version Debian) | GPL-2.0-or-later | https://www.nongnu.org/lzip/ |
-| PyYAML | 6.0.2 | MIT | https://github.com/yaml/pyyaml |
-| pytsk3 (bindings TSK, lecture raw/E01) | 20260715 | LGPL-3.0-or-later | https://github.com/py4n6/pytsk |
-| libewf-python (bindings EWF, lecture E01) | 20240506 | LGPL-3.0-or-later | https://github.com/libyal/libewf |
+| Hayabusa | pinned at step 2 (sha256-verified release) | AGPL-3.0 | https://github.com/Yamato-Security/hayabusa |
+| Chainsaw | pinned at step 2 (sha256-verified release) | GPL-3.0 | https://github.com/WithSecureLabs/chainsaw |
+| Zircolite | pinned at step 2 (sha256-verified release) | LGPL-3.0-or-later | https://github.com/wagga40/Zircolite |
+| YARA / yara-python | 4.5.4 | BSD-3-Clause (YARA); Apache-2.0 (bindings) | https://github.com/VirusTotal/yara |
+| capa | pinned at step 2 (sha256-verified release) | Apache-2.0 | https://github.com/mandiant/capa |
+| FLOSS | pinned at step 2 (sha256-verified release) | Apache-2.0 | https://github.com/mandiant/flare-floss |
+| DIE | pinned at step 2 (sha256-verified release) | MIT | https://github.com/horsicq/DIE-engine |
+| unified-log parser | pinned at its step | see upstream at pin time | macOS deep lane |
 
-Les versions exactes et les textes de licence des paquets Debian sont embarques dans l'image (`/usr/share/doc/*/copyright`). L'inventaire factuel complet est regenere par `doctor.py test` et archive dans `docs/licences-image.txt`.
+### Volatility Software License v1.0
 
-Remarque : pytsk3 et libewf-python sont embarques comme dependances de plaso/dfVFS et exploites directement par le kit pour les images disque (raw, E01 via le support EWF de libtsk). Leurs versions sont verifiees par `doctor.py test` (imports).
+Volatility 3 is distributed under the Volatility Software License v1.0, a
+copyleft licence not recognized by OSI/SPDX. It permits free use, sharing and
+commercial building, but requires publication of "Additions": modifications
+and additions, plus any software designed to run volatility3 and interpret
+its results (the OREOA-AI wrappers fall in that scope). Compliance is
+satisfied by this repository being published under AGPL-3.0; any derivation
+keeps that guarantee if it stays published.
 
-## Regles de detection embarquees (suricata)
+## 4. Runtimes and system components (baked)
 
-| Ensemble | Contenu | Licence | Source |
-|----------|---------|---------|--------|
-| ET Open | signatures de detection (snapshot pris a la build, trie selon `config/suricata/disable.conf`) | ET Open - usage libre, attribution exigee | https://rules.emergingthreats.net |
-| Regles kit | regles de reference et de test E2E (sids 1000001+) | AGPL-3.0 (depot du kit) | `config/suricata/regles-kit.rules` |
+| Component | Version | Licence | Notes |
+|---|---|---|---|
+| Python | 3.12 (Debian slim) | PSF-2.0 | base image; Debian system packages under their own terms (`/usr/share/doc/*/copyright`) |
+| tini | Debian package | MIT | init in every image |
+| libmagic1 | Debian package | file(1) licence (BSD-style) | base |
+| libewf2 | Debian package | LGPL-3.0-or-later | EWF support for the future deep lane |
+| zstd | Debian package | BSD-3-Clause (dual BSD/GPL) | base |
+| ca-certificates | Debian package | MPL-2.0 (Mozilla bundle) | base |
+| tzdata | Debian package | public domain | base |
+| Node.js | 22 (bookworm slim) | MIT (+ bundled components) | agent image base |
+| OpenCode | 1.18.27 (npm `opencode-ai`) | MIT | agent runtime, https://github.com/anomalyco/opencode |
+| Claude Code | 2.1.260 | proprietary (Anthropic commercial terms) | optional runtime, NOT built by default (`claude-code` profile); requires the team's own Anthropic licence |
+| tinyproxy | 1.11.1-2.1+deb12u1 | GPL-2.0-or-later | egress allow-list proxy |
+| Redis | 8.8.2-alpine | RSALv2 / SSPLv1 / AGPL-3.0 (tri-licensed; the AGPL-3.0 option is used, consistent with this repository) | queue backbone, `redis:8.8.2-alpine3.23` |
 
-La trace du ruleset bake (source, SHA256, nombre de regles, date de build) est embarquee dans l'image : `/etc/suricata/kit/regles-trace.txt`. Le snapshot ET Open etant pris a la build, la reproductibilite stricte d'une image passe par le bundle air-gap (`docker save` de l'image construite).
+## 5. One-shot build/refresh images (workstation-side, never shipped)
 
-## Cas particulier : Volatility Software License v1.0
+| Image | Purpose | Licence |
+|---|---|---|
+| `oreoa/corpus-ntfs` (built from `debian:bookworm-slim` + `ntfs-3g` 1:2022.10.3-1+deb12u3) | builds the T0 NTFS corpus images, no mount | ntfs-3g: GPL-2.0-or-later (binary) / LGPL-2.1-or-later (library); Debian base packages under their own terms |
+| `clamav/clamav:1.5.4-debian13-slim` | refreshes the ClamAV signature databases inside `knowledge/upstream/clamav_db/` | ClamAV engine: GPL-2.0; signature databases (main/daily/bytecode CVD): GPL-2.0 |
 
-La licence de volatility3 (VSL v1.0) est une licence copyleft non reconnue par l'OSI ni le SPDX. Elle autorise l'usage, le partage et la construction gratuits - y compris commerciaux - mais impose la publication des "Additions" : modifications, ajouts, et tout logiciel concu pour executer volatility3 et interpreter ses resultats (les wrappers du kit tombent dans ce cas).
+## 6. Knowledge sources and rule sets (never baked - workstation fetch only)
 
-Conformite : le kit OREOA-AI est publie publiquement (depot sous AGPL-3.0), ce qui satisfait l'obligation de publication du VSL. Toute derivation du kit conserve cette garantie si elle reste publiee.
+Fetched by `make update-knowledge` at the pinned commits of
+`knowledge/snapshot.json`; mounted read-only; each session records the
+snapshot it ran with. Licences below are those recorded in the snapshot.
 
-## Image de base et chaine de build
+| Source | Licence | Compliance notes |
+|---|---|---|
+| `dfiq` (google/dfiq) | Apache-2.0 | - |
+| `forensic_artifacts` (ForensicArtifacts/artifacts) | Apache-2.0 | - |
+| `attack` (MITRE ATT&CK STIX data) | MITRE Terms of Use | attribution per MITRE terms in reports |
+| `sigma` (SigmaHQ/sigma) | Detection Rule License 1.1 | **attribution required in reports** (reporter role appendix) |
+| `hayabusa_rules` (Yamato-Security/hayabusa-rules) | custom (see upstream LICENSE) | rule set mixes sources with their own terms |
+| `chainsaw_rules` (WithSecureLabs/chainsaw `rules/`) | GPL-3.0 | data use only; no code link |
+| `yara_elastic` (elastic/protections-artifacts) | Elastic License 2.0 | **redistribution check (SPEC A5): not shipped in any image and excluded from air-gap bundles**; each analyst fetches it under their own acceptance of the Elastic License 2.0 terms |
+| `signature_base` (Neo23x0/signature-base) | custom, DRL 1.1 / mixed (see upstream LICENSE) | rules requiring external variables are excluded or maintained |
+| `lolbas` (LOLBAS-Project/LOLBAS) | GPL-3.0 (data use only) | data use only, no code link (GPL boundary respected) |
+| `gtfobins` (GTFOBins) | GPL-3.0 (data use only) | data use only |
+| `loobins` (infosecB/LOOBins) | GPL-3.0 (see upstream LICENSE) | data use only |
+| `hijacklibs` (wietze/HijackLibs) | GPL-3.0 (see upstream LICENSE) | data use only |
+| `loldrivers` (magicsword-io/LOLDrivers) | GPL-3.0 (data use only) | hashes loaded into `iocs` with `source=report:loldrivers` |
+| `lolrmm` (magicsword-io/LOLRMM) | Apache-2.0 | - |
+| `clamav_db` (official mirrors) | GPL-2.0 | database snapshot versions recorded in the snapshot |
+| `volatility_symbols` (Volatility Foundation ISF packs) | Volatility Software License v1.0 | optional `--full-symbols`; never fetched by default |
+| `volatility_symbols_custom` (analyst-generated ISFs) | carried from the generating tool | provenance + sha256 recorded in the snapshot |
 
-- Image de base : `python:3.12-slim` (Python : PSF-2.0 ; systeme Debian : composants sous GPL/LGPL/BSD selon les paquets)
-- Chaine de compilation (gcc, make, pkg-config) : GPL-3.0-or-later - utilisee pendant la construction, purgee de l'image finale
+## 7. Distribution of air-gap bundles
 
-## Distribution des bundles air-gap
+Any distributed bundle of an OREOA-AI image (removable media, internal
+share) must include this NOTICE file. The `knowledge/` tree is **not part of
+the bundle**: recipients run `make update-knowledge` themselves (accepting
+section 6 licences, including Elastic License 2.0 for `yara_elastic`).
+Repository-derived content (mappings, corpus generators, prompts, tests) is
+AGPL-3.0 like the repository. Complete machine-readable per-image inventories
+(SBOM) are generated at work-order step 2.
 
-Tout bundle d'image distribue (media amovible, partage) doit etre accompagne de ce fichier NOTICE et de `docs/licences-image.txt` (distribution binaire = obligation de mentions de licences ; les sources GPL sont disponibles via les miroirs Debian et les depots amont cites ci-dessus).
+---
 
-## Referentiels amont bakes dans l'image (donnees, licences propres)
-
-| Composant | Version | Licence | Source |
-|-----------|---------|---------|--------|
-| ForensicArtifacts (definitions d'artefacts) | release au build | Apache-2.0 | https://github.com/ForensicArtifacts/artifacts |
-| DFIQ (scenarios, facets, questions d'investigation) | branche main au build | Apache-2.0 | https://github.com/google/dfiq |
-
-Ces referentiels sont telecharges a chaque build de l'image (`scripts/fetch_referentiels.py`),
-bakes avec leur LICENSE amont et leur manifest d'integrite (`/referentiels/`), et traces
-(`/referentiels/traces/`). Ils ne sont ni modifies ni redistribues sous une autre licence :
-agregation simple, la licence amont s'applique aux donnees. Provenance et cycle de vie :
-`docs/REFERENTIELS.md`. L'inventaire factuel des empreintes est archive dans
-`docs/licences-image.txt` pour les paquets Debian ; les empreintes des referentiels sont
-dans les traces in-image et le `MANIFEST.sha256` embarque.
+Regenerated for the v2 platform stack on 2026-09-05 (work-order step 1.7,
+amendment A5), replacing the kit v2.1 (tag `kit-v2.1`) inventory.

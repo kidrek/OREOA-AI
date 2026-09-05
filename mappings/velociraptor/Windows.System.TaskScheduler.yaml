@@ -1,0 +1,19 @@
+# Velociraptor -> persistence (scheduled_task) - S1.6 (lossless)
+version: 1
+source_tool: velociraptor
+artifact: Windows.System.TaskScheduler
+forensic_artifact: WindowsScheduledTasks
+family: persistence
+lossless: true
+summary_tag: task
+summary_template: "scheduled task {name}: {target_path} ({trigger})"
+fields:
+  name: {path: Name, type: str}
+  location: {path: TaskPath, type: str}
+  target_path: {path: Action, type: str}
+  target_path_norm: {path: Action, type: str, transform: path_norm}
+  trigger: {path: Trigger, type: str}
+  enabled: {path: Enabled, type: bool}
+  run_as: {path: Author, type: str}
+consts:
+  mechanism: scheduled_task

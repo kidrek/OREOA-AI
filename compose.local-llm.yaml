@@ -1,0 +1,12 @@
+# Override: local LLM profile (docker_build_spec.md 2).
+# The agent talks to a host-side LM Studio / Ollama endpoint directly
+# (host.docker.internal), bypassing the proxy for that host only.
+# Usage: make up LLM=1  (docker compose -f compose.yaml -f compose.local-llm.yaml ...)
+services:
+  agent:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      NO_PROXY: "host.docker.internal,localhost,127.0.0.1,mcp-evidence,mcp-knowledge,mcp-case,mcp-jobs"

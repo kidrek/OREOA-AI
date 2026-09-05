@@ -1,0 +1,174 @@
+# Velociraptor -> log_events (+ semantic projections) - S1.6
+# EVTX rows are partially projected (EventData subset) => lossy: the raw row
+# stays in Parquet (raw_policy=kept) as the verbatim audit trail.
+version: 1
+source_tool: velociraptor
+artifact: Windows.EventLogs.EvtxHunter
+forensic_artifact: WindowsEventLogs
+family: log_events
+lossless: false
+summary_tag: event
+summary_template: "{channel} EID {event_id} on {computer}"
+fields:
+  ts: {path: EventTime, type: timestamp}
+  channel: {path: Channel, type: str}
+  provider: {path: Provider, type: str}
+  event_id: {path: EventID, type: str}
+  level: {path: Level, type: str}
+  computer: {path: Computer, type: str}
+  message: {path: Message, type: str}
+  fields: {path: EventData, type: json}
+  record_number: {path: EventRecordID, type: int}
+consts: {}
+projections:
+  # Sysmon EID 1 - process creation -> executions (evidence_type
+  # process_creation_log, SPEC executions family)
+  - when: {EventID: 1}
+    family: executions
+    consts: {evidence_type: process_creation_log}
+    summary_tag: exec
+    summary_template: "process created: {exe_path} (pid={pid})"
+    fields:
+      ts_first: {path: EventTime, type: timestamp}
+      exe_path: {path: "EventData.Image", type: str}
+      exe_name: {path: "EventData.Image", type: str, transform: basename}
+      exe_path_norm: {path: "EventData.Image", type: str, transform: path_norm}
+      cmdline: {path: "EventData.CommandLine", type: str}
+      pid: {path: "EventData.ProcessId", type: int}
+      ppid: {path: "EventData.ParentProcessId", type: int}
+      parent_path: {path: "EventData.ParentImage", type: str}
+      user_name: {path: "EventData.User", type: str, transform: user_name}
+  # Sysmon EID 11 - file create -> fs_journal
+  - when: {EventID: 11}
+    family: fs_journal
+    consts: {op: create}
+    summary_tag: fs
+    summary_template: "file created: {path}"
+    fields:
+      ts: {path: EventTime, type: timestamp}
+      path: {path: "EventData.TargetFilename", type: str}
+      path_norm: {path: "EventData.TargetFilename", type: str, transform: path_norm}
+      name: {path: "EventData.TargetFilename", type: str, transform: basename}
+  # Sysmon EID 23 - file delete -> fs_journal
+  - when: {EventID: 23}
+    family: fs_journal
+    consts: {op: delete}
+    summary_tag: fs
+    summary_template: "file deleted: {path}"
+    fields:
+      ts: {path: EventTime, type: timestamp}
+      path: {path: "EventData.TargetFilename", type: str}
+      path_norm: {path: "EventData.TargetFilename", type: str, transform: path_norm}
+      name: {path: "EventData.TargetFilename", type: str, transform: basename}
+  # Sysmon EID 3 - network connection -> network
+  - when: {EventID: 3}
+    family: network
+    consts: {entry_type: connection}
+    summary_tag: net
+    summary_template: "{process_name} -> {dst_ip}:{dst_port}"
+    fields:
+      ts: {path: EventTime, type: timestamp}
+      dst_ip: {path: "EventData.DestinationIp", type: str}
+      dst_port: {path: "EventData.DestinationPort", type: int}
+      pid: {path: "EventData.ProcessId", type: int}
+      process_name: {path: "EventData.Image", type: str, transform: basename}
+      user_name: {path: "EventData.User", type: str, transform: user_name}
+  # Sysmon EID 22 - DNS query -> network (dns_cache)
+  - when: {EventID: 22}
+    family: network
+    consts: {entry_type: dns_cache}
+    summary_tag: dns
+    summary_template: "dns query: {domain} from {process_name}"
+    fields:
+      ts: {path: EventTime, type: timestamp}
+      domain: {path: "EventData.QueryName", type: str}
+      pid: {path: "EventData.ProcessId", type: int}
+      process_name: {path: "EventData.Image", type: str, transform: basename}
+  # 4624 / 4625 - logons -> auth_events
+  - when: {EventID: 4624}
+    family: auth_events
+    consts: {event_type: logon_success, outcome: success}
+    summary_tag: auth
+    summary_template: "logon success type {logon_type} user {user_name} from {src_ip}"
+    fields:
+      ts: {path: EventTime, type: timestamp}
+      logon_type: {path: "EventData.LogonType", type: str}
+      user_name: {path: "EventData.TargetUserName", type: str}
+      domain: {path: "EventData.TargetDomainName", type: str}
+      src_ip: {path: "EventData.IpAddress", type: str}
+      dst_host: {path: Computer, type: str}
+      auth_package: {path: "EventData.AuthenticationPackageName", type: str}
+  - when: {EventID: 4625}
+    family: auth_events
+    consts: {event_type: logon_failure, outcome: failure}
+    summary_tag: auth
+    summary_template: "logon failure type {logon_type} user {user_name} from {src_ip}"
+    fields:
+      ts: {path: EventTime, type: timestamp}
+      logon_type: {path: "EventData.LogonType", type: str}
+      user_name: {path: "EventData.TargetUserName", type: str}
+      domain: {path: "EventData.TargetDomainName", type: str}
+      src_ip: {path: "EventData.IpAddress", type: str}
+      failure_reason: {path: "EventData.Status", type: str}
+      dst_host: {path: Computer, type: str}
+  # 4647 - explicit logoff
+  - when: {EventID: 4647}
+    family: auth_events
+    consts: {event_type: logoff, outcome: success}
+    summary_tag: auth
+    summary_template: "logoff user {user_name}"
+    fields:
+      ts: {path: EventTime, type: timestamp}
+      user_name: {path: "EventData.TargetUserName", type: str}
+      domain: {path: "EventData.TargetDomainName", type: str}
+  # 4720 / 4724 / 4732 - account lifecycle -> accounts
+  - when: {EventID: 4720}
+    family: accounts
+    consts: {}
+    summary_tag: account
+    summary_template: "account created: {user_name}"
+    fields:
+      ts_created: {path: EventTime, type: timestamp}
+      user_name: {path: "EventData.TargetUserName", type: str}
+  - when: {EventID: 4724}
+    family: accounts
+    consts: {}
+    summary_tag: account
+    summary_template: "password changed: {user_name}"
+    fields:
+      ts_password_changed: {path: EventTime, type: timestamp}
+      user_name: {path: "EventData.TargetUserName", type: str}
+  - when: {EventID: 4732}
+    family: accounts
+    consts: {}
+    summary_tag: account
+    summary_template: "{user_name} added to group {groups}"
+    fields:
+      ts_modified: {path: EventTime, type: timestamp}
+      user_name: {path: "EventData.TargetUserName", type: str}
+      groups: {path: "EventData.GroupName", type: list}
+  # 7045 - service install -> persistence (mechanism service)
+  - when: {EventID: 7045}
+    family: persistence
+    consts: {mechanism: service, enabled: true}
+    summary_tag: persist
+    summary_template: "service {name} installed: {target_path}"
+    fields:
+      ts_created: {path: EventTime, type: timestamp}
+      name: {path: "EventData.ServiceName", type: str}
+      location: {path: "EventData.ServiceName", type: str, transform: service_key}
+      target_path: {path: "EventData.ServiceFileName", type: str}
+      target_path_norm: {path: "EventData.ServiceFileName", type: str, transform: path_norm}
+      trigger: {path: "EventData.StartType", type: str}
+      run_as: {path: "EventData.AccountName", type: str}
+  # 4698 - scheduled task created -> persistence (mechanism scheduled_task)
+  - when: {EventID: 4698}
+    family: persistence
+    consts: {mechanism: scheduled_task, enabled: true}
+    summary_tag: persist
+    summary_template: "scheduled task {name} created"
+    fields:
+      ts_created: {path: EventTime, type: timestamp}
+      name: {path: "EventData.TaskName", type: str}
+      args: {path: "EventData.Content", type: str}
+      run_as: {path: "EventData.SubjectUserName", type: str}

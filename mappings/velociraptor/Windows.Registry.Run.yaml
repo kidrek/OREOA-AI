@@ -1,0 +1,18 @@
+# Velociraptor -> persistence (run_key) - S1.6 (lossless)
+version: 1
+source_tool: velociraptor
+artifact: Windows.Registry.Run
+forensic_artifact: WindowsRunKeys
+family: persistence
+lossless: true
+summary_tag: run-key
+summary_template: "run key {value_name}: {target_path}"
+fields:
+  location: {path: KeyPath, type: str}
+  name: {path: ValueName, type: str}
+  target_path: {path: Value, type: str}
+  target_path_norm: {path: Value, type: str, transform: path_norm}
+  ts_modified: {path: LastWriteTimestamp, type: timestamp}
+consts:
+  mechanism: run_key
+  enabled: true

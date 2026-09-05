@@ -1,0 +1,110 @@
+# case.yaml — état déclaratif du dossier.
+# Lu par l'agent à chaque `/case <nom>`. Modifié par l'agent uniquement via des
+# actions explicites (validation d'un constat, changement de statut d'hypothèse…),
+# jamais réécrit librement. L'analyste peut l'éditer à la main.
+#
+# Ce fichier ne contient pas la liste des archives : elle vit dans derived/manifest.json
+# (registre des preuves, empreintes, états de traitement). L'avancement par hôte
+# (dropped → inventoried → fast_done → triaged → deep_done → reviewed) vit dans state/phase.json.
+ 
+schema_version: 2
+ 
+case:
+  id: 2026-09-INC-042            # identifiant unique = nom du répertoire
+  name: "Compromission poste comptabilité"
+  type: incident                 # incident | exercice  (affiché dans le bandeau à chaque tour)
+  status: open                   # open | closed
+  created: 2026-09-03T10:15:00+02:00
+  analysts:
+    - "prenom.nom"
+  summary: >                     # 2 à 3 lignes, maintenues par l'analyste
+    Alerte EDR le 30/08 sur WKS-042 (exécution suspecte depuis %TEMP%).
+    Suspicion de latéralisation vers SRV-DC01.
+ 
+context:
+  organisation: ""
+  perimetre: ""                  # ex : site de Lyon, domaine CORP.LOCAL
+  timezone: Europe/Paris         # fuseau de référence pour l'affichage ; stockage en UTC
+  window:                        # fenêtre temporelle d'intérêt (UTC)
+    start: 2026-08-28T00:00:00Z
+    end: null
+  trigger: "Alerte EDR — processus enfant de winword.exe lancé depuis %TEMP%"
+  known_indicators: []           # IOC fournis en entrée (hash, IP, domaine…), source à préciser
+ 
+machines:
+  - hostname: WKS-042
+    role: "poste utilisateur — comptabilité"
+    os: "Windows 11 23H2"
+    ips: ["10.20.4.42"]
+    users: ["j.dupont"]
+    criticity: medium            # low | medium | high
+    evidence_ids: ["EV-001"]     # renvoie vers manifest.json
+    notes: ""
+  - hostname: SRV-DC01
+    role: "contrôleur de domaine"
+    os: "Windows Server 2022"
+    ips: ["10.20.0.10"]
+    users: []
+    criticity: high
+    evidence_ids: []
+    notes: "Collecte demandée, non reçue"
+ 
+hypotheses:
+  - id: H1
+    statement: "Accès initial par pièce jointe Office malveillante sur WKS-042"
+    status: open                 # open | confirmed | refuted
+    confidence: medium           # low | medium | high — révisée par l'analyste, proposée par l'agent
+    attck: ["T1566.001", "T1204.002"]
+    dfiq_questions: []           # ids DFIQ (ex : Q1001) pris en charge par cette hypothèse
+    supported_by: ["F1"]         # ids de findings
+    contradicted_by: []
+    stop_criteria:               # ce qui tranche l'hypothèse — l'agent ne la laisse pas ouverte indéfiniment
+      confirm: "OfficeMRU montre un .docm ouvert < 2 min avant F1 ET le fichier provient d'un téléchargement ou d'une pièce jointe"
+      refute: "Aucun document Office ouvert dans les 30 min précédant F1 ET WINWORD.EXE lancé depuis un autre vecteur"
+    next_actions:                # pistes concrètes, consommées par /analyse et le triage
+      - "Exploiter OfficeMRU et LNK Recent sur WKS-042 (EV-001)"
+      - "Vérifier l'origine du .docm : historique navigateur ou pièce jointe Outlook"
+    opened: 2026-09-03
+    closed: null
+ 
+findings:                        # constats VALIDÉS par l'analyste uniquement.
+  - id: F1                       # les pistes non validées restent dans journal.md
+    host: WKS-042
+    timestamp: 2026-08-30T02:14:11Z
+    description: "Exécution de powershell.exe -enc … enfant de WINWORD.EXE"
+    attck: ["T1059.001"]
+    evidence_ref: "EV-001 / Windows.System.Pslist + Sysmon EID 1"   # artefact précis, exploitable dans le rapport
+    record_ids: ["a3f9…", "c71b…"]   # citations vérifiées automatiquement avant écriture (record_id DuckDB)
+    from_lead: P1
+    review: accept               # verdict du rôle reviewer : accept | challenge | reject
+    validated_by: "prenom.nom"
+    validated_on: 2026-09-03
+ 
+gaps:                            # collectes manquantes identifiées (gap analysis)
+  - host: SRV-DC01
+    artifact: "WindowsEventLogSecurity"      # nom ForensicArtifacts / Velociraptor
+    reason: "Confirmer ou infirmer l'authentification depuis WKS-042 (EID 4624/4768)"
+    dfiq_question: ""
+    status: requested            # requested | received | dropped
+    requested_on: 2026-09-03
+ 
+sessions:                        # traçabilité : quels modèles ont vu ce dossier, quand, avec quelles connaissances
+  - id: S1
+    started: 2026-09-03T10:20:00+02:00
+    analyst: "prenom.nom"
+    runtime: "opencode 1.x"      # opencode | claude-code
+    llm_endpoint: "http://host.docker.internal:1234/v1"
+    models:                      # un modèle par rôle
+      analyst: "qwen2.5-32b-instruct"
+      triage: "qwen2.5-7b-instruct"
+      reviewer: "mistral-small"
+    knowledge_snapshot:          # versions des bases (make update-knowledge)
+      dfiq: "a1b2c3d"
+      forensic_artifacts: "d4e5f6a"
+      sigma: "2026-08-28"
+      attack: "v17.1"
+      yara: "2026-08-28"
+      scoring: "scoring.yaml@1"
+    commands: ["/case new", "/ingest", "/analyse"]
+ 
+

@@ -1,0 +1,19 @@
+# Velociraptor -> persistence (service) - S1.6 (lossless)
+version: 1
+source_tool: velociraptor
+artifact: Windows.Sys.Services
+forensic_artifact: WindowsServices
+family: persistence
+lossless: true
+summary_tag: service
+summary_template: "service {name}: {target_path} ({state})"
+fields:
+  name: {path: Name, type: str}
+  location: {path: Name, type: str, transform: service_key}
+  target_path: {path: PathName, type: str}
+  target_path_norm: {path: PathName, type: str, transform: path_norm}
+  trigger: {path: StartMode, type: str}
+  run_as: {path: Account, type: str}
+consts:
+  mechanism: service
+  enabled: true

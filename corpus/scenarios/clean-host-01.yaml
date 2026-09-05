@@ -1,0 +1,54 @@
+# T0 scenario - clean Windows host (S1.6)
+#
+# False-positive yardstick: benign-only activity (legitimate software in
+# legitimate paths, pre-existing autostarts OUTSIDE the incident window,
+# internal logons, corporate browsing). SPEC T0/T2: zero detections above
+# `low` on this host. No traps, no expected detections.
+version: 1
+name: clean-host-01
+kind: clean
+host:
+  hostname: WKS-077
+  fqdn: WKS-077.corp.local
+  os: windows
+  os_version: "Windows 11 Pro 23H2"
+  build: "22631"
+  arch: amd64
+  domain: CORP
+  tz: Europe/Paris
+  clock_skew_seconds: 0
+  ips: [10.20.4.77]
+users:
+  - {user_name: m.martin, user_id: "S-1-5-21-1004336348-1177238915-682003330-1103", user_id_type: sid, full_name: "Marie Martin", is_admin: false, home: "C:\\Users\\m.martin"}
+window:
+  start: "2026-08-30T01:30:00Z"
+  end: "2026-08-30T03:30:00Z"
+
+traps: {}
+
+events:
+  # Legitimate office activity
+  - {type: log_event, channel: "Microsoft-Windows-Sysmon/Operational", provider: Microsoft-Windows-Sysmon, event_id: 1, ts: "2026-08-30T02:05:00Z", computer: WKS-077.corp.local, fields: {Image: "C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE", CommandLine: "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE\" /n", User: "CORP\\m.martin", ParentImage: "C:\\Windows\\explorer.exe"}}
+  - {type: user_activity, activity_type: recent_docs, ts: "2026-08-30T02:05:10Z", target_path: "C:\\Users\\m.martin\\Documents\\budget.xlsx", source_app: EXCEL.EXE, user_name: m.martin}
+  # Legitimate system processes (System32 - not in user-writable paths)
+  - {type: log_event, channel: "Microsoft-Windows-Sysmon/Operational", provider: Microsoft-Windows-Sysmon, event_id: 1, ts: "2026-08-30T02:06:00Z", computer: WKS-077.corp.local, fields: {Image: "C:\\Windows\\System32\\svchost.exe", CommandLine: "svchost.exe -k netsvcs -p", User: "NT AUTHORITY\\SYSTEM", ParentImage: "C:\\Windows\\System32\\services.exe"}}
+  - {type: execution, source: prefetch, ts: "2026-08-30T02:06:05Z", ts_first: "2026-08-30T02:06:05Z", ts_last: "2026-08-30T02:06:05Z", run_count: 12, exe_path: "C:\\Windows\\System32\\svchost.exe"}
+  - {type: execution, source: amcache, ts: "2026-08-30T02:06:05Z", exe_path: "C:\\Windows\\System32\\svchost.exe", hash_sha256: "6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b", signer: "Microsoft Windows"}
+  # Benign internal logons (corporate IP, interactive)
+  - {type: log_event, channel: Security, provider: "Microsoft-Windows-Security-Auditing", event_id: 4624, ts: "2026-08-30T02:00:00Z", computer: WKS-077.corp.local, fields: {LogonType: 2, TargetUserName: m.martin, TargetDomainName: CORP, IpAddress: "127.0.0.1"}}
+  - {type: log_event, channel: Security, provider: "Microsoft-Windows-Security-Auditing", event_id: 4624, ts: "2026-08-30T02:30:00Z", computer: WKS-077.corp.local, fields: {LogonType: 3, TargetUserName: m.martin, TargetDomainName: CORP, IpAddress: "10.20.4.5", WorkstationName: SRV-FILE01}}
+  # Pre-existing autostarts, created long before the window (no H-PE-001 hit)
+  - {type: persistence, mechanism: run_key, ts: "2026-08-30T02:10:00Z", ts_created: "2026-07-01T09:00:00Z", ts_modified: "2026-07-01T09:00:00Z", name: OneDrive, location: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", target_path: "C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe", run_as: "CORP\\mmartin", user_name: m.martin}
+  - {type: persistence, mechanism: service, ts: "2026-08-30T02:10:00Z", ts_created: "2026-05-15T11:30:00Z", name: BITS, location: "HKLM\\SYSTEM\\CurrentControlSet\\Services\\BITS", target_path: "C:\\Windows\\System32\\svchost.exe", args: "-k netsvcs -p", run_as: LocalSystem, user_name: m.martin}
+  # Legitimate scheduled task created before the window
+  - {type: persistence, mechanism: scheduled_task, ts: "2026-08-30T02:11:00Z", ts_created: "2026-06-10T08:00:00Z", name: "Adobe Acrobat Update Task", location: "\\", target_path: "C:\\Program Files\\Common Files\\Adobe\\ARM\\1.0\\AdobeARM.exe", trigger: "daily", run_as: "CORP\\mmartin", user_name: m.martin}
+  # Benign browsing (corporate sites)
+  - {type: browser, entry_type: visit, ts: "2026-08-30T02:20:00Z", url: "https://intranet.corp.example/actualites", domain: intranet.corp.example, title: "Intranet - actualites", user_name: m.martin}
+  - {type: browser, entry_type: visit, ts: "2026-08-30T02:25:00Z", url: "https://www.microsoft.com/fr-fr/download", domain: www.microsoft.com, title: "Microsoft Download Center", user_name: m.martin}
+  # Legitimate registry activity (system values)
+  - {type: registry_value, hive: SYSTEM, key_path: "ControlSet001\\Services\\BITS", value_name: Start, value_type: REG_DWORD, value_data: "3", ts: "2026-08-30T02:12:00Z"}
+  # Routine USN noise (doc saves)
+  - {type: fs_journal, ts: "2026-08-30T02:05:30Z", op: modify, path: "C:\\Users\\m.martin\\Documents\\budget.xlsx", reason: "Data Overwrite"}
+  - {type: file, ts: "2026-08-30T02:05:00Z", path: "C:\\Users\\m.martin\\Documents\\budget.xlsx", content: "synthetic xlsx stub - oreoa T0 (clean host)", ts_created: "2026-08-29T09:00:00Z", ts_modified: "2026-08-30T02:05:30Z"}
+
+expected_detections: []

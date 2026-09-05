@@ -1,0 +1,21 @@
+# Velociraptor -> executions (prefetch) - S1.6
+# Partial projection: only Times[0]/Times[-1] are kept (not the full list)
+# => lossy, raw stays in Parquet.
+version: 1
+source_tool: velociraptor
+artifact: Windows.System.Prefetch
+forensic_artifact: WindowsPrefetchFiles
+family: executions
+lossless: false
+summary_tag: prefetch
+summary_template: "first run of {exe_path} (run_count={run_count})"
+fields:
+  ts_first: {path: "Times[0]", type: timestamp}
+  ts_last: {path: "Times[-1]", type: timestamp}
+  run_count: {path: RunCount, type: int}
+  exe_path: {path: SourceFilename, type: str}
+  exe_name: {path: SourceFilename, type: str, transform: basename}
+  exe_path_norm: {path: SourceFilename, type: str, transform: path_norm}
+  loaded_files: {path: FilesLoaded, type: list}
+  hash_sha256: {path: PrefetchHash, type: str}
+  evidence_type: {const: prefetch}

@@ -1,0 +1,19 @@
+# Velociraptor -> user_activity (RecentDocs / LNK traces) - S1.6 (lossless)
+# The activity type is the last KeyPath segment (generator contract).
+version: 1
+source_tool: velociraptor
+artifact: Windows.Registry.RecentDocs
+forensic_artifact: WindowsRecentDocs
+family: user_activity
+lossless: true
+summary_tag: activity
+summary_template: "{activity_type}: {target_path}"
+fields:
+  activity_type: {path: KeyPath, type: str, transform: tail_after_backslash}
+  ts: {path: LastWriteTimestamp, type: timestamp}
+  ts_desc: {const: accessed}
+  target_path: {path: ValueName, type: str}
+  target_path_norm: {path: ValueName, type: str, transform: path_norm}
+  target_name: {path: ValueName, type: str, transform: basename}
+  source_app: {path: ValueData, type: str}
+consts: {}

@@ -16,8 +16,9 @@ registered for all evidences of a host is ``ok``, the host phase becomes
 ``fast_done`` and a single ``[pipeline]`` line is appended to ``journal.md``
 (state-based notification - the analyst/roles read state through MCP; no
 pub/sub). The ``triage`` role is then triggered by the analyst / ingest role
-seeing the phase. Step implementations are work-order step 2+: this harness
-ships the plumbing with explicit placeholder handlers.
+seeing the phase. The fast-lane ``parse`` step ships its first implementation
+at S1.6 (Velociraptor archives, ``src/oreoa/parse_velociraptor.py``); other
+steps are work-order step 2+: the harness ships explicit placeholders.
 
 Concurrency: replicas are set at launch time (``make up`` passes
 ``--scale worker-fast=$WORKER_FAST_REPLICAS``). Shared writes
@@ -175,9 +176,15 @@ def journal_append(cdir: Path, line: str) -> None:
 
 
 def _fast_complete(steps: dict) -> bool:
-    """Fast lane done for an evidence: every registered fast step is ok."""
+    """Fast lane done for an evidence: every registered fast step is done.
+
+    ``skipped`` counts as done: an explicitly skipped step (not applicable
+    to this evidence kind, S1.6 parse contract) leaves nothing pending.
+    """
     registered = [name for name in steps if name in FAST_STEPS]
-    return bool(registered) and all(steps[name].status == "ok" for name in registered)
+    return bool(registered) and all(
+        steps[name].status in ("ok", "skipped") for name in registered
+    )
 
 
 def sync_phase(cdir: Path, manifest) -> list[str]:
@@ -281,6 +288,8 @@ def run_step(envelope: dict) -> dict:
         _save_manifest(cdir, manifest)
 
     details: dict = {}
+    status, error = "ok", ""
+    notifications: list[str] = []
     try:
         handler = HANDLERS.get(env.job_type)
         if handler is not None:
@@ -290,7 +299,9 @@ def run_step(envelope: dict) -> dict:
                 "note": f"step {env.job_type!r} lands at work-order step 2+ "
                 "(skeleton harness only)"
             }
-        status, error = "ok", ""
+    except SkipStep as skip:
+        status, error = "skipped", ""
+        details = {"note": str(skip)}
     except Exception as exc:  # noqa: BLE001 - failure is a manifest status
         status, error, details = "failed", f"{type(exc).__name__}: {exc}", {}
 
@@ -316,10 +327,57 @@ def run_step(envelope: dict) -> dict:
     }
 
 
-HANDLERS: dict[str, Callable] = {}
-# Step implementations land at work-order step 2+ (fast lane parsers, deep
-# lane tools, unlock); unlisted steps run the harness placeholder and report
-# it in their manifest details.
+class SkipStep(Exception):
+    """Explicit skip: the step does not apply to this evidence (journaled
+    in the manifest step details, distinct from a failure)."""
+
+
+def _step_parse(cdir: Path, env) -> dict:
+    """Fast-lane parse step (S1.6): Velociraptor archives only for now.
+
+    - verifies the evidence sha256 against the manifest (tamper defence);
+    - other evidence kinds are an explicit skip (their parsers land at
+      work-order steps 2/4).
+    """
+    from oreoa import parse_velociraptor
+
+    manifest = _load_manifest(cdir)
+    evidence = manifest.get_evidence(env.ev_id)
+    if evidence.kind != "archive_velociraptor":
+        raise SkipStep(
+            f"no parser for evidence kind {evidence.kind!r} at S1.6 "
+            "(Velociraptor only; other parsers land at work-order steps 2/4)"
+        )
+    if not evidence.files:
+        raise ValueError(f"{env.ev_id}: no evidence file registered")
+    evidence_file = cdir / evidence.files[0].path
+    if not evidence_file.is_file():
+        raise FileNotFoundError(f"missing evidence file {evidence_file}")
+    import hashlib
+
+    digest = hashlib.sha256()
+    with open(evidence_file, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    actual = digest.hexdigest()
+    if actual != evidence.files[0].sha256:
+        raise ValueError(
+            f"{env.ev_id}: evidence sha256 mismatch (manifest "
+            f"{evidence.files[0].sha256[:12]}... vs actual {actual[:12]}...) - "
+            "possible tampering, refusing to parse"
+        )
+    return parse_velociraptor.parse_archive(
+        evidence_file,
+        case_id=env.case_id,
+        ev_id=env.ev_id,
+        host=evidence.host,
+        case_dir=cdir,
+    )
+
+
+HANDLERS: dict[str, Callable] = {
+    "parse": _step_parse,
+}
 
 
 def redis_connection():

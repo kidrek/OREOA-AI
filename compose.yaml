@@ -115,6 +115,7 @@ services:
     depends_on: [redis]
     environment:
       OREOA_CASES: /cases
+      OREOA_MAPPINGS_DIR: /oreoa/mappings
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_PASSWORD_FILE: /run/secrets/redis_password
@@ -144,6 +145,7 @@ services:
     depends_on: [redis]
     environment:
       OREOA_CASES: /cases
+      OREOA_MAPPINGS_DIR: /oreoa/mappings
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_PASSWORD_FILE: /run/secrets/redis_password

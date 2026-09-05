@@ -1,0 +1,18 @@
+# Velociraptor -> registry (generic values) - S1.6 (lossless)
+version: 1
+source_tool: velociraptor
+artifact: Windows.Registry.AllValues
+forensic_artifact: WindowsRegistryValues
+family: registry
+lossless: true
+summary_tag: registry
+summary_template: "{hive}\\{key_path}\\{value_name} = {value_data}"
+fields:
+  hive: {path: Hive, type: str}
+  key_path: {path: KeyPath, type: str}
+  key_path_norm: {path: KeyPath, type: str, transform: path_norm}
+  value_name: {path: ValueName, type: str}
+  value_type: {path: ValueType, type: str}
+  value_data: {path: ValueData, type: str}
+  ts_last_write: {path: LastWriteTimestamp, type: timestamp}
+consts: {}

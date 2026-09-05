@@ -1,0 +1,20 @@
+# Velociraptor -> executions (amcache) - S1.6
+# Every source field is projected to a leaf column => lossless
+# (round-trip tested, raw omitted).
+version: 1
+source_tool: velociraptor
+artifact: Windows.Sys.Amcache
+forensic_artifact: WindowsAmcache
+family: executions
+lossless: true
+summary_tag: amcache
+summary_template: "amcache entry: {exe_path}"
+fields:
+  ts_last: {path: FileKeyLastWriteTimestamp, type: timestamp}
+  exe_path: {path: Path, type: str}
+  exe_name: {path: Name, type: str}
+  exe_path_norm: {path: Path, type: str, transform: path_norm}
+  hash_sha256: {path: Sha256, type: str}
+  signer: {path: Signer, type: str}
+consts:
+  evidence_type: amcache

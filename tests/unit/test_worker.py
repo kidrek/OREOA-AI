@@ -83,11 +83,25 @@ def test_run_step_writes_manifest_and_phase(case: Path):
 
 
 def test_run_step_placeholder_details(case: Path):
-    result = worker.run_step(envelope(job_type="parse"))
+    # `parse` is implemented since S1.6 (Velociraptor archives, explicit skip
+    # for other kinds) - the placeholder contract is asserted on a step that
+    # is still a skeleton (sigma, work-order step 2).
+    result = worker.run_step(envelope(job_type="sigma"))
     assert result["status"] == "ok"
     manifest = load_manifest(case / "derived" / "manifest.json")
-    details = manifest.get_evidence("EV-001").steps["parse"].details
+    details = manifest.get_evidence("EV-001").steps["sigma"].details
     assert "step 2" in details["note"]
+
+
+def test_run_step_parse_skips_non_velociraptor(case: Path):
+    """S1.6: parse is a real handler - non-Velociraptor kinds are an
+    explicit skip journaled in the manifest details."""
+    result = worker.run_step(envelope(job_type="parse"))
+    assert result["status"] == "skipped"
+    manifest = load_manifest(case / "derived" / "manifest.json")
+    step = manifest.get_evidence("EV-001").steps["parse"]
+    assert step.status == "skipped"
+    assert "no parser" in step.details["note"]
 
 
 def test_run_step_revalidates_envelope(case: Path):

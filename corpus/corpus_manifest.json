@@ -1,0 +1,44 @@
+{
+  "artifacts": [
+    {
+      "file": "out/clean-host-01/clean-host-01.velociraptor.zip",
+      "kind": "archive_velociraptor",
+      "scenario": "clean-host-01",
+      "sha256": "1e0e59c4cc462bbf0c7dba502dd720ff66f891bcbed4aa158edfdde681ee25a5",
+      "size_bytes": 37664
+    },
+    {
+      "file": "out/clean-host-01/clean-host-01.kape.zip",
+      "kind": "archive_kape",
+      "scenario": "clean-host-01",
+      "sha256": "5acfd6f7e9a6d54b850f472311b2842988000842df4319faab569a4990daaca9",
+      "size_bytes": 1401
+    },
+    {
+      "file": "out/win-workstation-01/win-workstation-01.velociraptor.zip",
+      "kind": "archive_velociraptor",
+      "scenario": "win-workstation-01",
+      "sha256": "762a2ea311b0e7eafd5d889065687cd5aa06aa1bfebd2efba84d3394cf846b53",
+      "size_bytes": 51348
+    },
+    {
+      "file": "out/win-workstation-01/win-workstation-01.kape.zip",
+      "kind": "archive_kape",
+      "scenario": "win-workstation-01",
+      "sha256": "49b8b056997f8117014933947ac17df67c9ca7204b78df94303d86ac38dbb0f0",
+      "size_bytes": 1703
+    },
+    {
+      "file": "out/win-workstation-01/win-workstation-01.disk.img",
+      "kind": "disk_image",
+      "scenario": "win-workstation-01",
+      "sha256": "67b9068d0a9a6d1e8d6f1a593318bebebdccbaa9a4203c9fdb7e6a239393b58b",
+      "size_bytes": 67108864
+    }
+  ],
+  "scenarios_sha256": {
+    "clean-host-01": "8b6ec9a0b0274b98b600c44a3388b36454a8a4c740aaa8cfcf375ca11ce28868",
+    "win-workstation-01": "3d4dce6bc3142108dd885877564d60e30911dc41063c32ae4febe18e01d14619"
+  },
+  "schema_version": 1
+}

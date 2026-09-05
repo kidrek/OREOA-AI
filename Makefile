@@ -9,8 +9,8 @@ export
 
 .DEFAULT_GOAL := help
 
-.PHONY: help secrets build build-base pins update-knowledge runtime-config \
-        up down shell case-new test test-infra lint-compose sbom scan \
+.PHONY: help secrets build build-base pins update-knowledge corpus corpus-image \
+        runtime-config up down shell case-new test test-infra lint-compose sbom scan \
         clean-derived image-sizes
 
 help: ## Show targets
@@ -38,6 +38,15 @@ pins: ## Resolve/refresh versions.env pins (scripts/make_pins.py; use YES=1 to s
 
 update-knowledge: ## Fetch pinned knowledge sources on the host (step 1.5)
 	python3 scripts/update_knowledge.py $(FLAGS)
+
+corpus: ## Build the T0 synthetic corpus from corpus/scenarios/ (step 1.6; --no-image to skip the raw NTFS images)
+	python3 scripts/build_corpus.py $(FLAGS)
+
+corpus-image: ## Build the one-shot ntfs-3g image used by make corpus
+	docker build -f docker/corpus-ntfs/Dockerfile \
+		--build-arg DEBIAN_IMAGE="$(DEBIAN_IMAGE)" \
+		--build-arg NTFS3G_VERSION="$(NTFS3G_VERSION)" \
+		-t oreoa/corpus-ntfs:$(TAG) .
 
 runtime-config: ## Render opencode.json + .claude/ from agents/ and commands/ (step 1.2)
 	python3 -m oreoa.runtime_config render

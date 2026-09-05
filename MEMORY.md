@@ -29,16 +29,15 @@ perdue - mise a jour de ce fichier + append du journal AVANT l'etape suivante.
 | 6 | S1.3 - modeles + DuckDB : vocab/normalize/manifest_model/jobs_model, db.py migration v1 (11 familles materialisees + events + vues de tiers, load idempotent, find_raw) ; 94/94 T1, 21/21 T5 | termine | 2026-09-04 |
 | 7 | S1.4 - pipeline Redis/RQ + 4 MCP : worker.py (harnais fast/deep, manifest/phase + flock, fast_done notifie, timeouts), mcp_server.py (evidence/case/jobs/knowledge streamable HTTP :8000 stateless), jobs_model etendu, requirements-mcp, compose REDIS+OREOA_CASES, T3 (33) + 2 smokes T5 reels (ACL rq validee) ; 140/140 T1+T3, 23/23 T5 | termine | 2026-09-04 |
 | 8 | S1.5 - update-knowledge + loader DFIQ interne + fetcher : gen_internal_dfiq.py (54 objets commites S0001/F0001-F0006/Q0001-Q0047 v1.1.0), dfiq_loader.py (parseur v1.1.0 officiel+interne, package dfiq ecarte - donnees pinniees inchargeables par lui), update_knowledge.py (14 sources + clamav one-shot par defaut, snapshot.json, run reel OK), fetcher.py complet (refus pre-reseau, ISF+provenance), mcp-knowledge dfiq_list/dfiq_get, seed monte ro mcp-evidence+knowledge ; 200/200 (138 T1 + 37 T3 + 25 T5) | termine | 2026-09-04 |
+| 9 | S1.6 - corpus T0 Windows : scenarios declaratifs (win-workstation-01 couvrant 49 hunts Windows fast + clean-host-01), generateurs deterministes (Velociraptor offline-collector JSONL + KAPE Module_Output CSV + image NTFS raw v0 via conteneur one-shot corpus-ntfs + patcheur MFT sans montage), 9 mappings velociraptor + parse_velociraptor (projections EID->familles, record_id, raw_policy) + step parse branche worker (skip explicite autres kinds, refused si hash mismatch, skipped compte fait pour fast_done) ; image byte-reproductible (serial/timestamps/INDX normalises, timestomping SI 2019 vs FN 2026 plante) ; 247/247 (T1+T3 217 + T5 30, 1 skip) ; artefacts : corpus_manifest.json commite, mappings/ bake worker-fast | termine | 2026-09-05 |
 
 ## Prochaine action
 
-**S1.6 - corpus T0 Windows** : generateurs declaratifs `corpus/scenarios/*.yaml`
-(host, users, timeline d'evenements plantes, detections attendues) + build
-`make corpus` (archive Velociraptor, archive KAPE, image disque, echantillon
-memoire avec ISF dans knowledge/custom/volatility_symbols/, hote propre sans
-evenement plante, hash du corpus versionne) ; premier jeu de parsers fast lane
-(Velociraptor JSONL -> Parquet via mappings YAML). Puis S1.7 (spike seuils A3,
-NOTICE stack v2 A5, `make test` T1+T3 + T5 vert, fiches vault, PR `v2`->`main`).
+**S1.7 - cloture etape 1** : spike seuils A3 (`evaluation/thresholds.yaml`
+recalibre par PR), NOTICE stack v2 (amendement A5), `make test` T1+T3 + T5
+vert, fiches vault, PR `v2`->`main`. Puis jalon dur etape 2 : affaire
+d'exercice reelle (une semaine d'usage) - corpus multi-hote plante a ce
+moment (H-LM-001 declare deep dans le scenario).
 
 ## Decisions verrouillees
 
@@ -80,6 +79,26 @@ NOTICE stack v2 A5, `make test` T1+T3 + T5 vert, fiches vault, PR `v2`->`main`).
     v1.1.0 versionne contre DFIQ_COMMIT (le package ne charge pas les
     donnees pinniees, faits journalises) ; fetcher sans mount cases
     (journal = stdout + provenance)
+15. S1.6 arbitres (3 points avec l'analyste) : memoire+ISF, E01, chiffrement
+    (BitLocker/LUKS2), VSS et .pf binaires REPORTES au sub-step deep lane
+    (le signal fast voyage dans le JSONL Velociraptor ; raw EVTX/hives sans
+    consommateur avant plaso) ; build corpus = Python hote + conteneur
+    one-shot pinne pour les steps NTFS (pattern ClamAV S1.5,
+    NTFS3G_VERSION dans versions.env, sans montage ni privileged) ; parsers
+    S1.6 = Velociraptor seul (les quick parsers KAPE MFT/USN/Amcache CSV
+    sont l'etape 2) ; rows shapes Velociraptor = convention documentee dans
+    corpus_gen/velociraptor.py, a confirmer sur une vraie collecte a
+    l'etape 2 ; image v0 = fichiers a la racine (ntfs-3g sans mkdir),
+    arborescence declarative dans MFT.csv
+16. S1.6 technique : determinisme image NTFS = patcheur MFT (serial boot
+    derive du scenario, SI/FN de tous les records, INDEX_ROOT + buffers
+    INDX balayes au-dela de l'horizon = fin de fenetre scenario,
+    $LogFile/$UsnJrnl:$J zeroes, $MFTMirr reecrit) - timestomping = SI forge
+    via si_created/si_modified du scenario, FN garde les temps reels ;
+    parse step : kinds non-velociraptor = SkipStep explicite, sha256
+    reverifie avant parse, uploads JAMAUS extraits (l'extract etape 2 en
+    est responsable) ; `skipped` compte comme fait pour fast_done ;
+    mappings/ bake dans worker-fast (/oreoa/mappings + OREOA_MAPPINGS_DIR)
 
 ## Limites connues
 
@@ -89,11 +108,14 @@ NOTICE stack v2 A5, `make test` T1+T3 + T5 vert, fiches vault, PR `v2`->`main`).
   question->hunt deja derivable du seed)
 - `velociraptor_artifacts` : pas de pin versions.env (reference only) -
   a pinner quand les mappings velociraptor en ont besoin (etape 2)
+- Corpus T0 : memoire+ISF, E01, chiffrement, VSS et .pf binaires reportes au
+  sub-step deep lane (decision 15) ; rows shapes Velociraptor synthetiques a
+  confronter a une vraie collecte (etape 2) ; image v0 sans arborescence
+  (fichiers a la racine, arborecence declarative dans MFT.csv)
 - `--nsrl` refuse jusqu'au pin NIST (arbitrage architecte requis) ;
   `--full-symbols` exige les sha256 VOL_SYMBOLS_* (vides aujourd'hui)
 - Fiches knowledge migrees (kit v2.1 : `dt`, `doctor`, manifest) - relecture
   a la restructuration en packs OS (etapes 2-4)
-- Corpus legacy = echantillons statiques - remplacer par le corpus T0 (S1.6)
 - Groupe docker : effectif a l'ouverture d'une nouvelle session (lessons #10)
 - `steps` du manifest : cles libres - liste fermee a l'implementation (S2)
 - `events` : table prete en v1, rebuild incremental avec les mappings (etape 2)

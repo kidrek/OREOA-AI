@@ -1,0 +1,24 @@
+# Velociraptor -> browser (history visits + downloads) - S1.6 (lossless)
+# Extension rows live in Windows.Applications.Chrome.Extensions.
+version: 1
+source_tool: velociraptor
+artifact: Windows.Applications.Chrome.History
+forensic_artifact: ChromeHistory
+family: browser
+lossless: true
+summary_tag: browser
+summary_template: "{entry_type}: {url}"
+fields:
+  browser: {const: chrome}
+  profile: {path: Profile, type: str}
+  entry_type: {path: EntryType, type: str}
+  ts: {path: VisitTime, type: timestamp}
+  url: {path: URL, type: str}
+  domain: {path: Domain, type: str}
+  title: {path: Title, type: str}
+  visit_count: {path: VisitCount, type: int}
+  target_path: {path: TargetPath, type: str}
+  target_path_norm: {path: TargetPath, type: str, transform: path_norm}
+  size: {path: TotalBytes, type: int}
+  state: {path: State, type: str}
+consts: {}

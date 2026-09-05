@@ -356,3 +356,55 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   images reconstruites (base->worker-fast->mcp->fetcher), loader valide en
   conteneur reel avec l'arbre monte (47 internes + 90 officiels). Prochaine
   action : S1.6 (corpus T0 Windows)
+- 2026-09-05 -- S1.6 - corpus T0 Windows (3 arbitrages avec l'analyste :
+  report memoire/ISF + chiffrement + VSS + E01 au sub-step deep lane -
+  le signal fast voyage dans le JSONL Velociraptor, raw EVTX/hives/.pf sans
+  consommateur avant plaso ; build corpus = Python hote + conteneur one-shot
+  pinne pour les steps NTFS (pattern ClamAV S1.5, NTFS3G_VERSION
+  1:2022.10.3-1+deb12u3 ajoutee a versions.env) ; parsers S1.6 = Velociraptor
+  seul, les quick parsers KAPE CSV sont l'etape 2). Cree :
+  `corpus/scenarios/{win-workstation-01,clean-host-01}.yaml` (schema Pydantic
+  `corpus_gen/scenario.py` : 8 types d'evenements, repeat deterministe avec
+  substitution {i}, expected_detections lane fast/step2/deep, traps
+  hallucination+prompt-injection declarees ; 49 hunts Windows couverts - 46
+  fast, 3 deferres avec raison dont H-LM-001 multi-hote plante au jalon
+  etape 2 ; 1080 evenements etendus vs 15 pour l'hote propre) ;
+  `corpus_gen/velociraptor.py` (archive offline collector : results/*.json
+  JSONL 10 artefacts - EvtxHunter/Prefetch/Amcache/Run/Services/
+  TaskScheduler/AllValues/RecentDocs/Chrome History/Chrome Extensions -
+  client_info.json, uploads + pieges SPEC T0 : zip-slip, bombe 32MB
+  compressible, paire tamper hash declare != reel, _OREOA_TRAPS.json) ;
+  `corpus_gen/kape.py` (Module_Output CSV : MFT.csv avec sets SI/FN separes
+  pour H-AF-003, USN.csv, Amcache.csv ; raw EVTX/hives/.pf reportes,
+  README dans l'archive) ; `corpus_gen/ntfs.py` + `docker/corpus-ntfs/`
+  (mkntfs+ntfscp sur fichiers reguliers, --user hote, sans montage ni
+  privileged ; patcheur MFT cote hote : serial boot derive du scenario,
+  SI/FN de tous les records - skip parent $FILE_NAME corrige en route,
+  INDEX_ROOT + buffers INDX balayes au-dela de l'horizon = fin de fenetre
+  scenario, $LogFile/$UsnJrnl:$J zeroes, $MFTMirr reecrit ; timestomping
+  plante : upd.exe SI 2019 vs FN 2026) ; `corpus_gen/builder.py` +
+  `scripts/build_corpus.py` + Makefile (corpus, corpus-image) ;
+  `corpus/corpus_manifest.json` commite (sha256 scenarios + artefacts ;
+  double build = hashes identiques, image NTFS byte-reproductible) ;
+  `mappings/velociraptor/*.yaml` (9 mappings : EvtxHunter lossy avec 11
+  projections EID->familles executions/fs_journal/network/auth_events/
+  accounts/persistence, Prefetch lossy (Times partiel), 7 lossless) ;
+  `src/oreoa/mappings.py` (loader strict : famille/colonne/transform/type,
+  transforms basename/path_norm/user_name/service_key/tail_after_backslash,
+  type json, summary template <= 160c) ; `src/oreoa/parse_velociraptor.py`
+  (zip -> results JSONL -> core+famille, record_id sha256
+  ev_id|FA_artifact|source_ref line:N[:famille], projections avec
+  derived_from, raw selon lossless, extra = cles non referencees, Parquet +
+  load DuckDB idempotent + vues ; uploads jamais extraits, zip-slip refuse
+  sur results) ; worker : HANDLERS['parse'] (skip explicite autres kinds,
+  sha256 reverifie avant parse - tamper refuse), `skipped` compte fait pour
+  fast_done ; compose OREOA_MAPPINGS_DIR + mappings bake worker-fast.
+  Corrections en route : regex hunt H-[A-Z0-9]{2} (C2, lecon S1.5),
+  ntfscp -f (minuscule), truncate avant mkntfs, chemin absolu du bind,
+  out_name passe au conteneur, visibilite retardee des ecrits docker
+  (wait actif + tests T5 sur .scratch/workspace). Vert : 247/247 (T1+T3
+  217 dont 47 nouveaux, T5 30+1 skip existant ; corpus-ntfs : validite,
+  timestomping, serial, double build identique). Artefacts reellement
+  construits et commites (manifest) : 2 archives VR, 2 archives KAPE,
+  1 image NTFS 64MB. Prochaine action : S1.7 (cloture etape 1 : seuils A3,
+  NOTICE A5, PR v2->main)

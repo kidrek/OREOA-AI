@@ -449,7 +449,7 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   4 cles requises, valeurs > 0, additives, refus non-mapping/zero/negatif.
   Vert : 260/260 (T1+T3 231 dont 14 nouveaux + T5 29, 0 skip - image fetcher
   reconstruite ; le 30+1 de S1.6 = erreur de saisie, la suite T5 n'a pas
-  change depuis 978df48). PR v2->main preparee et mergee : jalon etape 1
+  change depuis 978df48). merge --no-ff sur main = 2a6206c (gh absent, pas de token API - merge local arbitre avec l analyste, objet PR non cree) : jalon etape 1
   qualifie (SPEC work order 2 - Windows end-to-end + une semaine d'usage
   reel d'affaire d'exercice avant de continuer ; corpus multi-hote plante
   a ce moment, H-LM-001 declare deep). Prochaine action : etape 2

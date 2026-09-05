@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-09-05T11:49:20+00:00",
+  "git_sha": "978df48b33af32d0edb61641ce73ed0d8fae959b",
+  "case_id": "measure-thresholds-1",
+  "method": "compose run worker-fast (real Redis ACL + RQ burst drain, concurrency 1) over the T0 corpus evidences",
+  "perimeter": {
+    "steps": [
+      "hash",
+      "detect",
+      "inventory",
+      "parse"
+    ],
+    "notes": [
+      "hash/detect/inventory are skeleton steps (no handler yet): measured wall includes the full RQ round trip, no tool work",
+      "parse is real for archive_velociraptor, explicit SkipStep for archive_kape/disk_image",
+      "sigma/yara/clamav/events/hunts/rank_signals land at step 2 - re-measure there before relying on these numbers"
+    ]
+  },
+  "enqueue_s": 0.0126,
+  "lane_wall_s": 1.558,
+  "duckdb_bytes": 4730880,
+  "parquet_bytes": 398722,
+  "parquet_files": 17,
+  "steps": [
+    {
+      "ev_id": "EV-901",
+      "kind": "archive_velociraptor",
+      "host": "win-workstation-01",
+      "job_type": "hash",
+      "status": "ok",
+      "handler_s": 0.0071,
+      "note": "step 'hash' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-901",
+      "kind": "archive_velociraptor",
+      "host": "win-workstation-01",
+      "job_type": "detect",
+      "status": "ok",
+      "handler_s": 0.0012,
+      "note": "step 'detect' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-901",
+      "kind": "archive_velociraptor",
+      "host": "win-workstation-01",
+      "job_type": "inventory",
+      "status": "ok",
+      "handler_s": 0.0008,
+      "note": "step 'inventory' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-901",
+      "kind": "archive_velociraptor",
+      "host": "win-workstation-01",
+      "job_type": "parse",
+      "status": "ok",
+      "handler_s": 0.4925,
+      "note": ""
+    },
+    {
+      "ev_id": "EV-902",
+      "kind": "archive_kape",
+      "host": "win-workstation-01",
+      "job_type": "hash",
+      "status": "ok",
+      "handler_s": 0.0008,
+      "note": "step 'hash' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-902",
+      "kind": "archive_kape",
+      "host": "win-workstation-01",
+      "job_type": "detect",
+      "status": "ok",
+      "handler_s": 0.0009,
+      "note": "step 'detect' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-902",
+      "kind": "archive_kape",
+      "host": "win-workstation-01",
+      "job_type": "inventory",
+      "status": "ok",
+      "handler_s": 0.0008,
+      "note": "step 'inventory' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-902",
+      "kind": "archive_kape",
+      "host": "win-workstation-01",
+      "job_type": "parse",
+      "status": "skipped",
+      "handler_s": 0.0216,
+      "note": "no parser for evidence kind 'archive_kape' at S1.6 (Velociraptor only; other parsers land at work-order steps 2/4)"
+    },
+    {
+      "ev_id": "EV-903",
+      "kind": "disk_image",
+      "host": "win-workstation-01",
+      "job_type": "hash",
+      "status": "ok",
+      "handler_s": 0.0012,
+      "note": "step 'hash' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-903",
+      "kind": "disk_image",
+      "host": "win-workstation-01",
+      "job_type": "detect",
+      "status": "ok",
+      "handler_s": 0.0009,
+      "note": "step 'detect' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-903",
+      "kind": "disk_image",
+      "host": "win-workstation-01",
+      "job_type": "inventory",
+      "status": "ok",
+      "handler_s": 0.0009,
+      "note": "step 'inventory' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-903",
+      "kind": "disk_image",
+      "host": "win-workstation-01",
+      "job_type": "parse",
+      "status": "skipped",
+      "handler_s": 0.02,
+      "note": "no parser for evidence kind 'disk_image' at S1.6 (Velociraptor only; other parsers land at work-order steps 2/4)"
+    },
+    {
+      "ev_id": "EV-904",
+      "kind": "archive_velociraptor",
+      "host": "clean-host-01",
+      "job_type": "hash",
+      "status": "ok",
+      "handler_s": 0.0008,
+      "note": "step 'hash' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-904",
+      "kind": "archive_velociraptor",
+      "host": "clean-host-01",
+      "job_type": "detect",
+      "status": "ok",
+      "handler_s": 0.0009,
+      "note": "step 'detect' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-904",
+      "kind": "archive_velociraptor",
+      "host": "clean-host-01",
+      "job_type": "inventory",
+      "status": "ok",
+      "handler_s": 0.001,
+      "note": "step 'inventory' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-904",
+      "kind": "archive_velociraptor",
+      "host": "clean-host-01",
+      "job_type": "parse",
+      "status": "ok",
+      "handler_s": 0.3293,
+      "note": ""
+    },
+    {
+      "ev_id": "EV-905",
+      "kind": "archive_kape",
+      "host": "clean-host-01",
+      "job_type": "hash",
+      "status": "ok",
+      "handler_s": 0.001,
+      "note": "step 'hash' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-905",
+      "kind": "archive_kape",
+      "host": "clean-host-01",
+      "job_type": "detect",
+      "status": "ok",
+      "handler_s": 0.001,
+      "note": "step 'detect' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-905",
+      "kind": "archive_kape",
+      "host": "clean-host-01",
+      "job_type": "inventory",
+      "status": "ok",
+      "handler_s": 0.001,
+      "note": "step 'inventory' lands at work-order step 2+ (skeleton harness only)"
+    },
+    {
+      "ev_id": "EV-905",
+      "kind": "archive_kape",
+      "host": "clean-host-01",
+      "job_type": "parse",
+      "status": "skipped",
+      "handler_s": 0.0211,
+      "note": "no parser for evidence kind 'archive_kape' at S1.6 (Velociraptor only; other parsers land at work-order steps 2/4)"
+    }
+  ],
+  "failures": [],
+  "totals_by_step_s": {
+    "detect": 0.0049,
+    "hash": 0.0109,
+    "inventory": 0.0045,
+    "parse": 0.8845
+  }
+}

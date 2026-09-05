@@ -30,14 +30,19 @@ perdue - mise a jour de ce fichier + append du journal AVANT l'etape suivante.
 | 7 | S1.4 - pipeline Redis/RQ + 4 MCP : worker.py (harnais fast/deep, manifest/phase + flock, fast_done notifie, timeouts), mcp_server.py (evidence/case/jobs/knowledge streamable HTTP :8000 stateless), jobs_model etendu, requirements-mcp, compose REDIS+OREOA_CASES, T3 (33) + 2 smokes T5 reels (ACL rq validee) ; 140/140 T1+T3, 23/23 T5 | termine | 2026-09-04 |
 | 8 | S1.5 - update-knowledge + loader DFIQ interne + fetcher : gen_internal_dfiq.py (54 objets commites S0001/F0001-F0006/Q0001-Q0047 v1.1.0), dfiq_loader.py (parseur v1.1.0 officiel+interne, package dfiq ecarte - donnees pinniees inchargeables par lui), update_knowledge.py (14 sources + clamav one-shot par defaut, snapshot.json, run reel OK), fetcher.py complet (refus pre-reseau, ISF+provenance), mcp-knowledge dfiq_list/dfiq_get, seed monte ro mcp-evidence+knowledge ; 200/200 (138 T1 + 37 T3 + 25 T5) | termine | 2026-09-04 |
 | 9 | S1.6 - corpus T0 Windows : scenarios declaratifs (win-workstation-01 couvrant 49 hunts Windows fast + clean-host-01), generateurs deterministes (Velociraptor offline-collector JSONL + KAPE Module_Output CSV + image NTFS raw v0 via conteneur one-shot corpus-ntfs + patcheur MFT sans montage), 9 mappings velociraptor + parse_velociraptor (projections EID->familles, record_id, raw_policy) + step parse branche worker (skip explicite autres kinds, refused si hash mismatch, skipped compte fait pour fast_done) ; image byte-reproductible (serial/timestamps/INDX normalises, timestomping SI 2019 vs FN 2026 plante) ; 247/247 (T1+T3 217 + T5 30, 1 skip) ; artefacts : corpus_manifest.json commite, mappings/ bake worker-fast | termine | 2026-09-05 |
+| 10 | S1.7 - cloture etape 1 : seuils A3 (evaluation/thresholds.yaml + loader src/oreoa/thresholds.py + spike scripts/measure_thresholds.py en conteneur worker-fast : lane fast courante 1.56 s, parse win-workstation-01 0.49 s, DuckDB 4.7 MB ; rapport commite evaluation/measurements/2026-09-05_s1.7_spike.json) + NOTICE v2 regenere en anglais (A5, licences binaires verifyees a la source : Hayabusa AGPL-3.0, Chainsaw GPL-3.0, Zircolite LGPL-3.0, capa/FLOSS Apache-2.0, DIE MIT, OpenCode MIT) + test T1 couverture NOTICE vs snapshot.json ; 260/260 (T1+T3 231 + T5 29, 0 skip) ; PR v2->main mergee (jalon etape 1) | termine | 2026-09-05 |
 
 ## Prochaine action
 
-**S1.7 - cloture etape 1** : spike seuils A3 (`evaluation/thresholds.yaml`
-recalibre par PR), NOTICE stack v2 (amendement A5), `make test` T1+T3 + T5
-vert, fiches vault, PR `v2`->`main`. Puis jalon dur etape 2 : affaire
-d'exercice reelle (une semaine d'usage) - corpus multi-hote plante a ce
-moment (H-LM-001 declare deep dans le scenario).
+**Etape 2 - jalon dur** : affaire d'exercice reelle (une semaine d'usage).
+Windows end-to-end (SPEC work order 2) : fast lane complete (Sigma Hayabusa/
+Zircolite/Chainsaw, YARA, ClamAV, events, hunts, rank_signals), quick parsers
+KAPE MFT/USN/Amcache, manifest/delta + /ingest, `events`, 20 hunts avec tests,
+`rank_signals`, mcp-evidence (search, get_raw), mcp-jobs, roles ingest+triage,
+/ingest /status /triage, T2 + T4 pour ces roles, make record, make doctor,
+SBOM/scan. Corpus multi-hote plante a ce moment (H-LM-001 declare deep dans
+le scenario). Avant dependance : T2 consomme evaluation/thresholds.yaml
+(make measure re-passe la lane fast complete et alimente le re-baseline PR).
 
 ## Decisions verrouillees
 
@@ -99,6 +104,22 @@ moment (H-LM-001 declare deep dans le scenario).
     reverifie avant parse, uploads JAMAUS extraits (l'extract etape 2 en
     est responsable) ; `skipped` compte comme fait pour fast_done ;
     mappings/ bake dans worker-fast (/oreoa/mappings + OREOA_MAPPINGS_DIR)
+17. S1.7 arbitres : NOTICE en ANGLAIS (ecart assume a la regle langues -
+    surface legale arbitree avec l'analyste 2026-09-05, le reste du depot
+    garde ses langues) ; seuils = donnees (loader src/oreoa/thresholds.py,
+    cles requises des 4 seuils SPEC, valeurs > 0, additives par PR) ; spike
+    = mesure en conteneur worker-fast reel (redis ACL + RQ burst, cas
+    jetable, rapport JSON evaluation/local/ gitignore, copie commitee dans
+    evaluation/measurements/) ; le corpus T0 (51 Ko) ne calibre PAS les
+    seuils 10-min/20-min/1-GB - valeurs SPEC conservees, calibration reelle
+    a T2 (etape 2) ; NOTICE verifie aux sources (API GitHub) : Hayabusa
+    AGPL-3.0, Chainsaw GPL-3.0, Zircolite LGPL-3.0-or-later, capa/FLOSS
+    Apache-2.0, DIE MIT, OpenCode MIT, Claude Code proprietaire (profil
+    optionnel, non construit), Redis 8 tri-licence AGPL-3.0 option retenue ;
+    test T1 NOTICE = chaque source de snapshot.json a une entree + licence
+    (custom -> pointeur upstream) + check redistribution Elastic EL2.0 +
+    section VSL ; compteur T5 corrige (29 tests, le 30+1 de S1.6 = erreur de
+    saisie, suite inchangee depuis 978df48)
 
 ## Limites connues
 
@@ -106,6 +127,9 @@ moment (H-LM-001 declare deep dans le scenario).
   `prompt_injection_patterns.yaml`, `crosswalk/` ; approches DFIQ internes
   vides a S1.5 (A6 : set complet avec mcp-knowledge a l'etape 3 ; navigation
   question->hunt deja derivable du seed)
+- Seuils A3 : valeurs SPEC provisoires pour triage/E01/duckdb (le corpus T0
+  51 Ko ne calibre pas 10-min/20-min/1-GB) - T2 (etape 2) mesure la lane
+  fast complete et re-baseline par PR ; SBOM/scan syft-grype = etape 2
 - `velociraptor_artifacts` : pas de pin versions.env (reference only) -
   a pinner quand les mappings velociraptor en ont besoin (etape 2)
 - Corpus T0 : memoire+ISF, E01, chiffrement, VSS et .pf binaires reportes au

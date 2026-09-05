@@ -1,0 +1,40 @@
+# OREOA-AI - performance thresholds (SPEC amendment A3: thresholds are data,
+# not constants). This file changes by PR only. A missed threshold blocks a PR
+# unless a re-baseline PR documents the measurement and the architect accepts
+# the new value. Raw measurement reports: evaluation/measurements/*.json
+# (committed); local spike outputs: evaluation/local/ (gitignored).
+schema_version: 1
+
+# Units in the name suffix: _s = seconds, _bytes = bytes.
+thresholds:
+  # SPEC acceptance criteria (initial baseline = SPEC values, kept until the
+  # corresponding steps exist and T2 measures them for real).
+  triage_brief_archive_s: 600        # triage brief < 10 min after a typical Velociraptor archive
+  triage_brief_e01_100gb_s: 1200     # triage brief < 20 min after a 100 GB E01 (extraction included)
+  analyse_resume_s: 2                # /analyse resume on a 3-host case < 2 s
+  duckdb_3host_bytes: 1073741824     # case.duckdb < 1 GB for a 3-host case
+
+# Last re-baseline reference, copied by PR from the raw report below.
+# S1.7 spike (work-order step 1): fast lane as implemented today - hash/
+# detect/inventory are skeleton steps (no handler yet), parse is real for
+# archive_velociraptor and an explicit skip for other kinds; sigma/yara/
+# clamav/events/hunts/rank_signals land at step 2 and must be re-measured
+# there. The thresholds above remain at their SPEC values: the T0 corpus
+# (51 KB archives, 64 MB image) cannot calibrate the 10-min/20-min/1-GB
+# gates - it only proves the harness and records the S1.6 parser baseline.
+measured:
+  measured_at: "2026-09-05T11:49:20+00:00"
+  git_sha: 978df48b33af32d0edb61641ce73ed0d8fae959b
+  method: "compose run worker-fast (real Redis ACL + RQ burst drain, concurrency 1) over the T0 Windows corpus - scripts/measure_thresholds.py"
+  report: "evaluation/measurements/2026-09-05_s1.7_spike.json"
+  corpus: "win-workstation-01 + clean-host-01 (2 Velociraptor archives, 2 KAPE archives, 1 raw NTFS image)"
+  fast_lane_wall_s: 1.558             # 5 evidences x 4 steps (hash/detect/inventory/parse), 20 RQ jobs
+  parse_velociraptor_s: 0.4925        # win-workstation-01 archive (1080 events); clean-host-01: 0.3293
+  duckdb_bytes: 4730880
+  parquet_bytes: 398722
+  parquet_files: 17
+
+rebaseline_rules:
+  - "Thresholds change by PR only (A3); the PR must reference a committed measurement report under evaluation/measurements/."
+  - "A missed threshold blocks a PR unless a re-baseline PR documents the measurement and the architect accepts the new value."
+  - "T2 (work-order step 2) records measured values against these thresholds; re-measure the full fast lane when sigma/yara/clamav/events/hunts/rank_signals land."

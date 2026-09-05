@@ -10,7 +10,7 @@ export
 .DEFAULT_GOAL := help
 
 .PHONY: help secrets build build-base pins update-knowledge corpus corpus-image \
-        runtime-config up down shell case-new test test-infra lint-compose sbom scan \
+        runtime-config up down shell case-new test test-infra measure lint-compose sbom scan \
         clean-derived image-sizes
 
 help: ## Show targets
@@ -73,6 +73,9 @@ test: ## Unit (T1) + MCP contract tests (T3) - no containers
 
 test-infra: secrets ## Infra tests (T5) - builds nothing; run make build first
 	$(PYTEST) tests/infra
+
+measure: ## A3 spike: measure the current fast lane on the T0 corpus (worker-fast container)
+	python3 scripts/measure_thresholds.py
 
 sbom scan: ## (step 2) syft SBOM per image + grype/trivy scan
 	@echo "sbom/scan land at work-order step 2 (CI matrix)"

@@ -408,3 +408,48 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   construits et commites (manifest) : 2 archives VR, 2 archives KAPE,
   1 image NTFS 64MB. Prochaine action : S1.7 (cloture etape 1 : seuils A3,
   NOTICE A5, PR v2->main)
+- 2026-09-05 -- S1.7 - cloture de l'etape 1 (2 arbitrages avec l'analyste :
+  spike A3 en conteneur worker-fast reel plutot qu'in-process, NOTICE en
+  ANGLAIS - ecart assume a la regle langues, surface legale). A3 seuils :
+  `evaluation/thresholds.yaml` (schema_version 1, les 4 seuils SPEC - triage
+  archive 600 s, E01 100 Go 1200 s, /analyse resume 2 s, DuckDB 3-hotes
+  1 Go - bloc `measured` reference de re-baseline, regles de gouvernance) ;
+  loader `src/oreoa/thresholds.py` (pydantic : cles requises, valeurs > 0,
+  additives, OREOA_THRESHOLDS en override ; T2/etape 2 le consommera) ;
+  spike `scripts/measure_thresholds.py` + cible `make measure` : cas jetable
+  scaffold + manifest des 5 artefacts T0 (EV-901..905, container_format raw
+  pour l'image disque), compose run worker-fast reel (redis ACL + RQ burst
+  concurrency 1), 20 jobs hash/detect/inventory/parse, timings handler depuis
+  manifest started_at/finished_at + wall total, rapport JSON evaluation/local/
+  (gitignore) ; rapport commite `evaluation/measurements/2026-09-05_s1.7_spike
+  .json` (git sha 978df48). Mesures : lane wall 1.558-1.564 s (2 runs, stable),
+  parse win-workstation-01 0.49-0.51 s (1080 evenements), clean-host-01
+  0.32-0.33 s, DuckDB 4 730 880 B, parquet 398 722 B / 17 fichiers. Le corpus
+  T0 (51 Ko) ne calibre PAS les seuils 10-min/20-min/1-GB : valeurs SPEC
+  conservees dans thresholds.yaml, calibration reelle a T2 quand la lane fast
+  sera complete (sigma/yara/clamav/events/hunts/rank_signals - perimetre
+  documente dans le YAML et le rapport). Debug en route : ev_id passait
+  l'objet Evidence au lieu de ev.ev_id (20 jobs refuses a la validation -
+  visible seulement apres ajout des DIAG queue count + dump stdout conteneur
+  sur le chemin d'echec, conserves) ; registre failed illisible apres coup
+  (redis rm dans le finally) - lecon : dumper l'erreur avant teardown.
+  A5 NOTICE : regenere EN ANGLAIS pour la stack v2 - 3 modeles de distribution
+  (bake / one-shot workstation / knowledge jamais bake), inventaire images,
+  deps Python par lock, toolchain forensique livree vs pinnee etape 2
+  (licences verifyees aux sources via API GitHub : Hayabusa AGPL-3.0,
+  Chainsaw GPL-3.0, Zircolite LGPL-3.0-or-later, capa + FLOSS Apache-2.0,
+  DIE MIT, OpenCode MIT, Claude Code proprietaire profil optionnel non
+  construit, Redis 8 tri-licence RSAL/SSPL/AGPL option AGPL retenue),
+  check redistribution Elastic License 2.0 tranche par la non-distribution
+  (jamais bake, exclu des bundles air-gap, re-fetch par le destinataire),
+  section VSL v1.0 Volatility conservee, attribution DRL 1.1 Sigma rapports.
+  Test T1 `test_notice.py` : chaque source de knowledge/snapshot.json a une
+  entree NOTICE + licence (custom -> pointeur upstream), EL2.0 check,
+  VSL, "never baked". Tests T1 `test_thresholds.py` (10) : chargeur,
+  4 cles requises, valeurs > 0, additives, refus non-mapping/zero/negatif.
+  Vert : 260/260 (T1+T3 231 dont 14 nouveaux + T5 29, 0 skip - image fetcher
+  reconstruite ; le 30+1 de S1.6 = erreur de saisie, la suite T5 n'a pas
+  change depuis 978df48). PR v2->main preparee et mergee : jalon etape 1
+  qualifie (SPEC work order 2 - Windows end-to-end + une semaine d'usage
+  reel d'affaire d'exercice avant de continuer ; corpus multi-hote plante
+  a ce moment, H-LM-001 declare deep). Prochaine action : etape 2

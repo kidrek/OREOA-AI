@@ -33,6 +33,12 @@ def test_closed_vocabulary_accepts_member():
     assert validate_closed("os", "windows", vocab.OS) == "windows"
 
 
+def test_source_tool_accepts_kape():
+    """S2.1: KAPE module-output quick parsers are a first-class source tool."""
+    assert validate_closed("source_tool", "kape", vocab.SOURCE_TOOL) == "kape"
+    assert validate_closed("source_tool", "velociraptor", vocab.SOURCE_TOOL) == "velociraptor"
+
+
 def test_vocabularies_have_no_duplicates():
     for name, values in vocab.VOCABULARIES.items():
         assert len(values) == len(set(values)), f"duplicate values in {name}"

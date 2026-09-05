@@ -1,0 +1,31 @@
+# KAPE !MFTParser CSV -> fs_entries - S2.1
+# Source: Module_Output/MFT/MFT.csv (work-order step 2 quick parsers).
+# Every source column is projected into a typed column => lossless
+# (round-trip tested, SPEC storage tiers: raw NULL, omitted_lossless).
+# FullPath is composed parser-side (ParentPath + "\" + FileName, S2.1
+# arbitration) - the two source columns stay individually re-derivable.
+# forensic_artifact = ForensicArtifacts definition name (knowledge/upstream).
+version: 1
+source_tool: kape
+artifact: kape.MFT
+forensic_artifact: NTFSMFTFiles
+family: fs_entries
+lossless: true
+summary_tag: mft
+summary_template: "MFT record {inode}: {path}"
+fields:
+  inode: {path: RecordNumber, type: int}
+  path: {path: FullPath, type: str}
+  path_norm: {path: FullPath, type: str, transform: path_norm}
+  name: {path: FileName, type: str}
+  is_dir: {path: IsDirectory, type: bool}
+  size: {path: FileSize, type: int}
+  attributes: {path: Attributes, type: list}
+  ts_created: {path: SI_Created, type: timestamp}
+  ts_modified: {path: SI_Modified, type: timestamp}
+  ts_accessed: {path: SI_Accessed, type: timestamp}
+  ts_metadata_changed: {path: SI_MFT_Changed, type: timestamp}
+  fn_ts_created: {path: FN_Created, type: timestamp}
+  fn_ts_modified: {path: FN_Modified, type: timestamp}
+  fn_ts_accessed: {path: FN_Accessed, type: timestamp}
+  fn_ts_metadata_changed: {path: FN_MFT_Changed, type: timestamp}

@@ -53,6 +53,7 @@ OS: tuple[str, ...] = ("windows", "linux", "macos", "android", "ios", "unknown")
 USER_ID_TYPE: tuple[str, ...] = ("sid", "uid", "guid", "email", "unknown")
 SOURCE_TOOL: tuple[str, ...] = (
     "velociraptor",
+    "kape",
     "plaso",
     "dissect",
     "hayabusa",

@@ -1,9 +1,9 @@
-"""T1: worker parse step wiring (work-order step 1.6).
+"""T1: worker parse step wiring (work-order steps 1.6 + 2.1).
 
 Covers: HANDLERS['parse'] through run_step (manifest statuses, details, A1
-writer rule), explicit skip for non-Velociraptor kinds, hash-mismatch
-tamper refusal, fast-lane completion notification with only `parse`
-registered.
+writer rule), explicit skip for unparsed kinds, hash-mismatch tamper
+refusal, KAPE dispatch (S2.1 quick parsers), fast-lane completion
+notification with only `parse` registered.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from oreoa import worker  # noqa: E402
-from oreoa.corpus_gen import velociraptor  # noqa: E402
+from oreoa.corpus_gen import kape, velociraptor  # noqa: E402
 from oreoa.corpus_gen.scenario import load_scenarios  # noqa: E402
 from oreoa.jobs_model import JobEnvelope  # noqa: E402
 from oreoa.manifest_model import Evidence, EvidenceFile, Manifest  # noqa: E402
@@ -35,13 +35,9 @@ def _envelope(case_id: str, ev_id: str) -> dict:
     ).model_dump()
 
 
-@pytest.fixture()
-def velociraptor_case(tmp_path, monkeypatch):
+def _register_case(tmp_path, monkeypatch, kind: str, archive: Path, host: str = "WKS-042"):
     monkeypatch.setenv("OREOA_CASES", str(tmp_path))
     monkeypatch.setenv("OREOA_MAPPINGS_DIR", str(ROOT / "mappings"))
-    scenario = next(s for s in load_scenarios(ROOT / "corpus" / "scenarios") if s.name == "win-workstation-01")
-    archive = tmp_path / "source.zip"
-    velociraptor.build_archive(scenario, archive)
     sha = hashlib.sha256(archive.read_bytes()).hexdigest()
 
     cdir = scaffold_case(tmp_path, CASE_ID, "incident")
@@ -55,8 +51,8 @@ def velociraptor_case(tmp_path, monkeypatch):
         evidence=[
             Evidence(
                 ev_id="EV-001",
-                kind="archive_velociraptor",
-                host="WKS-042",
+                kind=kind,
+                host=host,
                 files=[EvidenceFile(path="evidence/archive.zip", sha256=sha)],
             )
         ],
@@ -64,6 +60,25 @@ def velociraptor_case(tmp_path, monkeypatch):
     (cdir / "derived").mkdir(exist_ok=True)
     (cdir / "derived" / "manifest.json").write_text(manifest.model_dump_json())
     return cdir
+
+
+def _scenario_archive(tmp_path, scenario_name: str, builder) -> Path:
+    scenario = next(s for s in load_scenarios(ROOT / "corpus" / "scenarios") if s.name == scenario_name)
+    archive = tmp_path / "source.zip"
+    builder(scenario, archive)
+    return archive
+
+
+@pytest.fixture()
+def velociraptor_case(tmp_path, monkeypatch):
+    archive = _scenario_archive(tmp_path, "win-workstation-01", velociraptor.build_archive)
+    return _register_case(tmp_path, monkeypatch, "archive_velociraptor", archive)
+
+
+@pytest.fixture()
+def kape_case(tmp_path, monkeypatch):
+    archive = _scenario_archive(tmp_path, "win-workstation-01", kape.build_archive)
+    return _register_case(tmp_path, monkeypatch, "archive_kape", archive)
 
 
 def test_parse_step_ok_and_details(velociraptor_case):
@@ -80,7 +95,20 @@ def test_parse_step_ok_and_details(velociraptor_case):
     assert "families" in step.details
 
 
-def test_parse_step_skips_non_velociraptor(velociraptor_case, monkeypatch):
+def test_parse_step_kape_dispatch(kape_case):
+    """S2.1: archive_kape routes to the KAPE quick parsers."""
+    cdir = kape_case
+    result = worker.run_step(_envelope(CASE_ID, "EV-001"))
+    assert result["status"] == "ok", result["error"]
+    from oreoa.manifest_model import load_manifest
+
+    step = load_manifest(cdir / "derived" / "manifest.json").get_evidence("EV-001").steps["parse"]
+    assert step.details["parser"] == "kape/1.0.0"
+    assert step.details["families"].get("fs_entries", 0) > 0
+    assert step.details["unmapped_artifacts"] == []
+
+
+def test_parse_step_skips_unparsed_kinds(velociraptor_case, monkeypatch):
     cdir = velociraptor_case
     from oreoa.manifest_model import load_manifest, save_manifest
 

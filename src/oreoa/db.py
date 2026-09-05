@@ -654,6 +654,27 @@ def load_evidence_family(con, case_dir: Path, ev_id: str, family: str) -> int:
     return int(count)
 
 
+def write_parsed_rows(case_dir: Path, ev_id: str, rows_by_family: dict[str, list[dict]]) -> None:
+    """Persist parsed rows for one evidence (shared by the fast-lane
+    parsers, S1.6 Velociraptor / S2.1 KAPE):
+
+    - one Parquet file per family (authoritative tier, ``raw`` included);
+    - materialized families loaded into DuckDB (idempotent, delete-then-
+      insert by ``ev_id``); view families get their Parquet-backed views
+      refreshed.
+    """
+    for family, rows in sorted(rows_by_family.items()):
+        write_parquet(case_dir, ev_id, family, rows)
+    con = connect(case_dir)
+    try:
+        for family, _rows in sorted(rows_by_family.items()):
+            if family in MATERIALIZED_FAMILIES:
+                load_evidence_family(con, case_dir, ev_id, family)
+        ensure_views(con, case_dir)
+    finally:
+        con.close()
+
+
 def find_raw(con, case_dir: Path, family: str, record_ids: list[str]) -> dict[str, str]:
     """Resolve ``raw`` records from the authoritative Parquet (SPEC get_raw).
 

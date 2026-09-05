@@ -56,7 +56,8 @@ def test_every_mapping_loads_with_valid_family(mappings):
     for artifact, mapping in mappings.items():
         assert mapping.artifact == artifact
         assert mapping.family in FAMILIES
-        assert mapping.source_tool == "velociraptor"
+        # source_tool follows the mapping directory (mappings/<tool>/)
+        assert mapping.source_tool == mapping.path.parent.name
         assert mapping.version == 1
 
 
@@ -110,6 +111,40 @@ def test_transform_user_name_and_service_key():
     row = mapping.build_row({"U": "CORP\\j.dupont", "N": "Svc1"}, "windows")
     assert row["user_name"] == "j.dupont"
     assert row["location"] == "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Svc1"
+
+
+def test_transform_usn_op_maps_onto_closed_vocab():
+    """S2.1: KAPE !USNParser Reason strings -> FS_JOURNAL_OP enum."""
+    from oreoa.vocab import FS_JOURNAL_OP
+
+    mapping = Mapping(
+        {
+            "version": 1,
+            "source_tool": "kape",
+            "artifact": "X.Usn",
+            "family": "fs_journal",
+            "lossless": True,
+            "fields": {"op": {"path": "Reason", "type": "str", "transform": "usn_op"}},
+        },
+        Path("test.yaml"),
+    )
+    cases = {
+        "File Create": "create",
+        "File Delete": "delete",
+        "Data Overwrite": "modify",
+        "Data Extend": "modify",
+        "Data Truncation": "truncate",
+        "Rename New Name": "rename_new",
+        "Rename Old Name": "rename_old",
+        "Basic Info Change": "attr_change",
+        "Security Change": "security_change",
+        "Hard Link Change": "hardlink",
+        "Close": "other",
+        "something collector specific": "other",
+    }
+    for reason, expected in cases.items():
+        assert mapping.build_row({"Reason": reason}, "windows")["op"] == expected, reason
+    assert set(cases.values()) <= set(FS_JOURNAL_OP)
 
 
 def test_summary_deterministic_and_capped():
@@ -199,7 +234,7 @@ def test_unreferenced_keys_go_to_extra_at_parse_time(mappings):
     mapping = mappings["Windows.Sys.Amcache"]
     assert mapping.referenced_paths == {"Path", "Name", "Sha256", "FileKeyLastWriteTimestamp", "Signer"}
 
-    from oreoa.parse_velociraptor import _extra
+    from oreoa.parse_common import extra_json
 
     source = {
         "Path": "C:\\Windows\\Temp\\iqvw64e.sys",
@@ -209,5 +244,5 @@ def test_unreferenced_keys_go_to_extra_at_parse_time(mappings):
         "FileKeyLastWriteTimestamp": "2026-08-30T02:28:05Z",
         "Signer": "Intel Corporation",
     }
-    extra = json.loads(_extra(source, mapping.referenced_paths))
+    extra = json.loads(extra_json(source, mapping.referenced_paths))
     assert extra == {"Size": 4096}

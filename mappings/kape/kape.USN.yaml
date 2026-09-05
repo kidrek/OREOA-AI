@@ -1,0 +1,22 @@
+# KAPE !USNParser CSV -> fs_journal - S2.1
+# Source: Module_Output/USN/USN.csv (work-order step 2 quick parsers).
+# Every source column is projected => lossless (round-trip tested):
+# ``op`` is the closed-vocabulary projection of ``Reason`` via the usn_op
+# transform (unknown reasons -> other), ``reason_raw`` keeps the original
+# string verbatim. FullPath is composed parser-side (S2.1 arbitration).
+version: 1
+source_tool: kape
+artifact: kape.USN
+forensic_artifact: NTFSUSNJournal
+family: fs_journal
+lossless: true
+summary_tag: usn
+summary_template: "USN {usn}: {op} {path}"
+fields:
+  usn: {path: USN, type: int}
+  ts: {path: Timestamp, type: timestamp}
+  op: {path: Reason, type: str, transform: usn_op}
+  path: {path: FullPath, type: str}
+  path_norm: {path: FullPath, type: str, transform: path_norm}
+  name: {path: FileName, type: str}
+  reason_raw: {path: Reason, type: str}

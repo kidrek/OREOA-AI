@@ -14,8 +14,9 @@ Field specification (per target column):
 - ``type``: ``str|int|float|bool|timestamp|list`` (timestamps are ISO-8601,
   Z or offset, normalized to naive UTC - data-model principle 3).
 - ``const``: fixed value (mutually exclusive with ``path``).
-- ``transform``: ``basename|path_norm|user_name|service_key|tail_after_backslash``
-  (``path_norm`` needs the row ``os``, applied by the parser).
+- ``transform``: ``basename|path_norm|user_name|service_key|tail_after_backslash|usn_op``
+  (``path_norm`` needs the row ``os``, applied by the parser; ``usn_op``
+  maps a USN ``Reason`` string onto the closed FS_JOURNAL_OP enum).
 
 Validation is strict (dfiq_loader precedent): a mapping that targets an
 unknown family/column or uses an unknown transform raises at load time -
@@ -35,8 +36,51 @@ import yaml
 from oreoa.normalize import path_norm
 
 MAPPING_VERSION = 1
-TRANSFORMS: tuple[str, ...] = ("basename", "path_norm", "user_name", "service_key", "tail_after_backslash")
+TRANSFORMS: tuple[str, ...] = (
+    "basename",
+    "path_norm",
+    "user_name",
+    "service_key",
+    "tail_after_backslash",
+    "usn_op",
+)
 FIELD_TYPES: tuple[str, ...] = ("str", "int", "float", "bool", "timestamp", "list", "json")
+
+# USN reason -> FS_JOURNAL_OP, first matching rule wins (priority order:
+# compound reasons like "Rename New Name" must be tested before their
+# substrings; a rule matches when ALL its needles appear in the reason).
+# "Close" and anything unknown fall back to "other".
+USN_OP_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("rename", "old"), "rename_old"),
+    (("rename", "new"), "rename_new"),
+    (("hard",), "hardlink"),
+    (("security",), "security_change"),
+    (("truncat",), "truncate"),
+    (("basic info",), "attr_change"),
+    (("ea change",), "attr_change"),
+    (("attribute",), "attr_change"),
+    (("create",), "create"),
+    (("delete",), "delete"),
+    (("overwrite",), "modify"),
+    (("extend",), "modify"),
+)
+
+
+def usn_reason_to_op(reason: str) -> str:
+    """Map a KAPE !USNParser ``Reason`` string onto the closed FS_JOURNAL_OP
+    enum. Unknown reasons (``Close``, collector-specific wording) fall back
+    to ``other`` - a data decision, never a parse failure (S2.1); the
+    original string stays in ``reason_raw``.
+    """
+    from oreoa.vocab import FS_JOURNAL_OP
+
+    text = str(reason).lower()
+    for needles, op in USN_OP_RULES:
+        if all(needle in text for needle in needles):
+            if op not in FS_JOURNAL_OP:
+                raise ValueError(f"usn_op rule maps to unknown op {op!r}")
+            return op
+    return "other"
 
 
 class SafeDict(dict):
@@ -169,6 +213,8 @@ class FieldSpec:
             return "HKLM\\SYSTEM\\CurrentControlSet\\Services\\" + str(value)
         if self.transform == "tail_after_backslash":
             return str(value).replace("/", "\\").rsplit("\\", 1)[-1]
+        if self.transform == "usn_op":
+            return usn_reason_to_op(str(value))
         raise ValueError(f"unhandled transform {self.transform!r}")
 
 

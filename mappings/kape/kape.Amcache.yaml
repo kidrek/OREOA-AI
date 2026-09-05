@@ -1,0 +1,23 @@
+# KAPE !AmcacheParser CSV -> executions - S2.1
+# Source: Module_Output/Amcache/Amcache.csv (work-order step 2 quick
+# parsers). Projected columns + extra (KeyPath/Size have no executions
+# column and land in ``extra``) => lossless (round-trip tested, SPEC
+# storage tiers). LastWriteTimestamp -> ts_last: the Amcache file key last
+# write (same convention as the Velociraptor Windows.Sys.Amcache mapping).
+version: 1
+source_tool: kape
+artifact: kape.Amcache
+forensic_artifact: WindowsAmcache
+family: executions
+lossless: true
+summary_tag: amcache
+summary_template: "amcache entry: {exe_path}"
+fields:
+  ts_last: {path: LastWriteTimestamp, type: timestamp}
+  exe_path: {path: Path, type: str}
+  exe_name: {path: Name, type: str}
+  exe_path_norm: {path: Path, type: str, transform: path_norm}
+  hash_sha256: {path: Sha256, type: str}
+  signer: {path: Signer, type: str}
+consts:
+  evidence_type: amcache

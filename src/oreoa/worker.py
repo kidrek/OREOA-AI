@@ -16,9 +16,10 @@ registered for all evidences of a host is ``ok``, the host phase becomes
 ``fast_done`` and a single ``[pipeline]`` line is appended to ``journal.md``
 (state-based notification - the analyst/roles read state through MCP; no
 pub/sub). The ``triage`` role is then triggered by the analyst / ingest role
-seeing the phase. The fast-lane ``parse`` step ships its first implementation
-at S1.6 (Velociraptor archives, ``src/oreoa/parse_velociraptor.py``); other
-steps are work-order step 2+: the harness ships explicit placeholders.
+seeing the phase. The fast-lane ``parse`` step ships the Velociraptor
+parser at S1.6 (``src/oreoa/parse_velociraptor.py``) and the KAPE module-
+output quick parsers at S2.1 (``src/oreoa/parse_kape.py``); other steps are
+work-order step 2+: the harness ships explicit placeholders.
 
 Concurrency: replicas are set at launch time (``make up`` passes
 ``--scale worker-fast=$WORKER_FAST_REPLICAS``). Shared writes
@@ -332,24 +333,11 @@ class SkipStep(Exception):
     in the manifest step details, distinct from a failure)."""
 
 
-def _step_parse(cdir: Path, env) -> dict:
-    """Fast-lane parse step (S1.6): Velociraptor archives only for now.
-
-    - verifies the evidence sha256 against the manifest (tamper defence);
-    - other evidence kinds are an explicit skip (their parsers land at
-      work-order steps 2/4).
-    """
-    from oreoa import parse_velociraptor
-
-    manifest = _load_manifest(cdir)
-    evidence = manifest.get_evidence(env.ev_id)
-    if evidence.kind != "archive_velociraptor":
-        raise SkipStep(
-            f"no parser for evidence kind {evidence.kind!r} at S1.6 "
-            "(Velociraptor only; other parsers land at work-order steps 2/4)"
-        )
+def _verify_evidence_file(cdir: Path, evidence) -> Path:
+    """The single registered evidence file must exist and match the manifest
+    sha256 (tamper defence, S1.6 contract - message asserted by tests)."""
     if not evidence.files:
-        raise ValueError(f"{env.ev_id}: no evidence file registered")
+        raise ValueError(f"{evidence.ev_id}: no evidence file registered")
     evidence_file = cdir / evidence.files[0].path
     if not evidence_file.is_file():
         raise FileNotFoundError(f"missing evidence file {evidence_file}")
@@ -362,11 +350,38 @@ def _step_parse(cdir: Path, env) -> dict:
     actual = digest.hexdigest()
     if actual != evidence.files[0].sha256:
         raise ValueError(
-            f"{env.ev_id}: evidence sha256 mismatch (manifest "
+            f"{evidence.ev_id}: evidence sha256 mismatch (manifest "
             f"{evidence.files[0].sha256[:12]}... vs actual {actual[:12]}...) - "
             "possible tampering, refusing to parse"
         )
-    return parse_velociraptor.parse_archive(
+    return evidence_file
+
+
+def _step_parse(cdir: Path, env) -> dict:
+    """Fast-lane parse step (S1.6 Velociraptor, S2.1 KAPE quick parsers).
+
+    - dispatches on the evidence kind (deterministic parsers only);
+    - verifies the evidence sha256 against the manifest (tamper defence);
+    - other evidence kinds are an explicit skip (their parsers land at
+      work-order steps 2/4).
+    """
+    from oreoa import parse_kape, parse_velociraptor
+
+    manifest = _load_manifest(cdir)
+    evidence = manifest.get_evidence(env.ev_id)
+    parsers = {
+        "archive_velociraptor": parse_velociraptor.parse_archive,
+        "archive_kape": parse_kape.parse_archive,
+    }
+    parser = parsers.get(evidence.kind)
+    if parser is None:
+        raise SkipStep(
+            f"no parser for evidence kind {evidence.kind!r} "
+            "(Velociraptor + KAPE module outputs shipped; remaining parsers "
+            "land at work-order steps 2/4)"
+        )
+    evidence_file = _verify_evidence_file(cdir, evidence)
+    return parser(
         evidence_file,
         case_id=env.case_id,
         ev_id=env.ev_id,

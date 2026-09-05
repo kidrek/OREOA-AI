@@ -505,3 +505,47 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   regles Sigma reelles a eprouver au step sigma (S2.2). Prochaine action :
   S2.1 - quick parsers KAPE MFT/USN/Amcache (+ confrontation shapes
   Velociraptor reelles si echantillon fourni).
+
+- 2026-09-05 -- S2.1 - quick parsers KAPE MFT/USN/Amcache (etape 2, work
+  order SPEC 2 ; 4 arbitrages valides analyste, aucun ecart SPEC). Mappings
+  mappings/kape/{kape.MFT,kape.USN,kape.Amcache}.yaml : lossless=true sur
+  les 3 (toute colonne source projettee -> raw NULL, omitted_lossless,
+  round-trip obligatoire), forensic_artifact verifies contre
+  knowledge/upstream (NTFSMFTFiles, NTFSUSNJournal ; WindowsAmcache =
+  precedent S1.6, la definition amont ne nomme que le fichier .hve) ;
+  kape.MFT -> fs_entries (SI -> ts_*, FN -> fn_ts_*, RecordNumber -> inode,
+  IsDirectory/FileSize/Attributes -> is_dir/size/attributes) ; kape.USN ->
+  fs_journal (USN/Timestamp/FileName/Reason -> usn/ts/name/reason_raw, op
+  via nouveau transform) ; kape.Amcache -> executions (LastWriteTimestamp
+  -> ts_last comme le mapping velociraptor ; KeyPath/Size -> extra).
+  Transform usn_op (mappings.py) : regles priorisees, match = TOUS les
+  needles presents (bug any->all corrige au test : "Rename New Name"),
+  raisons inconnues (Close...) -> other - decision data, reason_raw garde
+  verbatim ; vocab SOURCE_TOOL += kape (arbitre). parse_common.py :
+  mutualisation emit_row/extra_json/validate_entry_name/render_projection
+  des 2 parsers ; db.write_parsed_rows = chemin d'ecriture commun (Parquet
+  par famille + load materialisees + vues). parse_kape.py : zip consomme en
+  place (rien d'extrait, extract = autre step), whitelist entries (_kape.cli,
+  README.txt, Module_Output/), refus zip-slip, CSV DictReader utf-8/CRLF,
+  source_ref = csv:<entry>:<index de row donnee> (1-based, hors entete -
+  deterministe meme si un champ quote contient un \n), FullPath composee
+  parser (arbitre), warning explicite pour CSV Module_Output sans mapping ;
+  uploads JAMAIS touches (l'extract step en est responsable). worker.py : dispatch
+  parse par kind (archive_velociraptor -> S1.6, archive_kape -> S2.1, autres
+  -> SkipStep), _verify_evidence_file factorise (message de refus inchange,
+  teste). Round-trip SPEC data model 131 : test reconstruit CHAQUE ligne CSV
+  depuis la row normalisee (colonnes + extra) - 3 mappings couverts sur les
+  2 scenarios. T5 test_kape_parse.py : mappings/kape bakes dans
+  l'image + import parse_kape + parse REEL d'une archive KAPE T0 dans le
+  conteneur worker-fast (manifest step ok, rows plantees verifiees dans
+  DuckDB) ; lecon T5 : le conteneur ne supprime JAMAIS evidence/ (uid 10001
+  sur dir 0555 -> EACCES au rmtree - le smoke pipeline passait car son
+  evidence/ etait vide) ; teardown hote proprietaire. Images rebuilt (src
+  bakes dans base + mappings dans worker-fast) : base, worker-fast,
+  worker-deep. Vert : 280/280 (T1+T3 246 dont 13 nouveaux - test_parse_kape
+  10, dispatch kape 1, vocab kape 1, usn_op 1 ; T5 34 dont 2 nouveaux,
+  0 skip) ; lint-compose 12/12. Arbitrages journalises (decision 19) :
+  source_tool kape, os windows par defaut pour KAPE, FullPath cote parser,
+  usn_op other sur inconnu. Prochaine action : S2.2 - Sigma (Hayabusa/
+  Zircolite/Chainsaw sur archives/extracted, crosswalk sigma_to_hunt, hits
+  -> detections ; compat zircolite x regles reelles a eprouver).

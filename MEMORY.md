@@ -32,18 +32,21 @@ perdue - mise a jour de ce fichier + append du journal AVANT l'etape suivante.
 | 9 | S1.6 - corpus T0 Windows : scenarios declaratifs (win-workstation-01 couvrant 49 hunts Windows fast + clean-host-01), generateurs deterministes (Velociraptor offline-collector JSONL + KAPE Module_Output CSV + image NTFS raw v0 via conteneur one-shot corpus-ntfs + patcheur MFT sans montage), 9 mappings velociraptor + parse_velociraptor (projections EID->familles, record_id, raw_policy) + step parse branche worker (skip explicite autres kinds, refused si hash mismatch, skipped compte fait pour fast_done) ; image byte-reproductible (serial/timestamps/INDX normalises, timestomping SI 2019 vs FN 2026 plante) ; 247/247 (T1+T3 217 + T5 30, 1 skip) ; artefacts : corpus_manifest.json commite, mappings/ bake worker-fast | termine | 2026-09-05 |
 | 10 | S1.7 - cloture etape 1 : seuils A3 (evaluation/thresholds.yaml + loader src/oreoa/thresholds.py + spike scripts/measure_thresholds.py en conteneur worker-fast : lane fast courante 1.56 s, parse win-workstation-01 0.49 s, DuckDB 4.7 MB ; rapport commite evaluation/measurements/2026-09-05_s1.7_spike.json) + NOTICE v2 regenere en anglais (A5, licences binaires verifyees a la source : Hayabusa AGPL-3.0, Chainsaw GPL-3.0, Zircolite LGPL-3.0, capa/FLOSS Apache-2.0, DIE MIT, OpenCode MIT) + test T1 couverture NOTICE vs snapshot.json ; 260/260 (T1+T3 231 + T5 29, 0 skip) ; merge local --no-ff sur main 2a6206c (pas de gh/token API - arbitre analyste, objet PR non cree) | termine | 2026-09-05 |
 | 11 | S2.0 - pins binaires + image worker-fast detection-ready : Hayabusa 4.0.0 (MUSL - gnu exige glibc 2.38+ vs bookworm 2.36), Chainsaw 2.16.5, Zircolite 3.8.1 (tarball source pinne - ni binaire release ni PyPI ; deps pip-compilees, pysigma 1.5.0 = pdm.lock du projet), PYCLAMD 0.4.0 ; make_pins --only + sha256 au pin verifies au build ; service clamav dedie (spec 3.3 : clamd --foreground TCP 3310 internal, db ro, healthcheck TCP - clamdscan --ping bugge) ; smoke reel EICAR FOUND ; 265/265 (T1+T3 233 + T5 32, 0 skip) ; images worker-fast e668e8d36e57, worker-deep e18192db1b89 | termine | 2026-09-05 |
+| 12 | S2.1 - quick parsers KAPE : mappings/kape/{kape.MFT,kape.USN,kape.Amcache}.yaml (lossless, forensic_artifact NTFSMFTFiles/NTFSUSNJournal/WindowsAmcache verifies contre knowledge/upstream) + transform usn_op (Reason -> FS_JOURNAL_OP ferme, inconnu -> other, all-needles priorise) + vocab SOURCE_TOOL += kape ; parse_common.py mutualise (emit_row/extra_json/validate_entry_name) + db.write_parsed_rows communs aux 2 parsers ; parse_kape.py (Module_Output/*.csv, FullPath composee parser, source_ref csv:<entry>:<index>, zip-slip, warning CSV sans mapping) ; worker dispatch parse par kind (archive_kape) + _verify_evidence_file factorise ; round-trip tests par mapping (SPEC data model 131) ; T5 test_kape_parse.py (mappings bakes + parse reel en conteneur worker-fast) ; 280/280 (T1+T3 246 + T5 34, 0 skip) ; images rebuilt base+worker-fast+worker-deep | termine | 2026-09-05 |
 
 ## Prochaine action
 
-**S2.1 - quick parsers KAPE** (etape 2 continue) : mappings MFT/USN/Amcache
-CSV -> Parquet, dispatch parse par kind (archive_kape), round-trip tests.
-Si echantillon fourni : confrontation shapes Velociraptor reelles vs 9
-mappings S1.6 (limite journalisee, l'affaire reelle de l'analyste est en
-Velociraptor). Puis S2.2 sigma (Hayabusa/Zircolite/Chainsaw sur extracted/
-ou archives, crosswalk sigma_to_hunt). Jalon dur arbitre : la semaine
-d'usage reel de l'affaire d'exercice (Velociraptor) est DECALEE apres
-l'etape 3 (arbitrage analyste 2026-09-05, deviation vs SPEC step 2
-"before continuing" - voir decision 18).
+**S2.2 - Sigma** (etape 2 continue) : step `sigma` du worker -
+Hayabusa/Zircolite/Chainsaw sur le contenu des archives (Velociraptor
+results/, KAPE Module_Output, extracted/) ; rule sets montes ro depuis
+/knowledge (jamais bakes, decision S2.0) ; crosswalk `sigma_to_hunt` ;
+hits -> famille `detections` (status `new`, mutation `reviewed` via
+mcp-case uniquement). Compat zircolite x regles Sigma reelles a eprouver
+(limite S2.0). Puis S2.3 extract (images, dissect), S2.4 events/hunts/
+rank_signals, roles ingest/triage, T2-T4, make doctor. Jalon dur decale :
+la semaine d'usage reel de l'affaire d'exercice (Velociraptor) se fait
+APRES l'etape 3 (decision 18) ; confrontation shapes Velociraptor reelles
+vs mappings S1.6 des qu'un echantillon est fourni (aucun aujourd'hui).
 
 ## Decisions verrouillees
 
@@ -141,6 +144,22 @@ l'etape 3 (arbitrage analyste 2026-09-05, deviation vs SPEC step 2
     step 2 "one week of real use before continuing") ; la confrontation
     shapes Velociraptor reelles vs mappings S1.6 reste prevue des qu'un
     echantillon est disponible
+19. S2.1 arbitres (2026-09-05, valides analyste) : `source_tool: kape`
+    ajoute au vocab SOURCE_TOOL (les CSV sont produits par les modules
+    KAPE - ni velociraptor ni manual) ; OS des rows KAPE = `windows` par
+    defaut (KAPE Windows-only par construction, pas de client_info dans
+    la collection - revisite quand le step detect posera l'OS dans le
+    manifest) ; `FullPath` = ParentPath\FileName compose par le parser
+    AVANT mapping (le mapping reste pur data ; les colonnes sources
+    restent re-derivable - round-trip) ; usn_op = regles priorisees,
+    une regle matche quand TOUS ses needles apparaissent, raisons
+    inconnues (Close, wording collecteur) -> `other` (decision data,
+    jamais un echec de parse - reason_raw garde verbatim) ; CSV sous
+    Module_Output/ sans mapping = warning explicite (rien de silencieux)
+    ; T5 : le conteneur ne supprime JAMAIS evidence/ (uid 10001 sur dir
+    0555) - le teardown hote nettoie ; forensic_artifact = noms des
+    definitions ForensicArtifacts quand elles existent (NTFSMFTFiles,
+    NTFSUSNJournal), sinon precedent S1.6 (WindowsAmcache)
 
 ## Limites connues
 
@@ -148,6 +167,11 @@ l'etape 3 (arbitrage analyste 2026-09-05, deviation vs SPEC step 2
   `prompt_injection_patterns.yaml`, `crosswalk/` ; approches DFIQ internes
   vides a S1.5 (A6 : set complet avec mcp-knowledge a l'etape 3 ; navigation
   question->hunt deja derivable du seed)
+- Shapes KAPE = emulation generateur T0 (KAPE_MODULES, 3 CSV) ; une vraie
+  collection peut livrer des colonnes supplementaires -> colonnes non
+  referencees en `extra` + CSV sans mapping journalise en warning ;
+  confrontation shapes Velociraptor reelles vs 9 mappings S1.6 toujours en
+  attente d'echantillon reel (aucun fourni au 2026-09-05)
 - Seuils A3 : valeurs SPEC provisoires pour triage/E01/duckdb (le corpus T0
   51 Ko ne calibre pas 10-min/20-min/1-GB) - T2 (etape 2) mesure la lane
   fast complete et re-baseline par PR ; SBOM/scan syft-grype = etape 2

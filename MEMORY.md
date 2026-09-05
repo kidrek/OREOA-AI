@@ -31,18 +31,19 @@ perdue - mise a jour de ce fichier + append du journal AVANT l'etape suivante.
 | 8 | S1.5 - update-knowledge + loader DFIQ interne + fetcher : gen_internal_dfiq.py (54 objets commites S0001/F0001-F0006/Q0001-Q0047 v1.1.0), dfiq_loader.py (parseur v1.1.0 officiel+interne, package dfiq ecarte - donnees pinniees inchargeables par lui), update_knowledge.py (14 sources + clamav one-shot par defaut, snapshot.json, run reel OK), fetcher.py complet (refus pre-reseau, ISF+provenance), mcp-knowledge dfiq_list/dfiq_get, seed monte ro mcp-evidence+knowledge ; 200/200 (138 T1 + 37 T3 + 25 T5) | termine | 2026-09-04 |
 | 9 | S1.6 - corpus T0 Windows : scenarios declaratifs (win-workstation-01 couvrant 49 hunts Windows fast + clean-host-01), generateurs deterministes (Velociraptor offline-collector JSONL + KAPE Module_Output CSV + image NTFS raw v0 via conteneur one-shot corpus-ntfs + patcheur MFT sans montage), 9 mappings velociraptor + parse_velociraptor (projections EID->familles, record_id, raw_policy) + step parse branche worker (skip explicite autres kinds, refused si hash mismatch, skipped compte fait pour fast_done) ; image byte-reproductible (serial/timestamps/INDX normalises, timestomping SI 2019 vs FN 2026 plante) ; 247/247 (T1+T3 217 + T5 30, 1 skip) ; artefacts : corpus_manifest.json commite, mappings/ bake worker-fast | termine | 2026-09-05 |
 | 10 | S1.7 - cloture etape 1 : seuils A3 (evaluation/thresholds.yaml + loader src/oreoa/thresholds.py + spike scripts/measure_thresholds.py en conteneur worker-fast : lane fast courante 1.56 s, parse win-workstation-01 0.49 s, DuckDB 4.7 MB ; rapport commite evaluation/measurements/2026-09-05_s1.7_spike.json) + NOTICE v2 regenere en anglais (A5, licences binaires verifyees a la source : Hayabusa AGPL-3.0, Chainsaw GPL-3.0, Zircolite LGPL-3.0, capa/FLOSS Apache-2.0, DIE MIT, OpenCode MIT) + test T1 couverture NOTICE vs snapshot.json ; 260/260 (T1+T3 231 + T5 29, 0 skip) ; merge local --no-ff sur main 2a6206c (pas de gh/token API - arbitre analyste, objet PR non cree) | termine | 2026-09-05 |
+| 11 | S2.0 - pins binaires + image worker-fast detection-ready : Hayabusa 4.0.0 (MUSL - gnu exige glibc 2.38+ vs bookworm 2.36), Chainsaw 2.16.5, Zircolite 3.8.1 (tarball source pinne - ni binaire release ni PyPI ; deps pip-compilees, pysigma 1.5.0 = pdm.lock du projet), PYCLAMD 0.4.0 ; make_pins --only + sha256 au pin verifies au build ; service clamav dedie (spec 3.3 : clamd --foreground TCP 3310 internal, db ro, healthcheck TCP - clamdscan --ping bugge) ; smoke reel EICAR FOUND ; 265/265 (T1+T3 233 + T5 32, 0 skip) ; images worker-fast e668e8d36e57, worker-deep e18192db1b89 | termine | 2026-09-05 |
 
 ## Prochaine action
 
-**Etape 2 - jalon dur** : affaire d'exercice reelle (une semaine d'usage).
-Windows end-to-end (SPEC work order 2) : fast lane complete (Sigma Hayabusa/
-Zircolite/Chainsaw, YARA, ClamAV, events, hunts, rank_signals), quick parsers
-KAPE MFT/USN/Amcache, manifest/delta + /ingest, `events`, 20 hunts avec tests,
-`rank_signals`, mcp-evidence (search, get_raw), mcp-jobs, roles ingest+triage,
-/ingest /status /triage, T2 + T4 pour ces roles, make record, make doctor,
-SBOM/scan. Corpus multi-hote plante a ce moment (H-LM-001 declare deep dans
-le scenario). Avant dependance : T2 consomme evaluation/thresholds.yaml
-(make measure re-passe la lane fast complete et alimente le re-baseline PR).
+**S2.1 - quick parsers KAPE** (etape 2 continue) : mappings MFT/USN/Amcache
+CSV -> Parquet, dispatch parse par kind (archive_kape), round-trip tests.
+Si echantillon fourni : confrontation shapes Velociraptor reelles vs 9
+mappings S1.6 (limite journalisee, l'affaire reelle de l'analyste est en
+Velociraptor). Puis S2.2 sigma (Hayabusa/Zircolite/Chainsaw sur extracted/
+ou archives, crosswalk sigma_to_hunt). Jalon dur arbitre : la semaine
+d'usage reel de l'affaire d'exercice (Velociraptor) est DECALEE apres
+l'etape 3 (arbitrage analyste 2026-09-05, deviation vs SPEC step 2
+"before continuing" - voir decision 18).
 
 ## Decisions verrouillees
 
@@ -120,6 +121,26 @@ le scenario). Avant dependance : T2 consomme evaluation/thresholds.yaml
     (custom -> pointeur upstream) + check redistribution Elastic EL2.0 +
     section VSL ; compteur T5 corrige (29 tests, le 30+1 de S1.6 = erreur de
     saisie, suite inchangee depuis 978df48)
+18. S2.0 arbitres (2026-09-05) : Hayabusa = build MUSL (le gnu exige glibc
+    2.38+, base plateforme bookworm = 2.36 - resolver make_pins sur l'asset
+    musl) ; Zircolite = tarball source pinne (ni release binaire - 0 asset
+    sur toutes les releases - ni PyPI ; deps pip-compilees dans le lock
+    worker-fast, pysigma 1.5.0/evtx 0.12.1 = pdm.lock du projet ; wrapper
+    /oreoa/bin/zircolite avec cwd ZIRCOLITE_WORKDIR defaut /tmp -
+    zircolite.log relatif, rootfs read_only) ; rule sets jamais bakes
+    (rules/ retirees du zip Hayabusa et du tarball Zircolite, montes ro
+    depuis /knowledge) ; clamd = service dedie selon spec 3.3 avec
+    --foreground OBLIGATOIRE (se demonise sinon, parent exit 0), LogFile
+    /tmp (refuse /dev/stdout et bare stderr), healthcheck sonde TCP
+    (clamdscan --ping bugge exit 34), db ro knowledge/upstream/clamav_db ;
+    make_pins : option --only + sha256 des releases calcules au pin
+    (trust-on-first-pin, revus par PR) et verifies au build ; JALON DUR
+    ETAPE 2 DECALE : la semaine d'usage reel de l'affaire d'exercice
+    reelle (archives Velociraptor de l'analyste) se fait APRES l'etape 3
+    (boucle analyste complete - arbitrage analyste, deviation vs SPEC
+    step 2 "one week of real use before continuing") ; la confrontation
+    shapes Velociraptor reelles vs mappings S1.6 reste prevue des qu'un
+    echantillon est disponible
 
 ## Limites connues
 
@@ -130,6 +151,9 @@ le scenario). Avant dependance : T2 consomme evaluation/thresholds.yaml
 - Seuils A3 : valeurs SPEC provisoires pour triage/E01/duckdb (le corpus T0
   51 Ko ne calibre pas 10-min/20-min/1-GB) - T2 (etape 2) mesure la lane
   fast complete et re-baseline par PR ; SBOM/scan syft-grype = etape 2
+- dissect pas encore dans requirements-worker-fast (detect/extract sur
+  images l'ajouteront aux S2.2/S2.3) ; compat zircolite x regles Sigma
+  reelles a eprouver au step sigma (S2.2)
 - `velociraptor_artifacts` : pas de pin versions.env (reference only) -
   a pinner quand les mappings velociraptor en ont besoin (etape 2)
 - Corpus T0 : memoire+ISF, E01, chiffrement, VSS et .pf binaires reportes au

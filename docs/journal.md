@@ -453,3 +453,55 @@ fichier entier. Le detail long-form du projet vit dans le vault :
   qualifie (SPEC work order 2 - Windows end-to-end + une semaine d'usage
   reel d'affaire d'exercice avant de continuer ; corpus multi-hote plante
   a ce moment, H-LM-001 declare deep). Prochaine action : etape 2
+
+- 2026-09-05 -- S2.0 - pins binaires + image worker-fast detection-ready
+  (etape 2, work order SPEC 2 ; 2 arbitrages techniques en route avec
+  l'analyste, aucun ecart SPEC). Pins versions.env resolves par make_pins
+  (nouvelle option --only=K1,K2 pour une mise a jour ciblee sans drift des
+  autres pins ; sha256 calcules au pin sur le telechargement TLS
+  trust-on-first-pin, verifies au build) : Hayabusa 4.0.0, Chainsaw 2.16.5,
+  Zircolite 3.8.1 + PYCLAMD_VERSION 0.4.0. Decouvertes : Hayabusa gnu exige
+  glibc 2.38+ (base bookworm = 2.36) -> asset MUSL retenu (statique),
+  resolver passe a hayabusa-{V}-lin-x64-musl.zip ; zircolite n'a NI release
+  binaire (0 asset sur toutes les releases) NI paquet PyPI -> code installe
+  depuis le tarball source du tag pinne (sha256), dependances pip-compilees
+  dans requirements-worker-fast.lock (pysigma 1.5.0, evtx 0.12.1 = versions
+  du pdm.lock du projet lui-meme) ; commentaire versions.env corrige en
+  consequence. Image worker-fast : stage engines (download + sha256sum -c,
+  rules/ retirees du zip Hayabusa et rules/ du tarball Zircolite - les rule
+  sets ne sont jamais bakes, montes ro depuis /knowledge, spec 3.3) ;
+  moteurs root:root sous /oreoa/{hayabusa,chainsaw,zircolite} + wrapper
+  /oreoa/bin/zircolite (cwd -> ZIRCOLITE_WORKDIR defaut /tmp car
+  config_loader.DEFAULT_LOG_FILE = zircolite.log relatif, rootfs read_only) ;
+  PATH etendu, OREOA_ZIRCOLITE_HOME. Requirements worker-fast : + yara-python
+  (4.5.4, constraint pour ne pas deraper), + pyclamd, + 17 deps zircolite
+  (pip-compile avec constraint = ancien lock, pins existants inchanges).
+  ClamAV : service dedie compose selon spec 3.3 (image CLAMAV_IMAGE pinnee,
+  clamd en TCP 3310 sur internal, db montee ro depuis
+  knowledge/upstream/clamav_db, conf custom docker/clamav/oreoa-clamd.conf,
+  ancre hardened) - 3 defauts instruits : LogFile /dev/stdout refuse
+  ("too many levels of symbolic links") puis bare stderr refuse ("requires
+  full path") -> /tmp/clamd.log (tmpfs) ; clamd 1.5.4 se DEMONISE par defaut
+  (parent exit 0 apres init, enfant orphelin sans bind) -> --foreground
+  obligatoire ; clamdscan --ping bugge dans cette image (exit 34, "attempt_str
+  would go past end of buffer") -> healthcheck sonde TCP /dev/tcp + le PING
+  protocole verifie par le T5 pyclamd. Smoke reel : compose up --wait clamav
+  healthy, pyclamd ping True, version ClamAV 1.5.4/28113 (db snapshot S1.5),
+  scan_stream EICAR -> FOUND Eicar-Test-Signature. make_pins.py : resolvers
+  resolve_github_release (release + asset {V} ou tarball source, sha256 au
+  pin) + --only. Tests : T1 test_versions_env.py - DEFERRED_KEYS reduites
+  (CAPA/FLOSS/DIE/UNIFIEDLOGS/VOL_SYMBOLS restent deferrees), nouveaux
+  test_release_binary_pins_resolved (version + sha256 64 hex) +
+  test_clamd_client_pin_present ; T5 nouveau tests/infra/
+  test_detection_engines.py (versions banniere/--version des 3 moteurs vs
+  pins, root-owned + non-writable uid 10001, wiring compose clamav - image,
+  internal only, ro, read_only, --foreground -, live ping pyclamd ; helper
+  _run_in_worker_fast avec -e car compose ne propage pas l'env hote dans le
+  conteneur). Vert : 265/265 (T1+T3 233 dont 2 nouveaux + T5 32 dont 3
+  nouveaux, 0 skip) ; lint-compose 12/12. Images : worker-fast
+  e668e8d36e57, worker-deep e18192db1b89 (reconstruit FROM worker-fast).
+  Limites journalisees : dissect pas encore dans requirements-worker-fast
+  (les steps detect/extract sur images l'ajouteront) ; compat zircolite x
+  regles Sigma reelles a eprouver au step sigma (S2.2). Prochaine action :
+  S2.1 - quick parsers KAPE MFT/USN/Amcache (+ confrontation shapes
+  Velociraptor reelles si echantillon fourni).

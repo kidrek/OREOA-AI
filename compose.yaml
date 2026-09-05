@@ -109,6 +109,13 @@ services:
       dockerfile: docker/worker-fast/Dockerfile
       args:
         BASE_IMAGE: oreoa/base:${TAG:-dev}
+        DEBIAN_IMAGE: ${DEBIAN_IMAGE:-debian:bookworm-slim}
+        HAYABUSA_VERSION: ${HAYABUSA_VERSION:-}
+        HAYABUSA_SHA256: ${HAYABUSA_SHA256:-}
+        CHAINSAW_VERSION: ${CHAINSAW_VERSION:-}
+        CHAINSAW_SHA256: ${CHAINSAW_SHA256:-}
+        ZIRCOLITE_VERSION: ${ZIRCOLITE_VERSION:-}
+        ZIRCOLITE_SHA256: ${ZIRCOLITE_SHA256:-}
     <<: *hardened
     command: ["python", "-m", "oreoa.worker", "fast"]
     networks: [internal]
@@ -116,6 +123,7 @@ services:
     environment:
       OREOA_CASES: /cases
       OREOA_MAPPINGS_DIR: /oreoa/mappings
+      OREOA_ZIRCOLITE_HOME: /oreoa/zircolite
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_PASSWORD_FILE: /run/secrets/redis_password
@@ -129,6 +137,29 @@ services:
     cpus: ${WORKER_FAST_CPUS:-2.0}
     ulimits:
       nofile: 65536
+
+  # clamd sidecar (docker_build_spec.md 3.3): one process per container, db
+  # mounted read-only from knowledge/upstream/clamav_db (refreshed only by
+  # make update-knowledge). Workers stream files to it over TCP 3310.
+  clamav:
+    image: ${CLAMAV_IMAGE:-clamav/clamav:1.5.4-debian13-slim}
+    <<: *hardened
+    entrypoint: ["/usr/sbin/clamd"]
+    command: ["--foreground", "--config-file=/etc/clamav/oreoa-clamd.conf"]
+    networks: [internal]
+    volumes:
+      - ./knowledge/upstream/clamav_db:/var/lib/clamav:ro
+      - ./docker/clamav/oreoa-clamd.conf:/etc/clamav/oreoa-clamd.conf:ro
+    mem_limit: ${CLAMAV_MEM:-2g}
+    # clamdscan --ping is broken in this image build (exit 34, buffer
+    # warning): probe the TCP socket instead; the PING protocol is asserted
+    # by the T5 live test through pyclamd.
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 bash -c 'exec 3<>/dev/tcp/127.0.0.1/3310' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
 
   worker-deep:
     group_add:

@@ -19,13 +19,24 @@ KNOWLEDGE_COMMIT_KEYS = [
     "LOLRMM_COMMIT",
 ]
 
-# Binary tool pins deliberately empty until their work-order step.
+# Binary tool pins deliberately empty until their work-order step
+# (capa/floss/die = deep lane, step 4; unified logs = step 4; symbols on
+# demand). Hayabusa/chainsaw/zircolite resolved at S2.0 - see
+# test_release_binary_pins_resolved.
 DEFERRED_KEYS = [
-    "HAYABUSA_VERSION", "HAYABUSA_SHA256", "CHAINSAW_VERSION", "CHAINSAW_SHA256",
-    "ZIRCOLITE_VERSION", "ZIRCOLITE_SHA256", "CAPA_VERSION", "CAPA_SHA256",
-    "FLOSS_VERSION", "FLOSS_SHA256", "DIE_VERSION", "DIE_SHA256",
+    "CAPA_VERSION", "CAPA_SHA256",
+    "FLOSS_VERSION", "FLOSS_SHA256",
+    "DIE_VERSION", "DIE_SHA256",
     "UNIFIEDLOGS_TAG", "VOL_SYMBOLS_WINDOWS_SHA256", "VOL_SYMBOLS_MAC_SHA256",
     "VOL_SYMBOLS_LINUX_SHA256",
+]
+
+# Release binaries pinned at S2.0 (work-order step 2, build order
+# docker_build_spec 11.2): version + pin-time sha256, verified at build.
+RELEASE_BINARY_KEYS = [
+    "HAYABUSA_VERSION", "HAYABUSA_SHA256",
+    "CHAINSAW_VERSION", "CHAINSAW_SHA256",
+    "ZIRCOLITE_VERSION", "ZIRCOLITE_SHA256",
 ]
 
 
@@ -54,6 +65,19 @@ def test_deferred_pins_are_empty():
     for key in DEFERRED_KEYS:
         value = load_versions_env().get(key, "")
         assert value == "" or not value.startswith("#"), key
+
+
+def test_release_binary_pins_resolved():
+    versions = load_versions_env()
+    for key in RELEASE_BINARY_KEYS:
+        assert versions.get(key), f"{key} must be pinned (S2.0)"
+    for key in RELEASE_BINARY_KEYS:
+        if key.endswith("_SHA256"):
+            assert re.fullmatch(r"[0-9a-f]{64}", versions[key]), key
+
+
+def test_clamd_client_pin_present():
+    assert load_versions_env().get("PYCLAMD_VERSION"), "PYCLAMD_VERSION must be pinned"
 
 
 def test_core_tool_pins_present():

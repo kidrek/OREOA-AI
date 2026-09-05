@@ -3,14 +3,16 @@
 
 The only tool allowed to edit versions.env. Line-based rewrite: comments and
 order are preserved, only values change. Shows the diff and asks for
-confirmation unless --yes. Binary tool pins (hayabusa, chainsaw, ...) are
-deliberately not resolved here until their work-order step.
+confirmation unless --yes. Binary tool pins (hayabusa, chainsaw, zircolite)
+are resolved from GitHub releases: the sha256 of the pinned asset is computed
+at pin time (trust-on-first-pin, reviewed by PR) and verified at image build.
 
-Usage: python3 scripts/make_pins.py [--yes]
+Usage: python3 scripts/make_pins.py [--yes] [--only KEY[,KEY...]]
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import subprocess
@@ -87,6 +89,37 @@ def resolve_github_head(repo: str) -> str | None:
         return None
 
 
+# Memo for version+sha256 pairs resolved from the same release payload.
+_RELEASE_CACHE: dict[str, tuple[str, str]] = {}
+
+
+def resolve_github_release(repo: str, asset: str | None) -> tuple[str, str]:
+    """Latest release of a repo as (version, sha256) for pin-time checksums.
+
+    ``asset`` is a per-release asset name where ``{V}`` is the version without
+    the leading ``v``; ``None`` selects the source tarball of the tag
+    (refs/tags/vX.tar.gz) - used when a project ships no binary release and is
+    not on PyPI (zircolite). The sha256 is computed at pin time over the TLS
+    download (trust-on-first-pin, reviewed by PR) and verified at image build.
+    """
+    if repo in _RELEASE_CACHE:
+        return _RELEASE_CACHE[repo]
+    data = json.loads(fetch(f"https://api.github.com/repos/{repo}/releases/latest"))
+    tag = data["tag_name"]
+    version = tag[1:] if tag.startswith("v") else tag
+    if asset is None:
+        url = f"https://github.com/{repo}/archive/refs/tags/{tag}.tar.gz"
+    else:
+        matches = [a for a in data["assets"] if a["name"] == asset.replace("{V}", version)]
+        if not matches:
+            raise ValueError(f"{repo}: asset {asset!r} not found in release {tag}")
+        url = matches[0]["browser_download_url"]
+    blob = fetch(url, timeout=180)
+    info = (version, hashlib.sha256(blob).hexdigest())
+    _RELEASE_CACHE[repo] = info
+    return info
+
+
 def resolve_attack_version() -> str | None:
     try:
         tags = json.loads(fetch("https://api.github.com/repos/mitre-attack/attack-stix-data/tags?per_page=100"))
@@ -114,6 +147,21 @@ RESOLVERS: dict[str, callable] = {
     "DUCKDB_VERSION": lambda cur: resolve_pip("duckdb"),
     "RQ_VERSION": lambda cur: resolve_pip("rq"),
     "MCP_VERSION": lambda cur: resolve_pip("mcp"),
+    "PYCLAMD_VERSION": lambda cur: resolve_pip("pyclamd"),
+    # Release binaries (work-order step 2, build order docker_build_spec 11.2).
+    # zircolite ships no binary release and is not on PyPI: source tarball.
+    # Hayabusa: musl build - the gnu build needs glibc 2.38+, the platform
+    # base is debian bookworm (glibc 2.36).
+    "HAYABUSA_VERSION": lambda cur: resolve_github_release(
+        "Yamato-Security/hayabusa", "hayabusa-{V}-lin-x64-musl.zip")[0],
+    "HAYABUSA_SHA256": lambda cur: resolve_github_release(
+        "Yamato-Security/hayabusa", "hayabusa-{V}-lin-x64-musl.zip")[1],
+    "CHAINSAW_VERSION": lambda cur: resolve_github_release(
+        "WithSecureLabs/chainsaw", "chainsaw_x86_64-unknown-linux-gnu.tar.gz")[0],
+    "CHAINSAW_SHA256": lambda cur: resolve_github_release(
+        "WithSecureLabs/chainsaw", "chainsaw_x86_64-unknown-linux-gnu.tar.gz")[1],
+    "ZIRCOLITE_VERSION": lambda cur: resolve_github_release("wagga40/Zircolite", None)[0],
+    "ZIRCOLITE_SHA256": lambda cur: resolve_github_release("wagga40/Zircolite", None)[1],
     "ATTACK_VERSION": lambda cur: resolve_attack_version(),
     "DFIQ_COMMIT": lambda cur: resolve_github_head("google/dfiq"),
     "FORENSIC_ARTIFACTS_COMMIT": lambda cur: resolve_github_head("ForensicArtifacts/artifacts"),
@@ -135,6 +183,22 @@ def main() -> int:
     args = set(sys.argv[1:])
     assume_yes = "--yes" in args or "-y" in args
 
+    only: set[str] | None = None
+    for arg in sorted(args - {"--yes", "-y"}):
+        if arg.startswith("--only="):
+            only = {k.strip() for k in arg.split("=", 1)[1].split(",") if k.strip()}
+        elif arg == "--only":
+            print("usage: --only=KEY[,KEY...]", file=sys.stderr)
+            return 2
+        else:
+            print(f"unknown argument: {arg}", file=sys.stderr)
+            return 2
+    if only:
+        unknown = only - set(RESOLVERS)
+        if unknown:
+            print(f"unknown pin key(s): {', '.join(sorted(unknown))}", file=sys.stderr)
+            return 2
+
     lines = VERSIONS.read_text().splitlines()
     current: dict[str, str] = {}
     for line in lines:
@@ -145,6 +209,8 @@ def main() -> int:
     diff: list[tuple[str, str, str]] = []  # (key, old, new)
     new_values = dict(current)
     for key, resolver in RESOLVERS.items():
+        if only is not None and key not in only:
+            continue
         try:
             value = resolver(current)
         except Exception as exc:  # network hiccup -> keep current, warn

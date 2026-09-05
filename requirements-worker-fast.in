@@ -1,5 +1,30 @@
-# Direct dependencies of the fast-lane worker (skeleton step: harness + data layer).
+# Direct dependencies of the fast-lane worker.
+# Step 1: RQ harness + data layer. Step 2 (S2.0): detection engines -
+# yara-python, the clamd client, and zircolite's runtime deps (zircolite
+# itself is a pinned source tarball installed by the Dockerfile, not a pip
+# package: no PyPI release, no binary releases). pyyaml is provided by the
+# base image and is deliberately not repeated here.
 rq
 redis
 duckdb
 pyarrow
+yara-python
+pyclamd
+# zircolite 3.8.1 runtime deps (requirements.txt of the pinned tag, minus
+# pyyaml already in base)
+chardet
+evtx
+jinja2
+lxml
+orjson
+psutil
+py7zr
+pysigma
+pysigma-backend-sqlite
+pysigma-pipeline-sysmon
+pysigma-pipeline-windows
+requests
+RestrictedPython
+rich
+rich-argparse
+xxhash
